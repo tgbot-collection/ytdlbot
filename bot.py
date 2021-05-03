@@ -1,0 +1,100 @@
+#!/usr/local/bin/python3
+# coding: utf-8
+
+# ytdl-bot - bot.py
+# 5/3/21 18:31
+#
+
+__author__ = "Benny <benny.think@gmail.com>"
+
+import tempfile
+import os
+import logging
+import youtube_dl
+import traceback
+from telethon import TelegramClient, events
+from tgbot_ping import get_runtime
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
+
+token = os.getenv("TOKEN") or "17Zg"
+app_id = int(os.getenv("APP_ID") or "922")
+app_hash = os.getenv("APP_HASH") or "490"
+bot = TelegramClient('bot', app_id, app_hash).start(bot_token=token)
+
+
+def download_callback(current, total):
+    logging.info('Downloaded %s out of %s, %.2f%%', current, total, current / total * 100)
+
+
+def upload_callback(current, total):
+    logging.info('Uploaded %s out of %s, %.2f%%', current, total, current / total * 100)
+
+
+def ytdl_download(url, tempdir) -> dict:
+    response = dict(status=None, error=None, filepath=None)
+    os.chdir(tempdir)
+    logging.info("Downloading for %s", url)
+    ydl_opts = {}
+    try:
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        response["status"] = True
+        response["filepath"] = [i for i in os.listdir(tempdir)][0]
+    except Exception:
+        err = traceback.format_exc()
+        logging.error("Download  failed for %s ", url)
+        response["status"] = False
+        response["error"] = err
+
+    return response
+
+
+@bot.on(events.NewMessage(pattern='/start'))
+async def send_welcome(event):
+    async with bot.action(event.chat_id, 'typing'):
+        await bot.send_message(event.chat_id, "Wrapper for youtube-dl.")
+        raise events.StopPropagation
+
+
+@bot.on(events.NewMessage(pattern='/ping'))
+async def send_welcome(event):
+    async with bot.action(event.chat_id, 'typing'):
+        bot_info = get_runtime("botsrunner_ytdl_1", "YouTube-dl")
+        await bot.send_message(event.chat_id, f"{bot_info}\n", parse_mode='md')
+        raise events.StopPropagation
+
+
+@bot.on(events.NewMessage(pattern='/about'))
+async def send_welcome(event):
+    async with bot.action(event.chat_id, 'typing'):
+        await bot.send_message(event.chat_id, "YouTube-DL by @BennyThink\n"
+                                              "GitHub: https://github.com/tgbot-collection/ytdl-bot")
+        raise events.StopPropagation
+
+
+@bot.on(events.NewMessage(incoming=True))
+async def echo_all(event):
+    chat_id = event.message.chat_id
+    url = event.message.text
+    message = await event.reply("Downloading...")
+
+    temp_dir = tempfile.TemporaryDirectory()
+    async with bot.action(event.chat_id, 'record-video'):
+        result = ytdl_download(url, temp_dir.name)
+    if result["status"]:
+        async with bot.action(event.chat_id, 'document'):
+            video_path = result["filepath"]
+            await bot.send_file(chat_id, video_path, progress_callback=upload_callback)
+            await bot.edit_message(chat_id, message, 'Download success!✅')
+    else:
+        async with bot.action(event.chat_id, 'typing'):
+            tb = result["error"]
+            await bot.edit_message(chat_id, message, f"{url} download failed❌：\n```{tb}```",
+                                   parse_mode='markdown')
+
+    temp_dir.cleanup()
+
+
+if __name__ == '__main__':
+    bot.run_until_disconnected()

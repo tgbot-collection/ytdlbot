@@ -1,0 +1,3 @@
+telethon
+youtube-dl
+tgbot-ping
