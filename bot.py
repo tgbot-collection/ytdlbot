@@ -10,8 +10,11 @@ __author__ = "Benny <benny.think@gmail.com>"
 import tempfile
 import os
 import logging
-import youtube_dl
+import threading
+import asyncio
 import traceback
+
+import youtube_dl
 from telethon import TelegramClient, events
 from tgbot_ping import get_runtime
 
@@ -23,19 +26,37 @@ app_hash = os.getenv("APP_HASH") or "490"
 bot = TelegramClient('bot', app_id, app_hash).start(bot_token=token)
 
 
-def download_callback(current, total):
-    logging.info('Downloaded %s out of %s, %.2f%%', current, total, current / total * 100)
+async def upload_callback(current, total, chat_id, message):
+    msg = f'Uploading {current / total * 100}: {current}/{total}'
+    await bot.edit_message(chat_id, message, msg)
 
 
-def upload_callback(current, total):
-    logging.info('Uploaded %s out of %s, %.2f%%', current, total, current / total * 100)
+async def sync_edit_message(chat_id, message, msg):
+    await bot.edit_message(chat_id, message, msg)
 
 
-def ytdl_download(url, tempdir) -> dict:
+def go(chat_id, message, msg):
+    asyncio.run(sync_edit_message(chat_id, message, msg))
+
+
+def progress_hook(d: dict, chat_id, message):
+    if d['status'] == 'downloading':
+        downloaded = d["downloaded_bytes"]
+        total = d["total_bytes"]
+        percent = d["_percent_str"]
+        speed = d["_speed_str"]
+        msg = f'Downloading {percent}: {downloaded}/{total} @ {speed}'
+        threading.Thread(target=go, args=(chat_id, message, msg)).start()
+
+
+def ytdl_download(url, tempdir, chat_id, message) -> dict:
     response = dict(status=None, error=None, filepath=None)
     os.chdir(tempdir)
     logging.info("Downloading for %s", url)
-    ydl_opts = {}
+    ydl_opts = {
+        'progress_hooks': [lambda d: progress_hook(d, chat_id, message)],
+        'quiet': True
+    }
     try:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
@@ -77,18 +98,21 @@ async def send_welcome(event):
 async def echo_all(event):
     chat_id = event.message.chat_id
     url = event.message.text
-    message = await event.reply("Downloading...")
-
+    message = await event.reply("Processing...")
     temp_dir = tempfile.TemporaryDirectory()
-    async with bot.action(event.chat_id, 'record-video'):
-        result = ytdl_download(url, temp_dir.name)
+
+    async with bot.action(chat_id, 'video'):
+        result = ytdl_download(url, temp_dir.name, chat_id, message)
+
     if result["status"]:
-        async with bot.action(event.chat_id, 'document'):
+        async with bot.action(chat_id, 'document'):
             video_path = result["filepath"]
-            await bot.send_file(chat_id, video_path, progress_callback=upload_callback)
+            await bot.edit_message(chat_id, message, 'Download complete. Sending now...')
+            await bot.send_file(chat_id, video_path,
+                                progress_callback=lambda x, y: upload_callback(x, y, chat_id, message))
             await bot.edit_message(chat_id, message, 'Download success!✅')
     else:
-        async with bot.action(event.chat_id, 'typing'):
+        async with bot.action(chat_id, 'typing'):
             tb = result["error"]
             await bot.edit_message(chat_id, message, f"{url} download failed❌：\n```{tb}```",
                                    parse_mode='markdown')
