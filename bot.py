@@ -49,7 +49,7 @@ def progress_hook(d: dict, chat_id, message):
         threading.Thread(target=go, args=(chat_id, message, msg)).start()
 
 
-def ytdl_download(url, tempdir, chat_id, message) -> dict:
+async def ytdl_download(url, tempdir, chat_id, message) -> dict:
     response = dict(status=None, error=None, filepath=None)
     logging.info("Downloading for %s", url)
     output = os.path.join(tempdir, '%(title)s.%(ext)s')
@@ -103,7 +103,7 @@ async def echo_all(event):
     temp_dir = tempfile.TemporaryDirectory()
 
     async with bot.action(chat_id, 'video'):
-        result = ytdl_download(url, temp_dir.name, chat_id, message)
+        result = await ytdl_download(url, temp_dir.name, chat_id, message)
 
     if result["status"]:
         async with bot.action(chat_id, 'document'):
