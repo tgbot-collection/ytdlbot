@@ -57,10 +57,10 @@ def go(chat_id, message, msg):
 
 def progress_hook(d: dict, chat_id, message):
     if d['status'] == 'downloading':
-        downloaded = d["downloaded_bytes"]
-        total = d["total_bytes"]
-        percent = d["_percent_str"]
-        speed = d["_speed_str"]
+        downloaded = d.get("downloaded_bytes", 0)
+        total = d.get("total_bytes") or d.get("total_bytes_estimate", "N/A")
+        percent = d.get("_percent_str", "N/A")
+        speed = d.get("_speed_str", "N/A")
         msg = f'Downloading {percent}: {downloaded}/{total} @ {speed}'
         threading.Thread(target=go, args=(chat_id, message, msg)).start()
 
