@@ -51,17 +51,18 @@ def progress_hook(d: dict, chat_id, message):
 
 def ytdl_download(url, tempdir, chat_id, message) -> dict:
     response = dict(status=None, error=None, filepath=None)
-    os.chdir(tempdir)
     logging.info("Downloading for %s", url)
+    output = os.path.join(tempdir, '%(title)s.%(ext)s')
     ydl_opts = {
         'progress_hooks': [lambda d: progress_hook(d, chat_id, message)],
-        'quiet': True
+        'outtmpl': output,
+        'restrictfilenames': True
     }
     try:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
         response["status"] = True
-        response["filepath"] = [i for i in os.listdir(tempdir)][0]
+        response["filepath"] = os.path.join(tempdir, [i for i in os.listdir(tempdir)][0])
     except Exception:
         err = traceback.format_exc()
         logging.error("Download  failed for %s ", url)
