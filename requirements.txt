@@ -1,4 +1,7 @@
-telethon
-youtube-dl
 tgbot-ping
 cryptg
+fakeredis
+
+telethon==1.21.1
+youtube-dl==2021.4.26
+hachoir==3.1.2

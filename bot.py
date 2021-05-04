@@ -14,6 +14,7 @@ import threading
 import asyncio
 import traceback
 
+import fakeredis
 import youtube_dl
 from telethon import TelegramClient, events
 from tgbot_ping import get_runtime
@@ -23,16 +24,29 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(le
 token = os.getenv("TOKEN") or "17Zg"
 app_id = int(os.getenv("APP_ID") or "922")
 app_hash = os.getenv("APP_HASH") or "490"
+
 bot = TelegramClient('bot', app_id, app_hash).start(bot_token=token)
+
+r = fakeredis.FakeStrictRedis()
+
+EXPIRE = 5
 
 
 async def upload_callback(current, total, chat_id, message):
-    msg = f'Uploading {round(current / total * 100, 2)}%: {current}/{total}'
-    await bot.edit_message(chat_id, message, msg)
+    key = f"{chat_id}-{message.id}"
+    # if the key exists, we shouldn't send edit message
+    if not r.exists(key):
+        msg = f'Uploading {round(current / total * 100, 2)}%: {current}/{total}'
+        await bot.edit_message(chat_id, message, msg)
+        r.set(key, "ok", ex=EXPIRE)
 
 
 async def sync_edit_message(chat_id, message, msg):
-    await bot.edit_message(chat_id, message, msg)
+    # try to avoid flood
+    key = f"{chat_id}-{message.id}"
+    if not r.exists(key):
+        await bot.edit_message(chat_id, message, msg)
+        r.set(key, "ok", ex=EXPIRE)
 
 
 def go(chat_id, message, msg):
@@ -79,6 +93,15 @@ async def send_welcome(event):
         raise events.StopPropagation
 
 
+@bot.on(events.NewMessage(pattern='/help'))
+async def send_welcome(event):
+    async with bot.action(event.chat_id, 'typing'):
+        await bot.send_message(event.chat_id, "Bot is not working? "
+                                              "Wait a few seconds, send your link again or report bugs at "
+                                              "https://github.com/tgbot-collection/ytdl-bot/issues")
+        raise events.StopPropagation
+
+
 @bot.on(events.NewMessage(pattern='/ping'))
 async def send_welcome(event):
     async with bot.action(event.chat_id, 'typing'):
@@ -122,4 +145,5 @@ async def echo_all(event):
 
 
 if __name__ == '__main__':
+    bot.start()
     bot.run_until_disconnected()
