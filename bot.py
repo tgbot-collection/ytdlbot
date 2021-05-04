@@ -27,7 +27,7 @@ bot = TelegramClient('bot', app_id, app_hash).start(bot_token=token)
 
 
 async def upload_callback(current, total, chat_id, message):
-    msg = f'Uploading {current / total * 100}: {current}/{total}'
+    msg = f'Uploading {round(current / total * 100, 2)}%: {current}/{total}'
     await bot.edit_message(chat_id, message, msg)
 
 
