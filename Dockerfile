@@ -14,4 +14,4 @@ COPY . /ytdl-bot
 
 WORKDIR /ytdl-bot
 ENV TZ=Asia/Shanghai
-CMD ["python", "bot.py"]
+CMD ["python", "ytdl.py"]
