@@ -9,10 +9,12 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import tempfile
 import os
+import re
 import logging
 import threading
 import asyncio
 import traceback
+import functools
 
 import fakeredis
 import youtube_dl
@@ -63,7 +65,17 @@ def progress_hook(d: dict, chat_id, message):
         threading.Thread(target=go, args=(chat_id, message, msg)).start()
 
 
-async def ytdl_download(url, tempdir, chat_id, message) -> dict:
+def run_in_executor(f):
+    @functools.wraps(f)
+    def inner(*args, **kwargs):
+        loop = asyncio.get_running_loop()
+        return loop.run_in_executor(None, lambda: f(*args, **kwargs))
+
+    return inner
+
+
+@run_in_executor
+def ytdl_download(url, tempdir, chat_id, message) -> dict:
     response = dict(status=None, error=None, filepath=None)
     logging.info("Downloading for %s", url)
     output = os.path.join(tempdir, '%(title)s.%(ext)s')
@@ -122,11 +134,17 @@ async def send_welcome(event):
 async def echo_all(event):
     chat_id = event.message.chat_id
     url = event.message.text
+    logging.info("start %s", url)
+    if not re.findall(r"^https?://", url.lower()):
+        await event.reply("I think you should send me a link. Don't you agree with me?")
+        return
     message = await event.reply("Processing...")
     temp_dir = tempfile.TemporaryDirectory()
 
     async with bot.action(chat_id, 'video'):
+        logging.info("downloading start")
         result = await ytdl_download(url, temp_dir.name, chat_id, message)
+        logging.info("downloading complete")
 
     if result["status"]:
         async with bot.action(chat_id, 'document'):
@@ -137,7 +155,7 @@ async def echo_all(event):
             await bot.edit_message(chat_id, message, 'Download success!✅')
     else:
         async with bot.action(chat_id, 'typing'):
-            tb = result["error"]
+            tb = result["error"][0:4000]
             await bot.edit_message(chat_id, message, f"{url} download failed❌：\n```{tb}```",
                                    parse_mode='markdown')
 
