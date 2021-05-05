@@ -156,7 +156,7 @@ async def echo_all(event):
         async with bot.action(chat_id, 'document'):
             video_path = result["filepath"]
             await bot.edit_message(chat_id, message, 'Download complete. Sending now...')
-            d, w, h, mime_type = get_metadata(video_path)
+            metadata, mime_type = get_metadata(video_path)
             with open(video_path, 'rb') as f:
                 input_file = await upload_file(
                     bot,
@@ -166,11 +166,9 @@ async def echo_all(event):
             input_media = get_input_media(input_file)
             input_media.attributes = [
                 DocumentAttributeVideo(
-                    duration=d,
-                    w=w,
-                    h=h,
                     round_message=False,
-                    supports_streaming=True
+                    supports_streaming=True,
+                    **metadata
                 ),
                 DocumentAttributeFilename(
                     os.path.basename(video_path)),
@@ -191,18 +189,20 @@ def get_metadata(video_path):
     try:
         metadata = extractMetadata(createParser(video_path))
         if isinstance(metadata, MkvMetadata):
-            return (metadata.get('duration').seconds,
-                    metadata['video[1]'].get('width'),
-                    metadata['video[1]'].get('height'),
-                    metadata.get('mime_type'))
+            return dict(
+                duration=metadata.get('duration').seconds,
+                w=metadata['video[1]'].get('width'),
+                h=metadata['video[1]'].get('height')
+                ), metadata.get('mime_type')
         else:
-            return (metadata.get('duration').seconds,
-                    metadata.get('width'),
-                    metadata.get('height'),
-                    metadata.get('mime_type'))
+            return dict(
+                duration=metadata.get('duration').seconds,
+                w=metadata.get('width'),
+                h=metadata.get('height')
+                ), metadata.get('mime_type')
     except Exception as e:
         logging.error(e)
-        return (0, 0, 0, 'application/octet-stream')
+        return dict(duration=0, w=0, h=0), 'application/octet-stream'
 
 
 if __name__ == '__main__':
