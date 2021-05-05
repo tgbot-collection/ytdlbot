@@ -105,7 +105,8 @@ def ytdl_download(url, tempdir, chat_id, message) -> dict:
     ydl_opts = {
         'progress_hooks': [lambda d: progress_hook(d, chat_id, message)],
         'outtmpl': output,
-        'restrictfilenames': True
+        'restrictfilenames': True,
+        'format': 'bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best'
     }
     try:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
