@@ -40,8 +40,27 @@ app_hash = os.getenv("APP_HASH") or "490"
 bot = TelegramClient('bot', app_id, app_hash).start(bot_token=token)
 
 r = fakeredis.FakeStrictRedis()
-
 EXPIRE = 5
+
+
+def get_metadata(video_path):
+    try:
+        metadata = extractMetadata(createParser(video_path))
+        if isinstance(metadata, MkvMetadata):
+            return dict(
+                duration=metadata.get('duration').seconds,
+                w=metadata['video[1]'].get('width'),
+                h=metadata['video[1]'].get('height')
+            ), metadata.get('mime_type')
+        else:
+            return dict(
+                duration=metadata.get('duration').seconds,
+                w=metadata.get('width'),
+                h=metadata.get('height')
+            ), metadata.get('mime_type')
+    except Exception as e:
+        logging.error(e)
+        return dict(duration=0, w=0, h=0), 'application/octet-stream'
 
 
 async def upload_callback(current, total, chat_id, message):
@@ -108,15 +127,16 @@ def ytdl_download(url, tempdir, chat_id, message) -> dict:
     return response
 
 
+# bot starts here
 @bot.on(events.NewMessage(pattern='/start'))
-async def send_welcome(event):
+async def send_start(event):
     async with bot.action(event.chat_id, 'typing'):
         await bot.send_message(event.chat_id, "Wrapper for youtube-dl.")
         raise events.StopPropagation
 
 
 @bot.on(events.NewMessage(pattern='/help'))
-async def send_welcome(event):
+async def send_help(event):
     async with bot.action(event.chat_id, 'typing'):
         await bot.send_message(event.chat_id, "Bot is not working? "
                                               "Wait a few seconds, send your link again or report bugs at "
@@ -125,7 +145,7 @@ async def send_welcome(event):
 
 
 @bot.on(events.NewMessage(pattern='/ping'))
-async def send_welcome(event):
+async def send_ping(event):
     async with bot.action(event.chat_id, 'typing'):
         bot_info = get_runtime("botsrunner_ytdl_1", "YouTube-dl")
         await bot.send_message(event.chat_id, f"{bot_info}\n", parse_mode='md')
@@ -133,7 +153,7 @@ async def send_welcome(event):
 
 
 @bot.on(events.NewMessage(pattern='/about'))
-async def send_welcome(event):
+async def send_about(event):
     async with bot.action(event.chat_id, 'typing'):
         await bot.send_message(event.chat_id, "YouTube-DL by @BennyThink\n"
                                               "GitHub: https://github.com/tgbot-collection/ytdl-bot")
@@ -141,7 +161,7 @@ async def send_welcome(event):
 
 
 @bot.on(events.NewMessage(incoming=True))
-async def echo_all(event):
+async def send_video(event):
     chat_id = event.message.chat_id
     url = re.sub(r'/ytdl\s*', '', event.message.text)
     logging.info("start %s", url)
@@ -157,9 +177,7 @@ async def echo_all(event):
     temp_dir = tempfile.TemporaryDirectory()
 
     async with bot.action(chat_id, 'video'):
-        logging.info("downloading start")
         result = await ytdl_download(url, temp_dir.name, chat_id, message)
-        logging.info("downloading complete")
 
     if result["status"]:
         async with bot.action(chat_id, 'document'):
@@ -168,19 +186,12 @@ async def echo_all(event):
             metadata, mime_type = get_metadata(video_path)
             with open(video_path, 'rb') as f:
                 input_file = await upload_file(
-                    bot,
-                    f,
-                    progress_callback=lambda x, y: upload_callback(
-                        x, y, chat_id, message))
+                    bot, f,
+                    progress_callback=lambda x, y: upload_callback(x, y, chat_id, message))
             input_media = get_input_media(input_file)
             input_media.attributes = [
-                DocumentAttributeVideo(
-                    round_message=False,
-                    supports_streaming=True,
-                    **metadata
-                ),
-                DocumentAttributeFilename(
-                    os.path.basename(video_path)),
+                DocumentAttributeVideo(round_message=False, supports_streaming=True, **metadata),
+                DocumentAttributeFilename(os.path.basename(video_path)),
             ]
             input_media.mime_type = mime_type
             await bot.send_file(chat_id, input_media)
@@ -192,26 +203,6 @@ async def echo_all(event):
                                    parse_mode='markdown')
 
     temp_dir.cleanup()
-
-
-def get_metadata(video_path):
-    try:
-        metadata = extractMetadata(createParser(video_path))
-        if isinstance(metadata, MkvMetadata):
-            return dict(
-                duration=metadata.get('duration').seconds,
-                w=metadata['video[1]'].get('width'),
-                h=metadata['video[1]'].get('height')
-            ), metadata.get('mime_type')
-        else:
-            return dict(
-                duration=metadata.get('duration').seconds,
-                w=metadata.get('width'),
-                h=metadata.get('height')
-            ), metadata.get('mime_type')
-    except Exception as e:
-        logging.error(e)
-        return dict(duration=0, w=0, h=0), 'application/octet-stream'
 
 
 if __name__ == '__main__':

@@ -22,16 +22,17 @@ Any platform [supported by youtube-dl](https://ytdl-org.github.io/youtube-dl/sup
 # How to deploy?
 ## Normal
 1. clone code and update submodule `git submodule update --init --recursive`
-1. install Python 3.6+
-2. pip3 install -r requirements.txt
-3. set environment variables `TOKEN`, `APP_ID` and `APP_HASH`
-4. `python3 bot.py`
-5. supervisor on your own preference.
+2. install ffmpeg   
+3. install Python 3.6+
+4. pip3 install -r requirements.txt
+5. set environment variables `TOKEN`, `APP_ID` and `APP_HASH`
+6. `python3 bot.py`
+7. supervisor on your own preference.
 
 ## docker
 see [here](https://github.com/tgbot-collection/BotsRunner)
 
-# commdands
+# Command
 ```
 start - let's start
 about - wanna contribute?
@@ -39,5 +40,9 @@ ping - bot running status
 help - it's not working?
 ytdl - download video in group
 ```
+
+# Test video
+https://www.youtube.com/watch?v=BaW_jenozKc
+
 # License
 Apache License 2.0
