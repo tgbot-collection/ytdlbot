@@ -26,7 +26,6 @@ from hachoir.metadata.video import MkvMetadata
 from telethon import TelegramClient, events
 from telethon.tl.types import DocumentAttributeFilename, DocumentAttributeVideo
 from telethon.utils import get_input_media
-
 from tgbot_ping import get_runtime
 
 from FastTelethon.FastTelethon import upload_file
@@ -63,34 +62,29 @@ def get_metadata(video_path):
         return dict(duration=0, w=0, h=0), 'application/octet-stream'
 
 
-async def upload_callback(current, total, chat_id, message):
-    key = f"{chat_id}-{message.id}"
-    # if the key exists, we shouldn't send edit message
-    if not r.exists(key):
-        r.set(key, "ok", ex=EXPIRE)
-        msg = f'Uploading {round(current / total * 100, 2)}%: {current}/{total}'
-        await bot.edit_message(chat_id, message, msg)
-
-
-async def sync_edit_message(chat_id, message, msg):
-    # try to avoid flood
-    key = f"{chat_id}-{message.id}"
-    if not r.exists(key):
-        r.set(key, "ok", ex=EXPIRE)
-        await bot.edit_message(chat_id, message, msg)
-
-
 def go(chat_id, message, msg):
     asyncio.run(sync_edit_message(chat_id, message, msg))
+
+
+def sizeof_fmt(num: int, suffix='B'):
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)
 
 
 def progress_hook(d: dict, chat_id, message):
     if d['status'] == 'downloading':
         downloaded = d.get("downloaded_bytes", 0)
-        total = d.get("total_bytes") or d.get("total_bytes_estimate", "N/A")
+        total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
+        filesize = sizeof_fmt(total)
+        if total > 2 * 1024 * 1024 * 1024:
+            raise Exception("\n\nYour video is too large. %s will exceed Telegram's max limit 2GiB" % filesize)
+
         percent = d.get("_percent_str", "N/A")
         speed = d.get("_speed_str", "N/A")
-        msg = f'Downloading {percent}: {downloaded}/{total} @ {speed}'
+        msg = f'[{filesize}]: Downloading {percent} - {downloaded}/{total} @ {speed}'
         threading.Thread(target=go, args=(chat_id, message, msg)).start()
 
 
@@ -125,6 +119,23 @@ def ytdl_download(url, tempdir, chat_id, message) -> dict:
         response["error"] = err
 
     return response
+
+
+async def upload_callback(current, total, chat_id, message):
+    key = f"{chat_id}-{message.id}"
+    # if the key exists, we shouldn't send edit message
+    if not r.exists(key):
+        r.set(key, "ok", ex=EXPIRE)
+        msg = f'Uploading {round(current / total * 100, 2)}%: {current}/{total}'
+        await bot.edit_message(chat_id, message, msg)
+
+
+async def sync_edit_message(chat_id, message, msg):
+    # try to avoid flood
+    key = f"{chat_id}-{message.id}"
+    if not r.exists(key):
+        r.set(key, "ok", ex=EXPIRE)
+        await bot.edit_message(chat_id, message, msg)
 
 
 # bot starts here
