@@ -18,14 +18,18 @@ import functools
 
 import fakeredis
 import youtube_dl
-from FastTelethon.FastTelethon import upload_file
+
 from hachoir.metadata import extractMetadata
 from hachoir.parser import createParser
+from hachoir.metadata.video import MkvMetadata
+
 from telethon import TelegramClient, events
 from telethon.tl.types import DocumentAttributeFilename, DocumentAttributeVideo
 from telethon.utils import get_input_media
-from hachoir.metadata.video import MkvMetadata
+
 from tgbot_ping import get_runtime
+
+from FastTelethon.FastTelethon import upload_file
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
 
@@ -141,9 +145,14 @@ async def echo_all(event):
     chat_id = event.message.chat_id
     url = re.sub(r'/ytdl\s*', '', event.message.text)
     logging.info("start %s", url)
+    # if this is in a group/channel
+    if not event.message.is_private and not event.message.text.lower().startswith("/ytdl"):
+        logging.info("%s, it's annoying me...🙄️ ", event.message.text)
+        return
     if not re.findall(r"^https?://", url.lower()):
         await event.reply("I think you should send me a link. Don't you agree with me?")
         return
+
     message = await event.reply("Processing...")
     temp_dir = tempfile.TemporaryDirectory()
 
@@ -172,7 +181,7 @@ async def echo_all(event):
                 ),
                 DocumentAttributeFilename(
                     os.path.basename(video_path)),
-                ]
+            ]
             input_media.mime_type = mime_type
             await bot.send_file(chat_id, input_media)
             await bot.edit_message(chat_id, message, 'Download success!✅')
@@ -193,13 +202,13 @@ def get_metadata(video_path):
                 duration=metadata.get('duration').seconds,
                 w=metadata['video[1]'].get('width'),
                 h=metadata['video[1]'].get('height')
-                ), metadata.get('mime_type')
+            ), metadata.get('mime_type')
         else:
             return dict(
                 duration=metadata.get('duration').seconds,
                 w=metadata.get('width'),
                 h=metadata.get('height')
-                ), metadata.get('mime_type')
+            ), metadata.get('mime_type')
     except Exception as e:
         logging.error(e)
         return dict(duration=0, w=0, h=0), 'application/octet-stream'
