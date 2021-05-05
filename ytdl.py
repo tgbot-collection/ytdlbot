@@ -133,7 +133,7 @@ async def send_welcome(event):
 @bot.on(events.NewMessage(incoming=True))
 async def echo_all(event):
     chat_id = event.message.chat_id
-    url = event.message.text
+    url = re.sub(r'/ytdl\s*', '', event.message.text)
     logging.info("start %s", url)
     if not re.findall(r"^https?://", url.lower()):
         await event.reply("I think you should send me a link. Don't you agree with me?")
