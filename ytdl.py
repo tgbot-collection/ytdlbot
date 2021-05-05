@@ -18,7 +18,13 @@ import functools
 
 import fakeredis
 import youtube_dl
+from FastTelethon.FastTelethon import upload_file
+from hachoir.metadata import extractMetadata
+from hachoir.parser import createParser
 from telethon import TelegramClient, events
+from telethon.tl.types import DocumentAttributeFilename, DocumentAttributeVideo
+from telethon.utils import get_input_media
+from hachoir.metadata.video import MkvMetadata
 from tgbot_ping import get_runtime
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
@@ -150,8 +156,25 @@ async def echo_all(event):
         async with bot.action(chat_id, 'document'):
             video_path = result["filepath"]
             await bot.edit_message(chat_id, message, 'Download complete. Sending now...')
-            await bot.send_file(chat_id, video_path,
-                                progress_callback=lambda x, y: upload_callback(x, y, chat_id, message))
+            metadata, mime_type = get_metadata(video_path)
+            with open(video_path, 'rb') as f:
+                input_file = await upload_file(
+                    bot,
+                    f,
+                    progress_callback=lambda x, y: upload_callback(
+                        x, y, chat_id, message))
+            input_media = get_input_media(input_file)
+            input_media.attributes = [
+                DocumentAttributeVideo(
+                    round_message=False,
+                    supports_streaming=True,
+                    **metadata
+                ),
+                DocumentAttributeFilename(
+                    os.path.basename(video_path)),
+                ]
+            input_media.mime_type = mime_type
+            await bot.send_file(chat_id, input_media)
             await bot.edit_message(chat_id, message, 'Download success!✅')
     else:
         async with bot.action(chat_id, 'typing'):
@@ -160,6 +183,26 @@ async def echo_all(event):
                                    parse_mode='markdown')
 
     temp_dir.cleanup()
+
+
+def get_metadata(video_path):
+    try:
+        metadata = extractMetadata(createParser(video_path))
+        if isinstance(metadata, MkvMetadata):
+            return dict(
+                duration=metadata.get('duration').seconds,
+                w=metadata['video[1]'].get('width'),
+                h=metadata['video[1]'].get('height')
+                ), metadata.get('mime_type')
+        else:
+            return dict(
+                duration=metadata.get('duration').seconds,
+                w=metadata.get('width'),
+                h=metadata.get('height')
+                ), metadata.get('mime_type')
+    except Exception as e:
+        logging.error(e)
+        return dict(duration=0, w=0, h=0), 'application/octet-stream'
 
 
 if __name__ == '__main__':
