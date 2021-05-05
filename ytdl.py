@@ -127,7 +127,8 @@ async def upload_callback(current, total, chat_id, message):
     # if the key exists, we shouldn't send edit message
     if not r.exists(key):
         r.set(key, "ok", ex=EXPIRE)
-        msg = f'Uploading {round(current / total * 100, 2)}%: {current}/{total}'
+        filesize = sizeof_fmt(total)
+        msg = f'[{filesize}]: Uploading {round(current / total * 100, 2)}% - {current}/{total}'
         await bot.edit_message(chat_id, message, msg)
 
 
