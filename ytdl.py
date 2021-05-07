@@ -15,7 +15,7 @@ import threading
 import asyncio
 import traceback
 import functools
-
+import platform
 import fakeredis
 import youtube_dl
 
@@ -36,7 +36,9 @@ token = os.getenv("TOKEN") or "17Zg"
 app_id = int(os.getenv("APP_ID") or "922")
 app_hash = os.getenv("APP_HASH") or "490"
 
-bot = TelegramClient('bot', app_id, app_hash).start(bot_token=token)
+bot = TelegramClient('bot', app_id, app_hash,
+                     device_model=f"{platform.system()} {platform.node()}-{os.path.basename(__file__)}",
+                     system_version=platform.platform()).start(bot_token=token)
 
 r = fakeredis.FakeStrictRedis()
 EXPIRE = 5
