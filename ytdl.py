@@ -16,6 +16,8 @@ import asyncio
 import traceback
 import functools
 import platform
+import datetime
+
 import fakeredis
 import youtube_dl
 
@@ -204,12 +206,17 @@ async def send_video(event):
                     bot, f,
                     progress_callback=lambda x, y: upload_callback(x, y, chat_id, message))
             input_media = get_input_media(input_file)
+            file_name = os.path.basename(video_path)
             input_media.attributes = [
                 DocumentAttributeVideo(round_message=False, supports_streaming=True, **metadata),
-                DocumentAttributeFilename(os.path.basename(video_path)),
+                DocumentAttributeFilename(file_name),
             ]
             input_media.mime_type = mime_type
-            await bot.send_file(chat_id, input_media)
+            # duration here is int - convert to timedelta
+            metadata["duration_str"] = datetime.timedelta(seconds=metadata["duration"])
+            metadata["size"]=sizeof_fmt(os.stat(video_path).st_size)
+            caption = "{name}\n{duration_str} {size} {w}*{h}".format(name=file_name, **metadata)
+            await bot.send_file(chat_id, input_media, caption=caption)
             await bot.edit_message(chat_id, message, 'Download success!✅')
     else:
         async with bot.action(chat_id, 'typing'):
@@ -221,5 +228,4 @@ async def send_video(event):
 
 
 if __name__ == '__main__':
-    bot.start()
     bot.run_until_disconnected()
