@@ -17,9 +17,11 @@ import traceback
 import functools
 import platform
 import datetime
+import contextlib
 
 import fakeredis
 import youtube_dl
+from youtube_dl.utils import DownloadError
 
 from hachoir.metadata import extractMetadata
 from hachoir.parser import createParser
@@ -110,19 +112,31 @@ def ytdl_download(url, tempdir, chat_id, message) -> dict:
         'progress_hooks': [lambda d: progress_hook(d, chat_id, message)],
         'outtmpl': output,
         'restrictfilenames': True,
-        'format': 'bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best'
     }
-    try:
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-        response["status"] = True
-        response["filepath"] = os.path.join(tempdir, [i for i in os.listdir(tempdir)][0])
-    except Exception:
-        err = traceback.format_exc()
-        logging.error("Download  failed for %s ", url)
-        response["status"] = False
-        response["error"] = err
+    formats = [
+        "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio",
+        "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
+        ""
+    ]
+    success, err = None, None
+    for f in formats:
+        if f:
+            ydl_opts["format"] = f
+        try:
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            success = True
+        except DownloadError:
+            err = traceback.format_exc()
+            logging.error("Download failed for %s ", url)
 
+        if success:
+            response["status"] = True
+            response["filepath"] = os.path.join(tempdir, [i for i in os.listdir(tempdir)][0])
+            break
+        else:
+            response["status"] = False
+            response["error"] = err
     return response
 
 
@@ -214,7 +228,7 @@ async def send_video(event):
             input_media.mime_type = mime_type
             # duration here is int - convert to timedelta
             metadata["duration_str"] = datetime.timedelta(seconds=metadata["duration"])
-            metadata["size"]=sizeof_fmt(os.stat(video_path).st_size)
+            metadata["size"] = sizeof_fmt(os.stat(video_path).st_size)
             caption = "{name}\n{duration_str} {size} {w}*{h}".format(name=file_name, **metadata)
             await bot.send_file(chat_id, input_media, caption=caption)
             await bot.edit_message(chat_id, message, 'Download success!✅')
