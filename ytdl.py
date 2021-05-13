@@ -7,6 +7,7 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
+import subprocess
 import tempfile
 import os
 import re
@@ -21,6 +22,7 @@ import contextlib
 
 import fakeredis
 import youtube_dl
+import filetype
 from youtube_dl.utils import DownloadError
 
 from hachoir.metadata import extractMetadata
@@ -137,7 +139,24 @@ def ytdl_download(url, tempdir, chat_id, message) -> dict:
         else:
             response["status"] = False
             response["error"] = err
+    # convert format if necessary
+    convert_to_mp4(response)
     return response
+
+
+def convert_to_mp4(resp: dict):
+    default_type = ["video/x-flv"]
+    if resp["status"]:
+        mime = filetype.guess(resp["filepath"]).mime
+        if mime in default_type:
+            path = resp["filepath"]
+            new_name = os.path.basename(path).split(".")[0] + ".mp4"
+            new_file_path = os.path.join(os.path.dirname(path), new_name)
+            cmd = "ffmpeg -i {} {}".format(path, new_file_path)
+            logging.info("Detected %s, converting to mp4...", mime)
+            subprocess.check_output(cmd.split())
+            resp["filepath"] = new_file_path
+            return resp
 
 
 async def upload_callback(current, total, chat_id, message):
