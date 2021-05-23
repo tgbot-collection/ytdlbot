@@ -1,0 +1,24 @@
+{
+  "name": "YouTube-Downloader",
+  "description": "A Telegrambot to download youtube video",
+  "repository": "https://github.com/tgbot-collection/ytdl-bot",
+  "logo": "https://avatars.githubusercontent.com/u/73354211?s=200&v=4",
+  "keywords": [
+    "telegram",
+    "youtube-dl"
+  ],
+  "env": {
+    "TOKEN": {
+      "description": "Bot token",
+      "value": "bot32313"
+    },
+    "APP_ID": {
+      "description": "APP_ID",
+      "value": "5155161"
+    },
+    "APP_HASH": {
+      "description": "APP_HASH",
+      "value": "3131"
+    }
+  }
+}
