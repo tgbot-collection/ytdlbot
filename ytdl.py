@@ -34,7 +34,7 @@ from telethon.tl.types import DocumentAttributeFilename, DocumentAttributeVideo
 from telethon.utils import get_input_media
 from tgbot_ping import get_runtime
 
-from FastTelethon.FastTelethon import upload_file
+from FastTelethon import upload_file
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
 
