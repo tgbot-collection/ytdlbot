@@ -20,5 +20,12 @@
       "description": "APP_HASH",
       "value": "3131"
     }
+  },
+  "formation": {
+
+    "worker": {
+      "quantity": 1,
+      "size": "free"
+    }
   }
 }
