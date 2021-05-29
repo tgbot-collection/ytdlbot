@@ -37,6 +37,7 @@ from tgbot_ping import get_runtime
 from FastTelethon import upload_file
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
+logging.getLogger('telethon').setLevel(logging.CRITICAL)
 
 token = os.getenv("TOKEN") or "17Zg"
 app_id = int(os.getenv("APP_ID") or "922")
@@ -217,7 +218,7 @@ async def send_video(event):
     logging.info("start %s", url)
     # if this is in a group/channel
     if not event.message.is_private and not event.message.text.lower().startswith("/ytdl"):
-        logging.info("%s, it's annoying me...🙄️ ", event.message.text)
+        logging.warning("%s, it's annoying me...🙄️ ", event.message.text)
         return
     if not re.findall(r"^https?://", url.lower()):
         await event.reply("I think you should send me a link. Don't you agree with me?")
