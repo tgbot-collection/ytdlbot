@@ -37,7 +37,7 @@ from tgbot_ping import get_runtime
 from FastTelethon import upload_file
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
-logging.getLogger('telethon').setLevel(logging.CRITICAL)
+logging.getLogger('telethon').setLevel(logging.WARNING)
 
 token = os.getenv("TOKEN") or "17Zg"
 app_id = int(os.getenv("APP_ID") or "922")
@@ -115,6 +115,7 @@ def ytdl_download(url, tempdir, chat_id, message) -> dict:
         'progress_hooks': [lambda d: progress_hook(d, chat_id, message)],
         'outtmpl': output,
         'restrictfilenames': True,
+        'quiet': True
     }
     formats = [
         "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio",
@@ -181,6 +182,7 @@ async def sync_edit_message(chat_id, message, msg):
 # bot starts here
 @bot.on(events.NewMessage(pattern='/start'))
 async def send_start(event):
+    logging.info("Welcome to youtube-dl bot!")
     async with bot.action(event.chat_id, 'typing'):
         await bot.send_message(event.chat_id, "Wrapper for youtube-dl.")
         raise events.StopPropagation
