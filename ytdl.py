@@ -21,14 +21,15 @@ import traceback
 
 import fakeredis
 import filetype
-import telethon.utils
 import youtube_dl
 from hachoir.metadata import extractMetadata
+from hachoir.metadata.audio import FlacMetadata
 from hachoir.metadata.video import MkvMetadata
 from hachoir.parser import createParser
 from telethon import Button, TelegramClient, events
-from telethon.tl.types import (DocumentAttributeFilename,
-                               DocumentAttributeVideo, ReplyInlineMarkup)
+from telethon.tl.types import (DocumentAttributeAudio,
+                               DocumentAttributeFilename,
+                               DocumentAttributeVideo)
 from telethon.utils import get_input_media
 from tgbot_ping import get_runtime
 from youtube_dl.utils import DownloadError
@@ -58,6 +59,10 @@ def get_metadata(video_path):
                 duration=metadata.get('duration').seconds,
                 w=metadata['video[1]'].get('width'),
                 h=metadata['video[1]'].get('height')
+            ), metadata.get('mime_type')
+        elif isinstance(metadata, FlacMetadata):
+            return dict(
+                duration=metadata.get('duration').seconds,
             ), metadata.get('mime_type')
         else:
             return dict(
@@ -190,6 +195,14 @@ async def send_start(event):
 import pathlib
 
 
+async def convert_flac(flac_name, tmp):
+    flac_tmp = pathlib.Path(tmp.name).parent.joinpath(flac_name).as_posix()
+    cmd = "ffmpeg -y -i {} {}".format(tmp.name, flac_tmp)
+    logging.info("converting to flac")
+    subprocess.check_output(cmd.split())
+    return flac_tmp
+
+
 @bot.on(events.CallbackQuery)
 async def handler(event):
     await event.answer('Converting to audio...please wait patiently')
@@ -206,14 +219,22 @@ async def handler(event):
             logging.info("downloading complete %s", tmp.name)
         # execute ffmpeg
         async with bot.action(chat_id, 'record-audio'):
-            await asyncio.sleep(2)
-            flac_tmp = pathlib.Path(tmp.name).parent.joinpath(flac_name).as_posix()
-            cmd = "ffmpeg -y -i {} {}".format(tmp.name, flac_tmp)
-            logging.info("converting to flac")
-            subprocess.check_output(cmd.split())
+            await asyncio.sleep(1)
+            flac_tmp = await convert_flac(flac_name, tmp)
         async with bot.action(chat_id, 'document'):
             logging.info("Converting flac complete, sending...")
-            await bot.send_file(chat_id, flac_tmp)
+            with open(flac_tmp, 'rb') as f:
+                input_file = await upload_file(bot, f)
+                metadata, mime_type = get_metadata(flac_tmp)
+                input_media = get_input_media(input_file)
+                input_media.attributes = [
+                    DocumentAttributeAudio(duration=metadata["duration"]),
+                    DocumentAttributeFilename(flac_name),
+                ]
+                input_media.mime_type = mime_type
+                await bot.send_file(chat_id, input_media)
+
+            # await bot.send_file(chat_id, flac_tmp)
 
     tmp.close()
 
