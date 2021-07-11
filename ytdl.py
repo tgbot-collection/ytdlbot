@@ -14,6 +14,7 @@ import logging
 import os
 import platform
 import re
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -235,7 +236,7 @@ async def handler(event):
                 await bot.send_file(chat_id, input_media)
 
             # await bot.send_file(chat_id, flac_tmp)
-
+    os.unlink(flac_tmp)
     tmp.close()
 
 
