@@ -7,34 +7,33 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
+import asyncio
+import datetime
+import functools
+import logging
+import os
+import platform
+import re
 import subprocess
 import tempfile
-import os
-import re
-import logging
 import threading
-import asyncio
 import traceback
-import functools
-import platform
-import datetime
-import contextlib
 
 import fakeredis
-import youtube_dl
 import filetype
-from youtube_dl.utils import DownloadError
-
+import telethon.utils
+import youtube_dl
 from hachoir.metadata import extractMetadata
-from hachoir.parser import createParser
 from hachoir.metadata.video import MkvMetadata
-
-from telethon import TelegramClient, events
-from telethon.tl.types import DocumentAttributeFilename, DocumentAttributeVideo
+from hachoir.parser import createParser
+from telethon import Button, TelegramClient, events
+from telethon.tl.types import (DocumentAttributeFilename,
+                               DocumentAttributeVideo, ReplyInlineMarkup)
 from telethon.utils import get_input_media
 from tgbot_ping import get_runtime
+from youtube_dl.utils import DownloadError
 
-from FastTelethon import upload_file
+from FastTelethon import download_file, upload_file
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
 logging.getLogger('telethon').setLevel(logging.WARNING)
@@ -188,6 +187,37 @@ async def send_start(event):
         raise events.StopPropagation
 
 
+import pathlib
+
+
+@bot.on(events.CallbackQuery)
+async def handler(event):
+    await event.answer('Converting to audio...please wait patiently')
+    msg = await event.get_message()
+    chat_id = msg.chat_id
+    mp4_name = msg.file.name  # 'youtube-dl_test_video_a.mp4'
+    flac_name = mp4_name.replace("mp4", "flac")
+
+    with tempfile.NamedTemporaryFile() as tmp:
+        with open(tmp.name, "wb") as out:
+            logging.info("downloading to %s", tmp.name)
+            async with bot.action(chat_id, 'record-round'):
+                await download_file(event.client, msg.media.document, out, )
+            logging.info("downloading complete %s", tmp.name)
+        # execute ffmpeg
+        async with bot.action(chat_id, 'record-audio'):
+            await asyncio.sleep(2)
+            flac_tmp = pathlib.Path(tmp.name).parent.joinpath(flac_name).as_posix()
+            cmd = "ffmpeg -y -i {} {}".format(tmp.name, flac_tmp)
+            logging.info("converting to flac")
+            subprocess.check_output(cmd.split())
+        async with bot.action(chat_id, 'document'):
+            logging.info("Converting flac complete, sending...")
+            await bot.send_file(chat_id, flac_tmp)
+
+    tmp.close()
+
+
 @bot.on(events.NewMessage(pattern='/help'))
 async def send_help(event):
     async with bot.action(event.chat_id, 'typing'):
@@ -232,6 +262,8 @@ async def send_video(event):
     async with bot.action(chat_id, 'video'):
         result = await ytdl_download(url, temp_dir.name, chat_id, message)
 
+    # markup
+    markup = bot.build_reply_markup(Button.inline('flac'))
     if result["status"]:
         async with bot.action(chat_id, 'document'):
             video_path = result["filepath"]
@@ -252,7 +284,7 @@ async def send_video(event):
             metadata["duration_str"] = datetime.timedelta(seconds=metadata["duration"])
             metadata["size"] = sizeof_fmt(os.stat(video_path).st_size)
             caption = "{name}\n{duration_str} {size} {w}*{h}".format(name=file_name, **metadata)
-            await bot.send_file(chat_id, input_media, caption=caption)
+            await bot.send_file(chat_id, input_media, caption=caption, buttons=markup)
             await bot.edit_message(chat_id, message, 'Download success!✅')
     else:
         async with bot.action(chat_id, 'typing'):
