@@ -12,9 +12,9 @@ import datetime
 import functools
 import logging
 import os
+import pathlib
 import platform
 import re
-import shutil
 import subprocess
 import tempfile
 import threading
@@ -24,8 +24,8 @@ import fakeredis
 import filetype
 import youtube_dl
 from hachoir.metadata import extractMetadata
-from hachoir.metadata.audio import FlacMetadata
-from hachoir.metadata.video import MkvMetadata
+from hachoir.metadata.audio import FlacMetadata, MpegAudioMetadata
+from hachoir.metadata.video import MkvMetadata, MP4Metadata
 from hachoir.parser import createParser
 from telethon import Button, TelegramClient, events
 from telethon.tl.types import (DocumentAttributeAudio,
@@ -68,8 +68,8 @@ def get_metadata(video_path):
         else:
             return dict(
                 duration=metadata.get('duration').seconds,
-                w=metadata.get('width'),
-                h=metadata.get('height')
+                w=metadata.get('width', 0),
+                h=metadata.get('height', 0)
             ), metadata.get('mime_type')
     except Exception as e:
         logging.error(e)
@@ -193,12 +193,11 @@ async def send_start(event):
         raise events.StopPropagation
 
 
-import pathlib
-
-
 async def convert_flac(flac_name, tmp):
     flac_tmp = pathlib.Path(tmp.name).parent.joinpath(flac_name).as_posix()
-    cmd = "ffmpeg -y -i {} {}".format(tmp.name, flac_tmp)
+    # ffmpeg -i input-video.avi -vn -acodec copy output-audio.m4a
+    cmd = "ffmpeg -y -i {} -vn -acodec copy {}".format(tmp.name, flac_tmp)
+    print(cmd)
     logging.info("converting to flac")
     subprocess.check_output(cmd.split())
     return flac_tmp
@@ -210,7 +209,7 @@ async def handler(event):
     msg = await event.get_message()
     chat_id = msg.chat_id
     mp4_name = msg.file.name  # 'youtube-dl_test_video_a.mp4'
-    flac_name = mp4_name.replace("mp4", "flac")
+    flac_name = mp4_name.replace("mp4", "m4a")
 
     with tempfile.NamedTemporaryFile() as tmp:
         with open(tmp.name, "wb") as out:
@@ -224,18 +223,18 @@ async def handler(event):
             flac_tmp = await convert_flac(flac_name, tmp)
         async with bot.action(chat_id, 'document'):
             logging.info("Converting flac complete, sending...")
-            with open(flac_tmp, 'rb') as f:
-                input_file = await upload_file(bot, f)
-                metadata, mime_type = get_metadata(flac_tmp)
-                input_media = get_input_media(input_file)
-                input_media.attributes = [
-                    DocumentAttributeAudio(duration=metadata["duration"]),
-                    DocumentAttributeFilename(flac_name),
-                ]
-                input_media.mime_type = mime_type
-                await bot.send_file(chat_id, input_media)
-
-            # await bot.send_file(chat_id, flac_tmp)
+            # with open(flac_tmp, 'rb') as f:
+            #     input_file = await upload_file(bot, f)
+            #     metadata, mime_type = get_metadata(flac_tmp)
+            #     input_media = get_input_media(input_file)
+            #     input_media.attributes = [
+            #         DocumentAttributeAudio(duration=metadata["duration"]),
+            #         DocumentAttributeFilename(flac_name),
+            #     ]
+            #     input_media.mime_type = mime_type
+            #     await bot.send_file(chat_id, input_media)
+            # TODO temp
+            await bot.send_file(chat_id, flac_tmp)
     os.unlink(flac_tmp)
     tmp.close()
 
@@ -285,7 +284,7 @@ async def send_video(event):
         result = await ytdl_download(url, temp_dir.name, chat_id, message)
 
     # markup
-    markup = bot.build_reply_markup(Button.inline('flac'))
+    markup = bot.build_reply_markup(Button.inline('audio'))
     if result["status"]:
         async with bot.action(chat_id, 'document'):
             video_path = result["filepath"]
