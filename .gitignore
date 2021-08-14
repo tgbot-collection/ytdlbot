@@ -136,3 +136,5 @@ dmypy.json
 /.idea/misc.xml
 /.idea/workspace.xml
 /.idea/jsonSchemas.xml
+/demo.session
+/.idea/ytdlbot.iml
