@@ -1,9 +1,6 @@
+pyrogram==1.2.9
+tgcrypto==1.2.2
+youtube-dl==2021.6.6
 tgbot-ping
-cryptg
 fakeredis
-
-telethon==1.21.1
-youtube-dl==2021.4.26
-hachoir==3.1.2
-
 filetype
