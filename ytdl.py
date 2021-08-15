@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(le
 api_id = int(os.getenv("APP_ID", 0))
 api_hash = os.getenv("APP_HASH")
 token = os.getenv("TOKEN")
-app = Client("ytdl", api_id, api_hash, bot_token=token, workers=50)
+app = Client("ytdl", api_id, api_hash, bot_token=token, workers=100)
 
 
 @app.on_message(filters.command(["start"]))
@@ -62,6 +62,10 @@ def help_handler(client: "Client", message: "types.Message"):
 
 @app.on_message()
 def download_handler(client: "Client", message: "types.Message"):
+    if message.chat.type != "private" and not message.text.lower().startswith("/ytdl"):
+        logging.warning("%s, it's annoying me...🙄️ ", message.text)
+        return
+
     chat_id = message.chat.id
     url = re.sub(r'/ytdl\s*', '', message.text)
     logging.info("start %s", url)
