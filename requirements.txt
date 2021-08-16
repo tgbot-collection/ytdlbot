@@ -5,3 +5,4 @@ tgbot-ping
 fakeredis
 filetype
 redis
+requests

@@ -35,11 +35,13 @@ see [here](https://github.com/tgbot-collection/BotsRunner)
 
 # Command
 ```
-start - let's start
-about - wanna contribute?
-ping - bot running status
-help - it's not working?
-ytdl - download video in group
+start - Let's start
+about - Want to contribute?
+ping - Bot running status
+help - Anything troubles you/
+ytdl - Download video in group
+vip - Join VIP
+terms - View Terms of Service
 ```
 
 # Test video

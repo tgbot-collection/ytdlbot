@@ -18,35 +18,32 @@ from pyrogram import Client, filters, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from tgbot_ping import get_runtime
 
-from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
-from limit import VIP
+from constant import BotText
+from downloader import convert_flac, upload_hook, ytdl_download
+from limit import verify_payment
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
 api_id = int(os.getenv("APP_ID", 0))
 api_hash = os.getenv("APP_HASH")
 token = os.getenv("TOKEN")
+
 app = Client("ytdl", api_id, api_hash, bot_token=token, workers=100)
+bot_text = BotText()
 
 
 @app.on_message(filters.command(["start"]))
 def start_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
-    used, total, ttl = VIP().check_remaining_quota(chat_id)
-    refresh_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ttl + time.time()))
-    caption = f"Remaining quota: {used} bytes({sizeof_fmt(used)})/ {total} bytes({sizeof_fmt(total)}), " \
-              f"refresh at {refresh_time}\n"
     logging.info("Welcome to youtube-dl bot!")
     client.send_chat_action(chat_id, "typing")
-    client.send_message(message.chat.id, "Wrapper for youtube-dl.\n\n" + caption)
+    client.send_message(message.chat.id, bot_text.start + "\n\n" + bot_text.remaining_quota_caption(chat_id))
 
 
 @app.on_message(filters.command(["help"]))
 def help_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
-    client.send_message(chat_id, "Stop working? "
-                                 "Wait a few seconds, send your link again or report bugs at "
-                                 "https://github.com/tgbot-collection/ytdl-bot/issues")
+    client.send_message(chat_id, bot_text.help, disable_web_page_preview=True)
 
 
 @app.on_message(filters.command(["ping"]))
@@ -61,16 +58,35 @@ def ping_handler(client: "Client", message: "types.Message"):
 def help_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
-    client.send_message(chat_id, "YouTube-DL by @BennyThink\n"
-                                 "GitHub: https://github.com/tgbot-collection/ytdl-bot")
+    client.send_message(chat_id, bot_text.about)
+
+
+@app.on_message(filters.command(["terms"]))
+def terms_handler(client: "Client", message: "types.Message"):
+    chat_id = message.chat.id
+    client.send_chat_action(chat_id, "typing")
+    client.send_message(chat_id, bot_text.terms)
+
+
+@app.on_message(filters.command(["vip"]))
+def vip_handler(client: "Client", message: "types.Message"):
+    chat_id = message.chat.id
+    text = message.text.strip()
+    client.send_chat_action(chat_id, "typing")
+    if text == "/vip":
+        client.send_message(chat_id, bot_text.vip, disable_web_page_preview=True)
+    else:
+        bm: typing.Union["types.Message", "typing.Any"] = message.reply_text(bot_text.vip_pay, quote=True)
+        unique = text.replace("/vip", "").strip()
+        msg = verify_payment(chat_id, unique)
+        bm.edit_text(msg)
 
 
 @app.on_message()
 def download_handler(client: "Client", message: "types.Message"):
     # check remaining quota
     chat_id = message.chat.id
-    vip = VIP()
-    used, _, ttl = vip.check_remaining_quota(chat_id)
+    used, _, ttl = bot_text.return_remaining_quota(chat_id)
 
     if used <= 0:
         refresh_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ttl + time.time()))
@@ -110,11 +126,7 @@ def download_handler(client: "Client", message: "types.Message"):
         client.send_chat_action(chat_id, 'upload_document')
         video_path = result["filepath"]
         bot_msg.edit_text('Download complete. Sending now...')
-
-        used, total, ttl = vip.check_remaining_quota(chat_id)
-        refresh_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ttl + time.time()))
-        caption = f"Remaining quota: {used} bytes({sizeof_fmt(used)})/{total} bytes({sizeof_fmt(total)}), " \
-                  f"refresh at {refresh_time}\n\n{url}"
+        caption = bot_text.remaining_quota_caption(chat_id)
         client.send_video(chat_id, video_path, supports_streaming=True, caption=caption,
                           progress=upload_hook, progress_args=(bot_msg,), reply_markup=markup)
         bot_msg.edit_text('Download success!✅')
