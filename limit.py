@@ -11,15 +11,20 @@ import hashlib
 import logging
 import math
 import os
+import re
 import sqlite3
 import tempfile
 import time
+from io import BytesIO
 
 import redis
 import requests
+from beautifultable import BeautifulTable
 
-# QUOTA = 10 * 1024 * 1024 * 1024  # 10G
-QUOTA = 5 * 1024 * 1024  # 10G
+QUOTA = 10 * 1024 * 1024 * 1024  # 10G
+if os.uname().sysname == "Darwin":
+    QUOTA = 10 * 1024 * 1024  # 10M
+
 EX = 24 * 3600
 MULTIPLY = 5  # VIP1 is 5*10-50G, VIP2 is 100G
 USD2CNY = 6  # $5 --> ¥30
@@ -28,10 +33,98 @@ USD2CNY = 6  # $5 --> ¥30
 class Redis:
     def __init__(self):
         super(Redis, self).__init__()
-        self.r = redis.StrictRedis(host=os.getenv("REDIS") or "redis", db=4, decode_responses=True)
+        self.r = redis.StrictRedis(host=os.getenv("REDIS", "redis"), db=4, decode_responses=True)
+
+        db_banner = "=" * 20 + "DB data" + "=" * 20
+        quota_banner = "=" * 20 + "Quota" + "=" * 20
+        metrics_banner = "=" * 20 + "Metrics" + "=" * 20
+        usage_banner = "=" * 20 + "Usage" + "=" * 20
+        self.final_text = f"""
+{db_banner}
+%s
+
+
+{quota_banner}
+%s
+
+
+{metrics_banner}
+%s
+
+
+{usage_banner}
+%s
+        """
 
     def __del__(self):
         self.r.close()
+
+    def update_metrics(self, metrics):
+        logging.info(f"Setting metrics: {metrics}")
+        all_ = f"all_{metrics}"
+        today = f"today_{metrics}"
+        self.r.hincrby("metrics", all_)
+        self.r.hincrby("metrics", today)
+
+    def generate_table(self, header, all_data: "list"):
+        table = BeautifulTable()
+        for data in all_data:
+            table.rows.append(data)
+        table.columns.header = header
+        table.rows.header = [str(i) for i in range(1, len(all_data) + 1)]
+        return table
+
+    def show_usage(self):
+        from downloader import sizeof_fmt
+        db = SQLite()
+        db.cur.execute("select * from VIP")
+        data = db.cur.fetchall()
+        fd = []
+        for item in data:
+            fd.append([item[0], item[1], sizeof_fmt(item[-1])])
+        db_text = self.generate_table(["ID", "username", "quota"], fd)
+
+        fd = []
+        hash_keys = self.r.hgetall("metrics")
+        for key, value in hash_keys.items():
+            if re.findall(r"^today|all", key):
+                fd.append([key, value])
+        fd.sort(key=lambda x: x[0])
+        metrics_text = self.generate_table(["name", "count"], fd)
+
+        fd = []
+        for key, value in hash_keys.items():
+            if re.findall(r"\d+", key):
+                fd.append([key, value])
+        fd.sort(key=lambda x: x[-1], reverse=True)
+        usage_text = self.generate_table(["UserID", "count"], fd)
+
+        fd = []
+        for key in self.r.keys("*"):
+            if re.findall(r"\d+", key):
+                value = self.r.get(key)
+                fd.append([key, value, sizeof_fmt(int(value))])
+        fd.sort(key=lambda x: int(x[1]))
+        quota_text = self.generate_table(["UserID", "bytes", "human readable"], fd)
+
+        return self.final_text % (db_text, quota_text, metrics_text, usage_text)
+
+    def reset_today(self):
+        pairs = self.r.hgetall("metrics")
+        for k in pairs:
+            if k.startswith("today"):
+                self.r.hdel("metrics", k)
+
+    def user_count(self, user_id):
+        self.r.hincrby("metrics", user_id)
+
+    def generate_file(self):
+        text = self.show_usage()
+        file = BytesIO()
+        file.write(text.encode("u8"))
+        date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
+        file.name = f"{date}.txt"
+        return file
 
 
 class SQLite:
@@ -63,10 +156,8 @@ class SQLite:
 def get_username(chat_id):
     from ytdl import create_app
     with tempfile.NamedTemporaryFile() as tmp:
-        app = create_app(tmp.name, 1)
-        app.start()
-        data = app.get_chat(chat_id).first_name
-        app.stop()
+        with create_app(tmp.name, 1) as app:
+            data = app.get_chat(chat_id).first_name
 
     return data
 

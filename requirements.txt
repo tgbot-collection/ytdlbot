@@ -6,3 +6,5 @@ fakeredis
 filetype
 redis
 requests
+APScheduler==3.7.0
+beautifultable==1.0.1

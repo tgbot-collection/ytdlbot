@@ -105,13 +105,13 @@ def ytdl_download(url, tempdir, bm) -> dict:
         if success:
             response["status"] = True
             response["filepath"] = os.path.join(tempdir, [i for i in os.listdir(tempdir)][0])
+            VIP().use_quota(bm.chat.id, os.stat(response["filepath"]).st_size)
             break
         else:
             response["status"] = False
             response["error"] = err
     # convert format if necessary
     convert_to_mp4(response)
-    VIP().use_quota(bm.chat.id, os.stat(response["filepath"]).st_size)
     return response
 
 

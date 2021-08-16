@@ -14,13 +14,14 @@ import tempfile
 import time
 import typing
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from tgbot_ping import get_runtime
 
 from constant import BotText
-from downloader import convert_flac, upload_hook, ytdl_download
-from limit import verify_payment
+from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
+from limit import Redis, verify_payment
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
 
@@ -58,8 +59,14 @@ def help_handler(client: "Client", message: "types.Message"):
 def ping_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
-    bot_info = get_runtime("botsrunner_ytdl_1", "YouTube-dl")
-    client.send_message(chat_id, bot_info)
+    if os.uname().sysname == "Darwin":
+        bot_info = "test"
+    else:
+        bot_info = get_runtime("botsrunner_ytdl_1", "YouTube-dl")
+    if chat_id == 260260121:
+        client.send_document(chat_id, Redis().generate_file(), caption=bot_info)
+    else:
+        client.send_message(chat_id, f"{bot_info}")
 
 
 @app.on_message(filters.command(["about"]))
@@ -94,12 +101,14 @@ def vip_handler(client: "Client", message: "types.Message"):
 def download_handler(client: "Client", message: "types.Message"):
     # check remaining quota
     chat_id = message.chat.id
+    Redis().user_count(chat_id)
     used, _, ttl = bot_text.return_remaining_quota(chat_id)
 
     if used <= 0:
         refresh_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ttl + time.time()))
         logging.error("quota exceed for %s, try again in %s seconds(%s)", chat_id, ttl, refresh_time)
         message.reply_text(f"Quota exceed, try again in {ttl} seconds({refresh_time})", quote=True)
+        Redis().update_metrics("quota_exceed")
         return
     if message.chat.type != "private" and not message.text.lower().startswith("/ytdl"):
         logging.warning("%s, it's annoying me...🙄️ ", message.text)
@@ -109,9 +118,11 @@ def download_handler(client: "Client", message: "types.Message"):
     logging.info("start %s", url)
 
     if not re.findall(r"^https?://", url.lower()):
+        Redis().update_metrics("bad_request")
         message.reply_text("I think you should send me a link.", quote=True)
         return
 
+    Redis().update_metrics("video_request")
     bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text("Processing", quote=True)
     client.send_chat_action(chat_id, 'upload_video')
     temp_dir = tempfile.TemporaryDirectory()
@@ -134,9 +145,13 @@ def download_handler(client: "Client", message: "types.Message"):
         client.send_chat_action(chat_id, 'upload_document')
         video_path = result["filepath"]
         bot_msg.edit_text('Download complete. Sending now...')
-        caption = bot_text.remaining_quota_caption(chat_id)
-        client.send_video(chat_id, video_path, supports_streaming=True, caption=caption,
-                          progress=upload_hook, progress_args=(bot_msg,), reply_markup=markup)
+        remain = bot_text.remaining_quota_caption(chat_id)
+        size = sizeof_fmt(os.stat(video_path).st_size)
+        client.send_video(chat_id, video_path, supports_streaming=True,
+                          caption=f"{url}\n\nsize: {size}\n\n{remain}",
+                          progress=upload_hook, progress_args=(bot_msg,),
+                          reply_markup=markup)
+        Redis().update_metrics("video_success")
         bot_msg.edit_text('Download success!✅')
     else:
         client.send_chat_action(chat_id, 'typing')
@@ -149,6 +164,8 @@ def download_handler(client: "Client", message: "types.Message"):
 @app.on_callback_query()
 def answer(client: "Client", callback_query: types.CallbackQuery):
     callback_query.answer(f"Converting to audio...please wait patiently")
+    Redis().update_metrics("audio_request")
+
     msg = callback_query.message
 
     chat_id = msg.chat.id
@@ -165,7 +182,12 @@ def answer(client: "Client", callback_query: types.CallbackQuery):
         flac_tmp = convert_flac(flac_name, tmp)
         client.send_chat_action(chat_id, 'upload_audio')
         client.send_audio(chat_id, flac_tmp)
+        Redis().update_metrics("audio_success")
+        os.unlink(flac_tmp)
 
 
 if __name__ == '__main__':
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(Redis().reset_today, 'cron', hour=0, minute=0)
+    scheduler.start()
     app.run()
