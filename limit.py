@@ -12,12 +12,14 @@ import logging
 import math
 import os
 import sqlite3
+import tempfile
 import time
 
 import redis
 import requests
 
-QUOTA = 10 * 1024 * 1024 * 1024  # 10G
+# QUOTA = 10 * 1024 * 1024 * 1024  # 10G
+QUOTA = 5 * 1024 * 1024  # 10G
 EX = 24 * 3600
 MULTIPLY = 5  # VIP1 is 5*10-50G, VIP2 is 100G
 USD2CNY = 6  # $5 --> ¥30
@@ -43,6 +45,7 @@ class SQLite:
                 user_id    integer 
                     constraint VIP
                         primary key,
+                username varchar(100),
                 payment_amount    integer,
                 payment_id varchar(100),
                 level     integer default 1,
@@ -57,6 +60,17 @@ class SQLite:
         self.con.close()
 
 
+def get_username(chat_id):
+    from ytdl import create_app
+    with tempfile.NamedTemporaryFile() as tmp:
+        app = create_app(tmp.name, 1)
+        app.start()
+        data = app.get_chat(chat_id).first_name
+        app.stop()
+
+    return data
+
+
 class VIP(Redis, SQLite):
 
     def check_vip(self, user_id: "int") -> "tuple":
@@ -65,8 +79,7 @@ class VIP(Redis, SQLite):
         return data
 
     def add_vip(self, user_data: "dict") -> ("bool", "str"):
-        user_data["quota"] = QUOTA * user_data["level"] * MULTIPLY
-        sql = "INSERT INTO VIP VALUES (?,?,?,?,?);"
+        sql = "INSERT INTO VIP VALUES (?,?,?,?,?,?);"
         # first select
         self.cur.execute("SELECT * FROM VIP WHERE payment_id=?", (user_data["payment_id"],))
         is_exist = self.cur.fetchone()
@@ -99,7 +112,7 @@ class VIP(Redis, SQLite):
         if self.r.exists(user_id):
             self.r.decr(user_id, traffic)
         else:
-            self.r.set(user_id, user_quota, ex=EX)
+            self.r.set(user_id, user_quota - traffic, ex=EX)
 
 
 class BuyMeACoffee:
@@ -184,12 +197,18 @@ def verify_payment(user_id, unique) -> "str":
                f"Talk to @BennyThink if you need any assistant."
     else:
         vip = VIP()
-        ud = {"user_id": user_id, "payment_amount": amount, "payment_id": pay_id, "level": level}
+        ud = {
+            "user_id": user_id,
+            "username": get_username(user_id),
+            "payment_amount": amount,
+            "payment_id": pay_id,
+            "level": level,
+            "quota": QUOTA * level * MULTIPLY
+        }
+
         message = vip.add_vip(ud)
         return message
 
 
 if __name__ == '__main__':
-    vip = VIP()
-    ud = {"user_id": 260260121, "username": "bahd", "payment": 5, "payment_id": "dhja767", "level": 1}
-    vip.add_vip(ud)
+    pass

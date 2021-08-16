@@ -23,11 +23,19 @@ from downloader import convert_flac, upload_hook, ytdl_download
 from limit import verify_payment
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
-api_id = int(os.getenv("APP_ID", 0))
-api_hash = os.getenv("APP_HASH")
-token = os.getenv("TOKEN")
 
-app = Client("ytdl", api_id, api_hash, bot_token=token, workers=100)
+
+def create_app(session="ytdl", workers=100):
+    api_id = int(os.getenv("APP_ID", 0))
+    api_hash = os.getenv("APP_HASH")
+    token = os.getenv("TOKEN")
+
+    _app = Client(session, api_id, api_hash,
+                  bot_token=token, workers=workers)
+    return _app
+
+
+app = create_app()
 bot_text = BotText()
 
 
