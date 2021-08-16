@@ -4,3 +4,4 @@ youtube-dl==2021.6.6
 tgbot-ping
 fakeredis
 filetype
+redis

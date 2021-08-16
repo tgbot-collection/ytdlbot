@@ -18,6 +18,8 @@ import filetype
 import youtube_dl
 from youtube_dl import DownloadError
 
+from limit import VIP
+
 r = fakeredis.FakeStrictRedis()
 EXPIRE = 5
 
@@ -109,6 +111,7 @@ def ytdl_download(url, tempdir, bm) -> dict:
             response["error"] = err
     # convert format if necessary
     convert_to_mp4(response)
+    VIP().use_quota(bm.chat.id, os.stat(response["filepath"]).st_size)
     return response
 
 

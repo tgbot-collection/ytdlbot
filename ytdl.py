@@ -9,16 +9,17 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import logging
 import os
-
 import re
 import tempfile
+import time
 import typing
 
 from pyrogram import Client, filters, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from tgbot_ping import get_runtime
 
-from downloader import convert_flac, upload_hook, ytdl_download
+from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
+from limit import VIP
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
 api_id = int(os.getenv("APP_ID", 0))
@@ -30,9 +31,13 @@ app = Client("ytdl", api_id, api_hash, bot_token=token, workers=100)
 @app.on_message(filters.command(["start"]))
 def start_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
+    used, total, ttl = VIP().check_remaining_quota(chat_id)
+    refresh_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ttl + time.time()))
+    caption = f"Remaining quota: {used} bytes({sizeof_fmt(used)})/ {total} bytes({sizeof_fmt(total)}), " \
+              f"refresh at {refresh_time}\n"
     logging.info("Welcome to youtube-dl bot!")
     client.send_chat_action(chat_id, "typing")
-    client.send_message(message.chat.id, "Wrapper for youtube-dl.")
+    client.send_message(message.chat.id, "Wrapper for youtube-dl.\n\n" + caption)
 
 
 @app.on_message(filters.command(["help"]))
@@ -62,11 +67,20 @@ def help_handler(client: "Client", message: "types.Message"):
 
 @app.on_message()
 def download_handler(client: "Client", message: "types.Message"):
+    # check remaining quota
+    chat_id = message.chat.id
+    vip = VIP()
+    used, _, ttl = vip.check_remaining_quota(chat_id)
+
+    if used <= 0:
+        refresh_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ttl + time.time()))
+        logging.error("quota exceed for %s, try again in %s seconds(%s)", chat_id, ttl, refresh_time)
+        message.reply_text(f"Quota exceed, try again in {ttl} seconds({refresh_time})", quote=True)
+        return
     if message.chat.type != "private" and not message.text.lower().startswith("/ytdl"):
         logging.warning("%s, it's annoying me...🙄️ ", message.text)
         return
 
-    chat_id = message.chat.id
     url = re.sub(r'/ytdl\s*', '', message.text)
     logging.info("start %s", url)
 
@@ -96,7 +110,12 @@ def download_handler(client: "Client", message: "types.Message"):
         client.send_chat_action(chat_id, 'upload_document')
         video_path = result["filepath"]
         bot_msg.edit_text('Download complete. Sending now...')
-        client.send_video(chat_id, video_path, supports_streaming=True, caption=url,
+
+        used, total, ttl = vip.check_remaining_quota(chat_id)
+        refresh_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ttl + time.time()))
+        caption = f"Remaining quota: {used} bytes({sizeof_fmt(used)})/{total} bytes({sizeof_fmt(total)}), " \
+                  f"refresh at {refresh_time}\n\n{url}"
+        client.send_video(chat_id, video_path, supports_streaming=True, caption=caption,
                           progress=upload_hook, progress_args=(bot_msg,), reply_markup=markup)
         bot_msg.edit_text('Download success!✅')
     else:
