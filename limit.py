@@ -103,9 +103,10 @@ class Redis:
         for key in self.r.keys("*"):
             if re.findall(r"\d+", key):
                 value = self.r.get(key)
-                fd.append([key, value, sizeof_fmt(int(value))])
+                date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self.r.ttl(key) + time.time()))
+                fd.append([key, value, sizeof_fmt(int(value)), date])
         fd.sort(key=lambda x: int(x[1]))
-        quota_text = self.generate_table(["UserID", "bytes", "human readable"], fd)
+        quota_text = self.generate_table(["UserID", "bytes", "human readable", "refresh time"], fd)
 
         return self.final_text % (db_text, quota_text, metrics_text, usage_text)
 
@@ -302,4 +303,5 @@ def verify_payment(user_id, unique) -> "str":
 
 
 if __name__ == '__main__':
-    pass
+    res = Redis().generate_file()
+    print(res.getvalue().decode())
