@@ -96,7 +96,7 @@ class Redis:
         for key, value in hash_keys.items():
             if re.findall(r"\d+", key):
                 fd.append([key, value])
-        fd.sort(key=lambda x: x[-1], reverse=True)
+        fd.sort(key=lambda x: int(x[-1]), reverse=True)
         usage_text = self.generate_table(["UserID", "count"], fd)
 
         fd = []
