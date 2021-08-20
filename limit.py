@@ -13,6 +13,7 @@ import math
 import os
 import re
 import sqlite3
+import subprocess
 import tempfile
 import time
 from io import BytesIO
@@ -39,6 +40,7 @@ class Redis:
         quota_banner = "=" * 20 + "Quota" + "=" * 20
         metrics_banner = "=" * 20 + "Metrics" + "=" * 20
         usage_banner = "=" * 20 + "Usage" + "=" * 20
+        vnstat_banner = "=" * 20 + "vnstat" + "=" * 20
         self.final_text = f"""
 {db_banner}
 %s
@@ -53,6 +55,10 @@ class Redis:
 
 
 {usage_banner}
+%s
+
+
+{vnstat_banner}
 %s
         """
 
@@ -108,7 +114,13 @@ class Redis:
         fd.sort(key=lambda x: int(x[1]))
         quota_text = self.generate_table(["UserID", "bytes", "human readable", "refresh time"], fd)
 
-        return self.final_text % (db_text, quota_text, metrics_text, usage_text)
+        # vnstat
+        if os.uname().sysname == "Darwin":
+            cmd = "/usr/local/bin/vnstat -i en0".split()
+        else:
+            cmd = "/usr/bin/vnstat -i eth0".split()
+        vnstat_text = subprocess.check_output(cmd).decode('u8')
+        return self.final_text % (db_text, quota_text, metrics_text, usage_text, vnstat_text)
 
     def reset_today(self):
         pairs = self.r.hgetall("metrics")
