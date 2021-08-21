@@ -14,6 +14,5 @@ COPY --from=builder /root/.local /usr/local
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY . /ytdlbot
-RUN echo "/usr/sbin/vnstatd -d;/usr/local/bin/python ytdl.py"> /ytdlbot/start.sh
 
-CMD ["sh", "start.sh"]
+CMD ["/usr/local/bin/supervisord", "-c" ,"/ytdlbot/supervisor.conf"]
