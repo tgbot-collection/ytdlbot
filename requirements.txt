@@ -1,11 +1,13 @@
 pyrogram==1.2.9
 tgcrypto==1.2.2
 youtube-dl==2021.6.6
+APScheduler==3.7.0
+beautifultable==1.0.1
+ffmpeg-python==0.2.0
+
+supervisor
 tgbot-ping
 fakeredis
 filetype
 redis
 requests
-APScheduler==3.7.0
-beautifultable==1.0.1
-supervisor

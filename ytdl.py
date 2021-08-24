@@ -15,6 +15,7 @@ import tempfile
 import time
 import typing
 
+import ffmpeg
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
@@ -23,6 +24,20 @@ from tgbot_ping import get_runtime
 from constant import BotText
 from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
 from limit import VIP, Redis, verify_payment
+
+
+def get_metadata(video_path):
+    height, width, duration = 1280, 720, 0
+    try:
+        video_streams = ffmpeg.probe(video_path, select_streams="v")
+        for item in video_streams.get("streams", []):
+            height = item["height"]
+            width = item["width"]
+        duration = int(float(video_streams["format"]["duration"]))
+    except Exception as e:
+        logging.error(e)
+    return dict(height=height, width=width, duration=duration)
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
 
@@ -34,6 +49,7 @@ def create_app(session="ytdl", workers=100):
 
     _app = Client(session, api_id, api_hash,
                   bot_token=token, workers=workers)
+
     return _app
 
 
@@ -158,10 +174,14 @@ def download_handler(client: "Client", message: "types.Message"):
             bot_msg.edit_text('Download complete. Sending now...')
             remain = bot_text.remaining_quota_caption(chat_id)
             size = sizeof_fmt(os.stat(video_path).st_size)
-            client.send_video(chat_id, video_path, supports_streaming=True,
+            meta = get_metadata(video_path)
+            client.send_video(chat_id, video_path,
+                              supports_streaming=True,
                               caption=f"`{filename}`\n\n{url}\n\nsize: {size}\n\n{remain}",
                               progress=upload_hook, progress_args=(bot_msg,),
-                              reply_markup=markup)
+                              reply_markup=markup,
+                              **meta
+                              )
             Redis().update_metrics("video_success")
         bot_msg.edit_text('Download success!✅')
     else:
