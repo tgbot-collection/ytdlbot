@@ -47,5 +47,8 @@ terms - View Terms of Service
 # Test video
 https://www.youtube.com/watch?v=BaW_jenozKc
 
+# Test Playlist
+https://www.youtube.com/playlist?list=PL1Hdq7xjQCJxQnGc05gS4wzHWccvEJy0w
+
 # License
 Apache License 2.0

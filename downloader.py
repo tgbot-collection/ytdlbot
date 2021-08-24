@@ -63,21 +63,23 @@ def upload_hook(current, total, bot_msg):
 def convert_to_mp4(resp: dict):
     default_type = ["video/x-flv"]
     if resp["status"]:
-        mime = filetype.guess(resp["filepath"]).mime
-        if mime in default_type:
-            path = resp["filepath"]
-            new_name = os.path.basename(path).split(".")[0] + ".mp4"
-            new_file_path = os.path.join(os.path.dirname(path), new_name)
-            cmd = "ffmpeg -i {} {}".format(path, new_file_path)
-            logging.info("Detected %s, converting to mp4...", mime)
-            subprocess.check_output(cmd.split())
-            resp["filepath"] = new_file_path
-            return resp
+        # all_converted = []
+        for path in resp["filepath"]:
+            mime = filetype.guess(path).mime
+            if mime in default_type:
+                new_name = os.path.basename(path).split(".")[0] + ".mp4"
+                new_file_path = os.path.join(os.path.dirname(path), new_name)
+                cmd = "ffmpeg -i {} {}".format(path, new_file_path)
+                logging.info("Detected %s, converting to mp4...", mime)
+                subprocess.check_output(cmd.split())
+                index = resp["filepath"].index(path)
+                resp["filepath"][index] = new_file_path
+
+        return resp
 
 
 def ytdl_download(url, tempdir, bm) -> dict:
-    response = dict(status=None, error=None, filepath=None)
-    logging.info("Downloading for %s", url)
+    response = dict(status=None, error=None, filepath=[])
     output = os.path.join(tempdir, '%(title)s.%(ext)s')
     ydl_opts = {
         'progress_hooks': [lambda d: download_hook(d, bm)],
@@ -95,21 +97,25 @@ def ytdl_download(url, tempdir, bm) -> dict:
         if f:
             ydl_opts["format"] = f
         try:
+            logging.info("Downloading for %s with format %s", url, f)
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
             success = True
+            break
         except DownloadError:
             err = traceback.format_exc()
             logging.error("Download failed for %s ", url)
 
-        if success:
-            response["status"] = True
-            response["filepath"] = os.path.join(tempdir, [i for i in os.listdir(tempdir)][0])
-            VIP().use_quota(bm.chat.id, os.stat(response["filepath"]).st_size)
-            break
-        else:
-            response["status"] = False
-            response["error"] = err
+    if success:
+        response["status"] = True
+        for i in os.listdir(tempdir):
+            p = os.path.join(tempdir, i)
+            response["filepath"].append(p)
+            VIP().use_quota(bm.chat.id, os.stat(p).st_size)
+        # break
+    else:
+        response["status"] = False
+        response["error"] = err
     # convert format if necessary
     convert_to_mp4(response)
     return response

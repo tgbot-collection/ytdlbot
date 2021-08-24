@@ -9,6 +9,7 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import logging
 import os
+import pathlib
 import re
 import tempfile
 import time
@@ -21,7 +22,7 @@ from tgbot_ping import get_runtime
 
 from constant import BotText
 from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
-from limit import Redis, verify_payment
+from limit import VIP, Redis, verify_payment
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
 
@@ -45,7 +46,8 @@ def start_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     logging.info("Welcome to youtube-dl bot!")
     client.send_chat_action(chat_id, "typing")
-    client.send_message(message.chat.id, bot_text.start + "\n\n" + bot_text.remaining_quota_caption(chat_id))
+    greeting = bot_text.get_vip_greeting(chat_id)
+    client.send_message(message.chat.id, greeting + bot_text.start + "\n\n" + bot_text.remaining_quota_caption(chat_id))
 
 
 @app.on_message(filters.command(["help"]))
@@ -103,7 +105,9 @@ def download_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     Redis().user_count(chat_id)
     used, _, ttl = bot_text.return_remaining_quota(chat_id)
-
+    # TODO bug here: if user have 10MB of quota, and he is downloading a playlist toal 10G
+    #  then it won't stop him from downloading
+    #  the same applies to 10MB of quota, but try to download 20MB video
     if used <= 0:
         refresh_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ttl + time.time()))
         logging.error("quota exceed for %s, try again in %s seconds(%s)", chat_id, ttl, refresh_time)
@@ -122,6 +126,11 @@ def download_handler(client: "Client", message: "types.Message"):
         message.reply_text("I think you should send me a link.", quote=True)
         return
 
+    # check if it's playlist - playlist is only available to VIP
+    if "?list=" in url:
+        if not VIP().check_vip(chat_id):
+            message.reply_text("Playlist download is only available to VIP users. Join /vip now.", quote=True)
+            return
     Redis().update_metrics("video_request")
     bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text("Processing", quote=True)
     client.send_chat_action(chat_id, 'upload_video')
@@ -143,15 +152,17 @@ def download_handler(client: "Client", message: "types.Message"):
 
     if result["status"]:
         client.send_chat_action(chat_id, 'upload_document')
-        video_path = result["filepath"]
-        bot_msg.edit_text('Download complete. Sending now...')
-        remain = bot_text.remaining_quota_caption(chat_id)
-        size = sizeof_fmt(os.stat(video_path).st_size)
-        client.send_video(chat_id, video_path, supports_streaming=True,
-                          caption=f"{url}\n\nsize: {size}\n\n{remain}",
-                          progress=upload_hook, progress_args=(bot_msg,),
-                          reply_markup=markup)
-        Redis().update_metrics("video_success")
+        video_paths = result["filepath"]
+        for video_path in video_paths:
+            filename = pathlib.Path(video_path).name
+            bot_msg.edit_text('Download complete. Sending now...')
+            remain = bot_text.remaining_quota_caption(chat_id)
+            size = sizeof_fmt(os.stat(video_path).st_size)
+            client.send_video(chat_id, video_path, supports_streaming=True,
+                              caption=f"`{filename}`\n\n{url}\n\nsize: {size}\n\n{remain}",
+                              progress=upload_hook, progress_args=(bot_msg,),
+                              reply_markup=markup)
+            Redis().update_metrics("video_success")
         bot_msg.edit_text('Download success!✅')
     else:
         client.send_chat_action(chat_id, 'typing')
