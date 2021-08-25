@@ -12,7 +12,6 @@ import os
 import pathlib
 import re
 import tempfile
-import time
 import typing
 
 import ffmpeg
@@ -27,7 +26,7 @@ from limit import VIP, Redis, verify_payment
 
 
 def get_metadata(video_path):
-    height, width, duration = 1280, 720, 0
+    width, height, duration = 1280, 720, 0
     try:
         video_streams = ffmpeg.probe(video_path, select_streams="v")
         for item in video_streams.get("streams", []):
@@ -120,16 +119,7 @@ def download_handler(client: "Client", message: "types.Message"):
     # check remaining quota
     chat_id = message.chat.id
     Redis().user_count(chat_id)
-    used, _, ttl = bot_text.return_remaining_quota(chat_id)
-    # TODO bug here: if user have 10MB of quota, and he is downloading a playlist toal 10G
-    #  then it won't stop him from downloading
-    #  the same applies to 10MB of quota, but try to download 20MB video
-    if used <= 0:
-        refresh_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ttl + time.time()))
-        logging.error("quota exceed for %s, try again in %s seconds(%s)", chat_id, ttl, refresh_time)
-        message.reply_text(f"Quota exceed, try again in {ttl} seconds({refresh_time})", quote=True)
-        Redis().update_metrics("quota_exceed")
-        return
+
     if message.chat.type != "private" and not message.text.lower().startswith("/ytdl"):
         logging.warning("%s, it's annoying me...🙄️ ", message.text)
         return
@@ -147,6 +137,7 @@ def download_handler(client: "Client", message: "types.Message"):
         if not VIP().check_vip(chat_id):
             message.reply_text("Playlist download is only available to VIP users. Join /vip now.", quote=True)
             return
+
     Redis().update_metrics("video_request")
     bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text("Processing", quote=True)
     client.send_chat_action(chat_id, 'upload_video')
@@ -169,9 +160,9 @@ def download_handler(client: "Client", message: "types.Message"):
     if result["status"]:
         client.send_chat_action(chat_id, 'upload_document')
         video_paths = result["filepath"]
+        bot_msg.edit_text('Download complete. Sending now...')
         for video_path in video_paths:
             filename = pathlib.Path(video_path).name
-            bot_msg.edit_text('Download complete. Sending now...')
             remain = bot_text.remaining_quota_caption(chat_id)
             size = sizeof_fmt(os.stat(video_path).st_size)
             meta = get_metadata(video_path)
@@ -187,7 +178,7 @@ def download_handler(client: "Client", message: "types.Message"):
     else:
         client.send_chat_action(chat_id, 'typing')
         tb = result["error"][0:4000]
-        bot_msg.edit_text(f"{url} download failed❌：\n```{tb}```")
+        bot_msg.edit_text(f"Download failed!❌\n\n```{tb}```", disable_web_page_preview=True)
 
     temp_dir.cleanup()
 

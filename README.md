@@ -38,7 +38,7 @@ see [here](https://github.com/tgbot-collection/BotsRunner)
 start - Let's start
 about - Want to contribute?
 ping - Bot running status
-help - Anything troubles you/
+help - Anything troubles you?
 ytdl - Download video in group
 vip - Join VIP
 terms - View Terms of Service

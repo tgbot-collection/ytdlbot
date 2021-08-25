@@ -11,6 +11,7 @@ import logging
 import os
 import pathlib
 import subprocess
+import time
 import traceback
 
 import fakeredis
@@ -18,7 +19,7 @@ import filetype
 import youtube_dl
 from youtube_dl import DownloadError
 
-from limit import VIP
+from limit import VIP, Redis
 
 r = fakeredis.FakeStrictRedis()
 EXPIRE = 5
@@ -33,7 +34,7 @@ def sizeof_fmt(num: int, suffix='B'):
 
 
 def edit_text(bot_msg, text):
-    key = bot_msg.message_id
+    key = f"{bot_msg.chat.id}-{bot_msg.message_id}"
     # if the key exists, we shouldn't send edit message
     if not r.exists(key):
         r.set(key, "ok", ex=EXPIRE)
@@ -44,12 +45,16 @@ def download_hook(d: dict, bot_msg):
     if d['status'] == 'downloading':
         downloaded = d.get("downloaded_bytes", 0)
         total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
+        # total = 0
         filesize = sizeof_fmt(total)
         if total > 2 * 1024 * 1024 * 1024:
             raise Exception("\n\nYour video is too large. %s will exceed Telegram's max limit 2GiB" % filesize)
 
         percent = d.get("_percent_str", "N/A")
         speed = d.get("_speed_str", "N/A")
+        result, err_msg = check_quota(total, bot_msg.chat.id)
+        if result is False:
+            raise ValueError(err_msg)
         text = f'[{filesize}]: Downloading {percent} - {downloaded}/{total} @ {speed}'
         edit_text(bot_msg, text)
 
@@ -58,6 +63,20 @@ def upload_hook(current, total, bot_msg):
     filesize = sizeof_fmt(total)
     text = f'[{filesize}]: Uploading {round(current / total * 100, 2)}% - {current}/{total}'
     edit_text(bot_msg, text)
+
+
+def check_quota(file_size, chat_id) -> ("bool", "str"):
+    remain, _, ttl = VIP().check_remaining_quota(chat_id)
+    if file_size > remain:
+        refresh_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ttl + time.time()))
+        err = f"Quota exceed, you have {sizeof_fmt(remain)} remaining, " \
+              f"but you want to download a video with {sizeof_fmt(file_size)} in size. \n" \
+              f"Try again in {ttl} seconds({refresh_time})"
+        logging.warning(err)
+        Redis().update_metrics("quota_exceed")
+        return False, err
+    else:
+        return True, ""
 
 
 def convert_to_mp4(resp: dict):
@@ -79,12 +98,13 @@ def convert_to_mp4(resp: dict):
 
 
 def ytdl_download(url, tempdir, bm) -> dict:
-    response = dict(status=None, error=None, filepath=[])
+    chat_id = bm.chat.id
+    response = {"status": True, "error": "", "filepath": []}
     output = os.path.join(tempdir, '%(title)s.%(ext)s')
     ydl_opts = {
         'progress_hooks': [lambda d: download_hook(d, bm)],
         'outtmpl': output,
-        'restrictfilenames': True,
+        'restrictfilenames': False,
         'quiet': True
     }
     formats = [
@@ -92,7 +112,7 @@ def ytdl_download(url, tempdir, bm) -> dict:
         "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
         ""
     ]
-    success, err = None, None
+    # TODO it appears twitter download on macOS will fail. Don't know why...Linux's fine.
     for f in formats:
         if f:
             ydl_opts["format"] = f
@@ -100,22 +120,37 @@ def ytdl_download(url, tempdir, bm) -> dict:
             logging.info("Downloading for %s with format %s", url, f)
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
-            success = True
+            response["status"] = True
+            response["error"] = ""
             break
-        except DownloadError:
-            err = traceback.format_exc()
-            logging.error("Download failed for %s ", url)
 
-    if success:
-        response["status"] = True
-        for i in os.listdir(tempdir):
-            p = os.path.join(tempdir, i)
+        except DownloadError as e:
+            err = str(e)
+            logging.error("Download failed for %s ", url)
+            response["status"] = False
+            response["error"] = err
+            # can't return here
+        except ValueError as e:
+            response["status"] = False
+            response["error"] = str(e)
+
+    logging.info(response)
+    if response["status"] is False:
+        return response
+
+    for i in os.listdir(tempdir):
+        remain, _, ttl = VIP().check_remaining_quota(chat_id)
+        p: "str" = os.path.join(tempdir, i)
+        file_size = os.stat(p).st_size
+        result, err_msg = check_quota(file_size, chat_id)
+        if result is False:
+            response["status"] = False
+            response["error"] = err_msg
+        else:
+            VIP().use_quota(bm.chat.id, file_size)
+            response["status"] = True
             response["filepath"].append(p)
-            VIP().use_quota(bm.chat.id, os.stat(p).st_size)
-        # break
-    else:
-        response["status"] = False
-        response["error"] = err
+
     # convert format if necessary
     convert_to_mp4(response)
     return response
