@@ -11,3 +11,4 @@ fakeredis
 filetype
 redis
 requests
+tqdm
