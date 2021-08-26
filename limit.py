@@ -241,7 +241,9 @@ class BuyMeACoffee:
 
     def get_user_payment(self, email: "str") -> ("int", "float", "str"):
         order = self._get_bmac_status(email)
-        amount = float(order.get("support_coffee_price", 0))
+        price = float(order.get("support_coffee_price", 0))
+        cups = float(order.get("support_coffees", 1))
+        amount = price * cups
         level = math.floor(amount / MULTIPLY)
         return level, amount, email
 
