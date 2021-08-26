@@ -47,8 +47,10 @@ def download_hook(d: dict, bot_msg):
         total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
         # total = 0
         filesize = sizeof_fmt(total)
-        if total > 2 * 1024 * 1024 * 1024:
-            raise Exception("\n\nYour video is too large. %s will exceed Telegram's max limit 2GiB" % filesize)
+        max_size = 2 * 1024 * 1024 * 1024
+        if total > max_size:
+            raise ValueError(f"\nYour video is too large. "
+                             f"{filesize} will exceed Telegram's max limit {sizeof_fmt(max_size)}")
 
         percent = d.get("_percent_str", "N/A")
         speed = d.get("_speed_str", "N/A")
