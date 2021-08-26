@@ -22,7 +22,7 @@ import redis
 import requests
 from beautifultable import BeautifulTable
 
-QUOTA = 10 * 1024 * 1024 * 1024  # 10G
+QUOTA = 5 * 1024 * 1024 * 1024  # 5G
 if os.uname().sysname == "Darwin":
     QUOTA = 10 * 1024 * 1024  # 10M
 
