@@ -114,7 +114,7 @@ def vip_handler(client: "Client", message: "types.Message"):
         bm.edit_text(msg)
 
 
-@app.on_message()
+@app.on_message(filters.incoming)
 def download_handler(client: "Client", message: "types.Message"):
     # check remaining quota
     chat_id = message.chat.id
