@@ -17,10 +17,14 @@ class BotText:
     start = "Welcome to YouTube Download bot. Type /help for more information."
 
     help = f"""
+I'm sorry guys, the bot is consuming too many network traffic, so I addressed more strict limit.
+If you have any troubles, you can talk to me and I'll see if I can ease the limitations for you.
+
 1. This bot should works at all times. 
 If it stops responding, please wait a few minutes or let me know on Telegram or GitHub.
 
-2. At this time of writing, this bot consumes hundreds of GigaBytes per day. In order to avoid being abused, 
+2. At this time of writing, this bot consumes hundreds of GigaBytes of network traffic per day. 
+In order to avoid being abused, 
 every one can use this bot within {sizeof_fmt(QUOTA)} of quota for every {int(EX / 3600)} hours.
 
 3. You can optionally choose to become 'VIP' user if you need more traffic. Type /vip for more information.

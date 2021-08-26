@@ -132,12 +132,6 @@ def download_handler(client: "Client", message: "types.Message"):
         message.reply_text("I think you should send me a link.", quote=True)
         return
 
-    # check if it's playlist - playlist is only available to VIP
-    if "?list=" in url:
-        if not VIP().check_vip(chat_id):
-            message.reply_text("Playlist download is only available to VIP users. Join /vip now.", quote=True)
-            return
-
     Redis().update_metrics("video_request")
     bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text("Processing", quote=True)
     client.send_chat_action(chat_id, 'upload_video')

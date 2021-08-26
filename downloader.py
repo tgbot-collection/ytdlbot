@@ -135,8 +135,10 @@ def ytdl_download(url, tempdir, bm) -> dict:
         except ValueError as e:
             response["status"] = False
             response["error"] = str(e)
+        except Exception as e:
+            logging.error("UNKNOWN EXCEPTION: %s", e)
 
-    logging.info(response)
+    logging.info("%s - %s", url, response)
     if response["status"] is False:
         return response
 
@@ -159,10 +161,12 @@ def ytdl_download(url, tempdir, bm) -> dict:
 
 
 def convert_flac(flac_name, tmp):
-    flac_tmp = pathlib.Path(tmp.name).parent.joinpath(flac_name).as_posix()
-    # ffmpeg -i input-video.avi -vn -acodec copy output-audio.m4a
-    cmd = "ffmpeg -y -i {} -vn -acodec copy {}".format(tmp.name, flac_tmp)
-    print(cmd)
     logging.info("converting to flac")
-    subprocess.check_output(cmd.split())
+    flac_tmp = pathlib.Path(tmp.name).parent.joinpath(flac_name).as_posix()
+    # flac_tmp contains spaces, can't add it here
+    cmd = f'ffmpeg -y -i {tmp.name} -vn -acodec copy '
+    cmd_list = cmd.split()
+    cmd_list.append(flac_tmp)
+    logging.info("CMD: %s", cmd_list)
+    subprocess.check_output(cmd_list)
     return flac_tmp
