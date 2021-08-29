@@ -12,13 +12,13 @@ import os
 import pathlib
 import subprocess
 import time
-import traceback
 
 import fakeredis
 import filetype
 import youtube_dl
 from youtube_dl import DownloadError
 
+from config import ENABLE_VIP
 from limit import VIP, Redis
 
 r = fakeredis.FakeStrictRedis()
@@ -54,9 +54,10 @@ def download_hook(d: dict, bot_msg):
 
         percent = d.get("_percent_str", "N/A")
         speed = d.get("_speed_str", "N/A")
-        result, err_msg = check_quota(total, bot_msg.chat.id)
-        if result is False:
-            raise ValueError(err_msg)
+        if ENABLE_VIP:
+            result, err_msg = check_quota(total, bot_msg.chat.id)
+            if result is False:
+                raise ValueError(err_msg)
         text = f'[{filesize}]: Downloading {percent} - {downloaded}/{total} @ {speed}'
         edit_text(bot_msg, text)
 
@@ -143,10 +144,13 @@ def ytdl_download(url, tempdir, bm) -> dict:
         return response
 
     for i in os.listdir(tempdir):
-        remain, _, ttl = VIP().check_remaining_quota(chat_id)
         p: "str" = os.path.join(tempdir, i)
         file_size = os.stat(p).st_size
-        result, err_msg = check_quota(file_size, chat_id)
+        if ENABLE_VIP:
+            remain, _, ttl = VIP().check_remaining_quota(chat_id)
+            result, err_msg = check_quota(file_size, chat_id)
+        else:
+            result, err_msg = True, ""
         if result is False:
             response["status"] = False
             response["error"] = err_msg

@@ -22,19 +22,14 @@ import redis
 import requests
 from beautifultable import BeautifulTable
 
-QUOTA = 5 * 1024 * 1024 * 1024  # 5G
-if os.uname().sysname == "Darwin":
-    QUOTA = 10 * 1024 * 1024  # 10M
-
-EX = 24 * 3600
-MULTIPLY = 5  # VIP1 is 5*10-50G, VIP2 is 100G
-USD2CNY = 6  # $5 --> ¥30
+from config import (AFD_TOKEN, AFD_USER_ID, COFFEE_TOKEN, ENABLE_VIP, EX,
+                    MULTIPLY, OWNER, QUOTA, REDIS, USD2CNY)
 
 
 class Redis:
     def __init__(self):
         super(Redis, self).__init__()
-        self.r = redis.StrictRedis(host=os.getenv("REDIS", "redis"), db=4, decode_responses=True)
+        self.r = redis.StrictRedis(host=REDIS, db=4, decode_responses=True)
 
         db_banner = "=" * 20 + "DB data" + "=" * 20
         quota_banner = "=" * 20 + "Quota" + "=" * 20
@@ -221,7 +216,7 @@ class VIP(Redis, SQLite):
 
 class BuyMeACoffee:
     def __init__(self):
-        self._token = os.getenv("COFFEE_TOKEN")
+        self._token = COFFEE_TOKEN
         self._url = "https://developers.buymeacoffee.com/api/v1/supporters"
         self._data = []
 
@@ -250,8 +245,8 @@ class BuyMeACoffee:
 
 class Afdian:
     def __init__(self):
-        self._token = os.getenv("AFD_TOKEN")
-        self._user_id = os.getenv("AFD_USER_ID")
+        self._token = AFD_TOKEN
+        self._user_id = AFD_USER_ID
         self._url = "https://afdian.net/api/open/query-order"
 
     def _generate_signature(self):
@@ -288,6 +283,8 @@ class Afdian:
 
 
 def verify_payment(user_id, unique) -> "str":
+    if not ENABLE_VIP:
+        return "VIP is not enabled."
     logging.info("Verifying payment for %s - %s", user_id, unique)
     if "@" in unique:
         pay = BuyMeACoffee()
@@ -297,10 +294,10 @@ def verify_payment(user_id, unique) -> "str":
     level, amount, pay_id = pay.get_user_payment(unique)
     if amount == 0:
         return f"You pay amount is {amount}. Did you input wrong order ID or email? " \
-               f"Talk to @BennyThink if you need any assistant."
+               f"Talk to @{OWNER} if you need any assistant."
     if not level:
         return f"You pay amount {amount} is below minimum ${MULTIPLY}. " \
-               f"Talk to @BennyThink if you need any assistant."
+               f"Talk to @{OWNER} if you need any assistant."
     else:
         vip = VIP()
         ud = {

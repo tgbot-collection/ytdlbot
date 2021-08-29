@@ -20,9 +20,28 @@ from pyrogram import Client, filters, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from tgbot_ping import get_runtime
 
+from config import APP_HASH, APP_ID, ENABLE_VIP, OWNER, TOKEN, WORKERS
 from constant import BotText
 from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
-from limit import VIP, Redis, verify_payment
+from limit import Redis, verify_payment
+
+
+def customize_logger(logger: "list"):
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
+    for log in logger:
+        logging.getLogger(log).setLevel(level=logging.WARNING)
+
+
+def create_app(session="ytdl", workers=WORKERS):
+    _app = Client(session, APP_ID, APP_HASH,
+                  bot_token=TOKEN, workers=workers)
+
+    return _app
+
+
+customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.client", "pyrogram.connection.connection"])
+app = create_app()
+bot_text = BotText()
 
 
 def get_metadata(video_path):
@@ -36,24 +55,6 @@ def get_metadata(video_path):
     except Exception as e:
         logging.error(e)
     return dict(height=height, width=width, duration=duration)
-
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
-
-
-def create_app(session="ytdl", workers=100):
-    api_id = int(os.getenv("APP_ID", 0))
-    api_hash = os.getenv("APP_HASH")
-    token = os.getenv("TOKEN")
-
-    _app = Client(session, api_id, api_hash,
-                  bot_token=token, workers=workers)
-
-    return _app
-
-
-app = create_app()
-bot_text = BotText()
 
 
 @app.on_message(filters.command(["start"]))
@@ -80,7 +81,7 @@ def ping_handler(client: "Client", message: "types.Message"):
         bot_info = "test"
     else:
         bot_info = get_runtime("botsrunner_ytdl_1", "YouTube-dl")
-    if chat_id == 260260121:
+    if message.chat.username == OWNER:
         client.send_document(chat_id, Redis().generate_file(), caption=bot_info)
     else:
         client.send_message(chat_id, f"{bot_info}")
@@ -206,4 +207,13 @@ if __name__ == '__main__':
     scheduler = BackgroundScheduler()
     scheduler.add_job(Redis().reset_today, 'cron', hour=0, minute=0)
     scheduler.start()
+    banner = f"""
+▌ ▌         ▀▛▘     ▌       ▛▀▖              ▜            ▌
+▝▞  ▞▀▖ ▌ ▌  ▌  ▌ ▌ ▛▀▖ ▞▀▖ ▌ ▌ ▞▀▖ ▌  ▌ ▛▀▖ ▐  ▞▀▖ ▝▀▖ ▞▀▌
+ ▌  ▌ ▌ ▌ ▌  ▌  ▌ ▌ ▌ ▌ ▛▀  ▌ ▌ ▌ ▌ ▐▐▐  ▌ ▌ ▐  ▌ ▌ ▞▀▌ ▌ ▌
+ ▘  ▝▀  ▝▀▘  ▘  ▝▀▘ ▀▀  ▝▀▘ ▀▀  ▝▀   ▘▘  ▘ ▘  ▘ ▝▀  ▝▀▘ ▝▀▘
+
+By @BennyThink, VIP mode: {ENABLE_VIP}
+    """
+    print(banner)
     app.run()
