@@ -1,0 +1,26 @@
+version: '3.1'
+
+services:
+  socat:
+    image: jmb12686/socat
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: [ "socat", "tcp-listen:2375,fork,reuseaddr","unix-connect:/var/run/docker.sock" ]
+
+  redis:
+    image: redis:alpine
+    restart: always
+    logging:
+      driver: none
+
+  ytdl:
+    image: bennythink/ytdlbot
+    env_file:
+      - env/ytdl.env
+    volumes:
+      - ./data/vip.sqlite:/ytdlbot/vip.sqlite
+    restart: always
+    depends_on:
+      - socat
+      - redis

@@ -140,3 +140,4 @@ dmypy.json
 /*.sqlite
 /.idea/dataSources.xml
 /.idea/sqldialects.xml
+/.idea/.gitignore
