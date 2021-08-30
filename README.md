@@ -34,6 +34,12 @@ You can choose to become 'VIP' if you really need large traffic. And also, you c
 
 # How to deploy?
 
+Choose your own preference.
+
+## Heroku
+
+Use the button above! It should work like a magic.
+
 ## Normal
 
 1. clone code
@@ -43,7 +49,15 @@ You can choose to become 'VIP' if you really need large traffic. And also, you c
 5. set environment variables `TOKEN`, `APP_ID` and `APP_HASH`, and more if you like.
 6. `python3 ytdl.py`
 
-## docker
+## Simple one line docker
+
+Some functions, such as VIP, ping will be disabled.
+
+```shell
+docker run -e APP_ID=111 -e APP_HASH=111 -e TOKEN=370FXI bennythink/ytdlbot
+```
+
+## docker-compose
 
 Compatible with amd64, arm64 and armv7l
 
