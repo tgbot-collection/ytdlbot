@@ -18,6 +18,7 @@ import tempfile
 import time
 from io import BytesIO
 
+import fakeredis
 import redis
 import requests
 from beautifultable import BeautifulTable
@@ -29,7 +30,10 @@ from config import (AFD_TOKEN, AFD_USER_ID, COFFEE_TOKEN, ENABLE_VIP, EX,
 class Redis:
     def __init__(self):
         super(Redis, self).__init__()
-        self.r = redis.StrictRedis(host=REDIS, db=4, decode_responses=True)
+        if REDIS is None:
+            self.r = fakeredis.FakeStrictRedis(host=REDIS, db=4, decode_responses=True)
+        else:
+            self.r = redis.StrictRedis(host=REDIS, db=4, decode_responses=True)
 
         db_banner = "=" * 20 + "DB data" + "=" * 20
         quota_banner = "=" * 20 + "Quota" + "=" * 20

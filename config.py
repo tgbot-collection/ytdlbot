@@ -29,6 +29,6 @@ OWNER = os.getenv("OWNER", "BennyThink")
 APP_ID: "int" = int(os.getenv("APP_ID", 111))
 APP_HASH = os.getenv("APP_HASH", "111")
 TOKEN = os.getenv("TOKEN", "3703WLI")
-REDIS = os.getenv("REDIS", "redis")
+REDIS = os.getenv("REDIS")
 
 WORKERS: "int" = int(os.getenv("WORKERS", 100))
