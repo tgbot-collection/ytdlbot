@@ -77,8 +77,8 @@ def help_handler(client: "Client", message: "types.Message"):
 def ping_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
-    if os.uname().sysname == "Darwin":
-        bot_info = "test"
+    if os.uname().sysname == "Darwin" or ".heroku" in os.getenv("PYTHONHOME", ""):
+        bot_info = "ping unavailable."
     else:
         bot_info = get_runtime("botsrunner_ytdl_1", "YouTube-dl")
     if message.chat.username == OWNER:

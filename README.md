@@ -1,6 +1,6 @@
 # ytdlbot
 
-YouTube Download🚀
+YouTube Download Bot🚀
 
 Download videos from YouTube and other platforms through a Telegram Bot
 
