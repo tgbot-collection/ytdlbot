@@ -24,12 +24,7 @@ from config import APP_HASH, APP_ID, ENABLE_VIP, OWNER, TOKEN, WORKERS
 from constant import BotText
 from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
 from limit import Redis, verify_payment
-
-
-def customize_logger(logger: "list"):
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(filename)s [%(levelname)s]: %(message)s')
-    for log in logger:
-        logging.getLogger(log).setLevel(level=logging.WARNING)
+from utils import customize_logger
 
 
 def create_app(session="ytdl", workers=WORKERS):
@@ -42,6 +37,7 @@ def create_app(session="ytdl", workers=WORKERS):
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.client", "pyrogram.connection.connection"])
 app = create_app()
 bot_text = BotText()
+logging
 
 
 def get_metadata(video_path):

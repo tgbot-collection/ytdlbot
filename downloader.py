@@ -20,9 +20,11 @@ from youtube_dl import DownloadError
 
 from config import ENABLE_VIP
 from limit import VIP, Redis
+from utils import apply_log_formatter
 
 r = fakeredis.FakeStrictRedis()
 EXPIRE = 5
+apply_log_formatter()
 
 
 def sizeof_fmt(num: int, suffix='B'):
@@ -103,7 +105,7 @@ def convert_to_mp4(resp: dict):
 def ytdl_download(url, tempdir, bm) -> dict:
     chat_id = bm.chat.id
     response = {"status": True, "error": "", "filepath": []}
-    output = os.path.join(tempdir, '%(title)s.%(ext)s')
+    output = os.path.join(tempdir, '%(title).50s.%(ext)s')
     ydl_opts = {
         'progress_hooks': [lambda d: download_hook(d, bm)],
         'outtmpl': output,

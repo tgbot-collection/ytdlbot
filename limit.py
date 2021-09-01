@@ -25,6 +25,9 @@ from beautifultable import BeautifulTable
 
 from config import (AFD_TOKEN, AFD_USER_ID, COFFEE_TOKEN, ENABLE_VIP, EX,
                     MULTIPLY, OWNER, QUOTA, REDIS, USD2CNY)
+from utils import apply_log_formatter
+
+apply_log_formatter()
 
 
 class Redis:
