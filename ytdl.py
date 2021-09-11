@@ -37,7 +37,6 @@ def create_app(session="ytdl", workers=WORKERS):
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.client", "pyrogram.connection.connection"])
 app = create_app()
 bot_text = BotText()
-logging
 
 
 def get_metadata(video_path):

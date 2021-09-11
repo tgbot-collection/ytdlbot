@@ -31,4 +31,4 @@ APP_HASH = os.getenv("APP_HASH", "111")
 TOKEN = os.getenv("TOKEN", "3703WLI")
 REDIS = os.getenv("REDIS")
 
-WORKERS: "int" = int(os.getenv("WORKERS", 100))
+WORKERS: "int" = int(os.getenv("WORKERS", 300))
