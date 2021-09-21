@@ -93,9 +93,9 @@ def convert_to_mp4(resp: dict):
             if mime in default_type:
                 new_name = os.path.basename(path).split(".")[0] + ".mp4"
                 new_file_path = os.path.join(os.path.dirname(path), new_name)
-                cmd = "ffmpeg -i {} {}".format(path, new_file_path)
+                cmd = ["ffmpeg", "-i", path, new_file_path]
                 logging.info("Detected %s, converting to mp4...", mime)
-                subprocess.check_output(cmd.split())
+                subprocess.check_output(cmd)
                 index = resp["filepath"].index(path)
                 resp["filepath"][index] = new_file_path
 
@@ -169,10 +169,7 @@ def ytdl_download(url, tempdir, bm) -> dict:
 def convert_flac(flac_name, tmp):
     logging.info("converting to flac")
     flac_tmp = pathlib.Path(tmp.name).parent.joinpath(flac_name).as_posix()
-    # flac_tmp contains spaces, can't add it here
-    cmd = f'ffmpeg -y -i {tmp.name} -vn -acodec copy '
-    cmd_list = cmd.split()
-    cmd_list.append(flac_tmp)
+    cmd_list = ["ffmpeg", "-y", "-i", tmp.name, "-vn", "-acodec", "copy", flac_tmp]
     logging.info("CMD: %s", cmd_list)
     subprocess.check_output(cmd_list)
     return flac_tmp
