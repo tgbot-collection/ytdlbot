@@ -71,6 +71,8 @@ __I live in a place where I don't have access to Telegram Payments. So...__
     """ if ENABLE_VIP else "VIP is not enabled."
     vip_pay = "Processing your payments...If it's not responding after one minute, please contact @BennyThink."
 
+    private = "This bot is for private use"
+
     def remaining_quota_caption(self, chat_id):
         if not ENABLE_VIP:
             return ""

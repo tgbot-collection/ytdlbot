@@ -20,7 +20,8 @@ from pyrogram import Client, filters, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from tgbot_ping import get_runtime
 
-from config import APP_HASH, APP_ID, ENABLE_VIP, OWNER, TOKEN, WORKERS
+from config import (APP_HASH, APP_ID, AUTHORIZED_USER, ENABLE_VIP, OWNER,
+                    TOKEN, WORKERS)
 from constant import BotText
 from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
 from limit import Redis, verify_payment
@@ -38,6 +39,8 @@ customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.clien
 app = create_app()
 bot_text = BotText()
 
+logging.info("Authorized users are %s", AUTHORIZED_USER)
+
 
 def get_metadata(video_path):
     width, height, duration = 1280, 720, 0
@@ -50,6 +53,22 @@ def get_metadata(video_path):
     except Exception as e:
         logging.error(e)
     return dict(height=height, width=width, duration=duration)
+
+
+def private_use(func):
+    def wrapper(client: "Client", message: "types.Message"):
+        chat_id = message.chat.id
+        if AUTHORIZED_USER:
+            users = [int(i) for i in AUTHORIZED_USER.split(",")]
+        else:
+            users = []
+        if users and chat_id not in users:
+            client.send_message(message.chat.id, bot_text.private)
+            return
+
+        return func(client, message)
+
+    return wrapper
 
 
 @app.on_message(filters.command(["start"]))
@@ -111,6 +130,7 @@ def vip_handler(client: "Client", message: "types.Message"):
 
 
 @app.on_message(filters.incoming)
+@private_use
 def download_handler(client: "Client", message: "types.Message"):
     # check remaining quota
     chat_id = message.chat.id
