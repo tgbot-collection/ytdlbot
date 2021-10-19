@@ -15,8 +15,13 @@ import time
 
 import fakeredis
 import filetype
-import yt_dlp
-from yt_dlp import DownloadError
+
+if os.getenv("downloader") == "youtube-dl":
+    import youtube_dl as ytdl
+    from youtube_dl import DownloadError
+else:
+    import yt_dlp as ytdl
+    from yt_dlp import DownloadError
 
 from config import ENABLE_VIP
 from limit import VIP, Redis
@@ -123,7 +128,7 @@ def ytdl_download(url, tempdir, bm) -> dict:
             ydl_opts["format"] = f
         try:
             logging.info("Downloading for %s with format %s", url, f)
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            with ytdl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
             response["status"] = True
             response["error"] = ""
