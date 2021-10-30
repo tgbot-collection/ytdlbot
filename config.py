@@ -9,6 +9,14 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import os
 
+# general settings
+WORKERS: "int" = int(os.getenv("WORKERS", 500))
+APP_ID: "int" = int(os.getenv("APP_ID", 111))
+APP_HASH = os.getenv("APP_HASH", "111")
+TOKEN = os.getenv("TOKEN", "3703WLI")
+REDIS = os.getenv("REDIS")
+
+# quota settings
 QUOTA = os.getenv("QUOTA", 5 * 1024 * 1024 * 1024)  # 5G
 if os.uname().sysname == "Darwin":
     QUOTA = 10 * 1024 * 1024  # 10M
@@ -23,13 +31,9 @@ COFFEE_LINK = os.getenv("COFFEE_LINK", "https://www.buymeacoffee.com/bennythink"
 COFFEE_TOKEN = os.getenv("COFFEE_TOKEN")
 AFD_TOKEN = os.getenv("AFD_TOKEN")
 AFD_USER_ID = os.getenv("AFD_USER_ID")
-
 OWNER = os.getenv("OWNER", "BennyThink")
 
-APP_ID: "int" = int(os.getenv("APP_ID", 111))
-APP_HASH = os.getenv("APP_HASH", "111")
-TOKEN = os.getenv("TOKEN", "3703WLI")
-REDIS = os.getenv("REDIS")
+# limitation settings
 AUTHORIZED_USER: "str" = os.getenv("AUTHORIZED", "")
-
-WORKERS: "int" = int(os.getenv("WORKERS", 300))
+# membership requires: the format could be username/chat_id of channel or group
+REQUIRED_MEMBERSHIP: "str" = os.getenv("REQUIRED_MEMBERSHIP", "")

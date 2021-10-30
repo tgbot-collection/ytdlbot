@@ -7,6 +7,7 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
+import contextlib
 import logging
 import os
 import pathlib
@@ -17,11 +18,12 @@ import typing
 import ffmpeg
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
+from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from tgbot_ping import get_runtime
 
 from config import (APP_HASH, APP_ID, AUTHORIZED_USER, ENABLE_VIP, OWNER,
-                    TOKEN, WORKERS)
+                    REQUIRED_MEMBERSHIP, TOKEN, WORKERS)
 from constant import BotText
 from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
 from limit import Redis, verify_payment
@@ -57,14 +59,32 @@ def get_metadata(video_path):
 
 def private_use(func):
     def wrapper(client: "Client", message: "types.Message"):
-        chat_id = message.chat.id
+        chat_id = getattr(message.from_user, "id", None)
+
+        # message type check
+        if message.chat.type != "private" and not message.text.lower().startswith("/ytdl"):
+            logging.warning("%s, it's annoying me...🙄️ ", message.text)
+            return
+
+        # authorized users check
         if AUTHORIZED_USER:
             users = [int(i) for i in AUTHORIZED_USER.split(",")]
         else:
             users = []
-        if users and chat_id not in users:
-            client.send_message(message.chat.id, bot_text.private)
+
+        if users and chat_id and chat_id not in users:
+            message.reply_text(bot_text.private, quote=True)
             return
+
+        # membership check
+        if REQUIRED_MEMBERSHIP:
+            try:
+                app.get_chat_member(REQUIRED_MEMBERSHIP, chat_id)
+                logging.info("user %s check passed for group/channel %s.", chat_id, REQUIRED_MEMBERSHIP)
+            except UserNotParticipant:
+                logging.warning("user %s is not a member of group/channel %s", chat_id, REQUIRED_MEMBERSHIP)
+                message.reply_text(bot_text.membership_require, quote=True)
+                return
 
         return func(client, message)
 
@@ -85,6 +105,9 @@ def help_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
     client.send_message(chat_id, bot_text.help, disable_web_page_preview=True)
+    channel_identifier = "https://t.me/joinchat/SGgzYMi59G4-aVCk"
+    chat = app.get_chat()
+    app.get_chat_member()
 
 
 @app.on_message(filters.command(["ping"]))
@@ -135,10 +158,6 @@ def download_handler(client: "Client", message: "types.Message"):
     # check remaining quota
     chat_id = message.chat.id
     Redis().user_count(chat_id)
-
-    if message.chat.type != "private" and not message.text.lower().startswith("/ytdl"):
-        logging.warning("%s, it's annoying me...🙄️ ", message.text)
-        return
 
     url = re.sub(r'/ytdl\s*', '', message.text)
     logging.info("start %s", url)

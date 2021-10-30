@@ -9,7 +9,8 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import time
 
-from config import AFD_LINK, COFFEE_LINK, ENABLE_VIP, EX, MULTIPLY, USD2CNY
+from config import (AFD_LINK, COFFEE_LINK, ENABLE_VIP, EX, MULTIPLY,
+                    REQUIRED_MEMBERSHIP, USD2CNY)
 from downloader import sizeof_fmt
 from limit import QUOTA, VIP
 
@@ -72,6 +73,7 @@ __I live in a place where I don't have access to Telegram Payments. So...__
     vip_pay = "Processing your payments...If it's not responding after one minute, please contact @BennyThink."
 
     private = "This bot is for private use"
+    membership_require = f"You need to join this group or channel to use this bot\n\nhttps://t.me/{REQUIRED_MEMBERSHIP}"
 
     def remaining_quota_caption(self, chat_id):
         if not ENABLE_VIP:

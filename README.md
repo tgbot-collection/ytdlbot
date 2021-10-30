@@ -17,7 +17,7 @@ platform [supported by youtube-dl](https://ytdl-org.github.io/youtube-dl/support
 
 Because I have limited resources, hundreds of Gigabytes doesn't sound like a sustainable solution.
 
-**In that case, I added one limitation: 5GiB per 24 hours for each user. Might change in future**
+**In that case, I added one limitation: 5 GiB per 24 hours for each user. Might change in future**
 
 You can choose to become 'VIP' if you really need large traffic. And also, you could always deploy your own bot.
 
@@ -80,11 +80,12 @@ vim ~/ytdl/env/ytdl.env
 ```
 
 you can configure all the following environment variables:
-
+* WORKERS: default 500
 * APP_ID: **REQUIRED**
 * APP_HASH: **REQUIRED**
 * TOKEN: **REQUIRED**
 * REDIS: **REQUIRED**
+
 * OWNER: owner username
 * QUOTA: quota in bytes
 * EX: quota expire time
@@ -96,7 +97,10 @@ you can configure all the following environment variables:
 * COFFEE_TOKEN
 * AFD_TOKEN
 * AFD_USER_ID
-* WORKERS: default 100
+
+* AUTHORIZED_USER: users that could use this bot, user_id, separated with `,`
+* REQUIRED_MEMBERSHIP: group or channel username, user must join this group to use the bot. Could be use with above `AUTHORIZED_USER`
+
 
 ### 4. run
 
