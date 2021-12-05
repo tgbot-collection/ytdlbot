@@ -7,7 +7,6 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
-import contextlib
 import logging
 import os
 import pathlib
@@ -54,7 +53,10 @@ def get_metadata(video_path):
         duration = int(float(video_streams["format"]["duration"]))
     except Exception as e:
         logging.error(e)
-    return dict(height=height, width=width, duration=duration)
+
+    thumb = video_path + "-thunmnail.png"
+    ffmpeg.input(video_path, ss=duration / 2).filter('scale', width, -1).output(thumb, vframes=1).run()
+    return dict(height=height, width=width, duration=duration, thumb=thumb)
 
 
 def private_use(func):
@@ -195,6 +197,7 @@ def download_handler(client: "Client", message: "types.Message"):
             remain = bot_text.remaining_quota_caption(chat_id)
             size = sizeof_fmt(os.stat(video_path).st_size)
             meta = get_metadata(video_path)
+            print(11111111, meta)
             client.send_video(chat_id, video_path,
                               supports_streaming=True,
                               caption=f"`{filename}`\n\n{url}\n\nsize: {size}\n\n{remain}",
