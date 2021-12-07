@@ -17,7 +17,7 @@ import time
 
 from tqdm import tqdm
 
-from limit import Redis
+from db import Redis
 from ytdl import create_app
 
 parser = argparse.ArgumentParser(description='Broadcast to users')

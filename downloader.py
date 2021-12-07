@@ -10,6 +10,7 @@ __author__ = "Benny <benny.think@gmail.com>"
 import logging
 import os
 import pathlib
+import re
 import subprocess
 import time
 
@@ -24,8 +25,9 @@ else:
     from yt_dlp import DownloadError
 
 from config import ENABLE_VIP
-from limit import VIP, Redis
-from utils import apply_log_formatter
+from db import Redis
+from limit import VIP
+from utils import adjust_formats, apply_log_formatter, get_user_settings
 
 r = fakeredis.FakeStrictRedis()
 EXPIRE = 5
@@ -48,6 +50,10 @@ def edit_text(bot_msg, text):
         bot_msg.edit_text(text)
 
 
+def remove_bash_color(text):
+    return re.sub(r'\u001b|\[0;94m|\u001b\[0m|\[0;32m|\[0m', "", text)
+
+
 def download_hook(d: dict, bot_msg):
     if d['status'] == 'downloading':
         downloaded = d.get("downloaded_bytes", 0)
@@ -59,8 +65,8 @@ def download_hook(d: dict, bot_msg):
             raise ValueError(f"\nYour video is too large. "
                              f"{filesize} will exceed Telegram's max limit {sizeof_fmt(max_size)}")
 
-        percent = d.get("_percent_str", "N/A")
-        speed = d.get("_speed_str", "N/A")
+        percent = remove_bash_color(d.get("_percent_str", "N/A"))
+        speed = remove_bash_color(d.get("_speed_str", "N/A"))
         if ENABLE_VIP:
             result, err_msg = check_quota(total, bot_msg.chat.id)
             if result is False:
@@ -89,13 +95,14 @@ def check_quota(file_size, chat_id) -> ("bool", "str"):
         return True, ""
 
 
-def convert_to_mp4(resp: dict):
-    default_type = ["video/x-flv"]
+def convert_to_mp4(resp: dict, bot_msg):
+    default_type = ["video/x-flv","video/webm"]
     if resp["status"]:
         # all_converted = []
         for path in resp["filepath"]:
             mime = filetype.guess(path).mime
             if mime in default_type:
+                edit_text(bot_msg, f"Converting {os.path.basename(path)} to mp4. Please wait patiently.")
                 new_name = os.path.basename(path).split(".")[0] + ".mp4"
                 new_file_path = os.path.join(os.path.dirname(path), new_name)
                 cmd = ["ffmpeg", "-i", path, new_file_path]
@@ -122,6 +129,7 @@ def ytdl_download(url, tempdir, bm) -> dict:
         "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
         ""
     ]
+    adjust_formats(chat_id, url, formats)
     # TODO it appears twitter download on macOS will fail. Don't know why...Linux's fine.
     for f in formats:
         if f:
@@ -167,7 +175,10 @@ def ytdl_download(url, tempdir, bm) -> dict:
             response["filepath"].append(p)
 
     # convert format if necessary
-    convert_to_mp4(response)
+    settings = get_user_settings(str(chat_id))
+    if settings[2] == "video":
+        # only convert if send type is video
+        convert_to_mp4(response, bm)
     return response
 
 

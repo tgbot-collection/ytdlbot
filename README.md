@@ -31,10 +31,14 @@ You can choose to become 'VIP' if you really need large traffic. And also, you c
 4. audio conversion
 5. playlist support
 6. VIP support
+7. support different video resolutions
+8. support sending as file or streaming as video
+
+![](assets/2.png)
 
 # How to deploy?
 
-Choose your own preference.
+You can deploy this bot on any platform that supports Python.
 
 ## Heroku
 
@@ -80,6 +84,7 @@ vim ~/ytdl/env/ytdl.env
 ```
 
 you can configure all the following environment variables:
+
 * WORKERS: default 500
 * APP_ID: **REQUIRED**
 * APP_HASH: **REQUIRED**
@@ -99,8 +104,8 @@ you can configure all the following environment variables:
 * AFD_USER_ID
 
 * AUTHORIZED_USER: users that could use this bot, user_id, separated with `,`
-* REQUIRED_MEMBERSHIP: group or channel username, user must join this group to use the bot. Could be use with above `AUTHORIZED_USER`
-
+* REQUIRED_MEMBERSHIP: group or channel username, user must join this group to use the bot. Could be use with
+  above `AUTHORIZED_USER`
 
 ### 4. run
 
@@ -118,6 +123,7 @@ help - Anything troubles you?
 ytdl - Download video in group
 vip - Join VIP
 terms - View Terms of Service
+settings - Set your preference
 ```
 
 # Test video

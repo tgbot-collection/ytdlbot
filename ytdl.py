@@ -24,9 +24,10 @@ from tgbot_ping import get_runtime
 from config import (APP_HASH, APP_ID, AUTHORIZED_USER, ENABLE_VIP, OWNER,
                     REQUIRED_MEMBERSHIP, TOKEN, WORKERS)
 from constant import BotText
+from db import Redis, SQLite
 from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
-from limit import Redis, verify_payment
-from utils import customize_logger
+from limit import verify_payment
+from utils import customize_logger, get_user_settings, set_user_settings
 
 
 def create_app(session="ytdl", workers=WORKERS):
@@ -107,9 +108,6 @@ def help_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
     client.send_message(chat_id, bot_text.help, disable_web_page_preview=True)
-    channel_identifier = "https://t.me/joinchat/SGgzYMi59G4-aVCk"
-    chat = app.get_chat()
-    app.get_chat_member()
 
 
 @app.on_message(filters.command(["ping"]))
@@ -138,6 +136,28 @@ def terms_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
     client.send_message(chat_id, bot_text.terms)
+
+
+@app.on_message(filters.command(["settings"]))
+def settings_handler(client: "Client", message: "types.Message"):
+    chat_id = message.chat.id
+    client.send_chat_action(chat_id, "typing")
+    markup = InlineKeyboardMarkup(
+        [
+            [  # First row
+                InlineKeyboardButton("send as document", callback_data="document"),
+                InlineKeyboardButton("send as video", callback_data="video")
+            ],
+            [  # second row
+                InlineKeyboardButton("High Quality", callback_data="high"),
+                InlineKeyboardButton("Medium Quality", callback_data="medium"),
+                InlineKeyboardButton("Low Quality", callback_data="low"),
+            ],
+        ]
+    )
+
+    data = get_user_settings(str(chat_id))
+    client.send_message(chat_id, bot_text.settings.format(data[1], data[2]), reply_markup=markup)
 
 
 @app.on_message(filters.command(["vip"]))
@@ -197,14 +217,25 @@ def download_handler(client: "Client", message: "types.Message"):
             remain = bot_text.remaining_quota_caption(chat_id)
             size = sizeof_fmt(os.stat(video_path).st_size)
             meta = get_metadata(video_path)
-            print(11111111, meta)
-            client.send_video(chat_id, video_path,
-                              supports_streaming=True,
-                              caption=f"`{filename}`\n\n{url}\n\nsize: {size}\n\n{remain}",
-                              progress=upload_hook, progress_args=(bot_msg,),
-                              reply_markup=markup,
-                              **meta
-                              )
+            cap = f"`{filename}`\n\n{url}\n\nInfo: {meta['width']}x{meta['height']} {size}\n\n{remain}"
+            settings = get_user_settings(str(chat_id))
+            if settings[2] == "document":
+                logging.info("Sending as document")
+                client.send_document(chat_id, video_path,
+                                     caption=cap,
+                                     progress=upload_hook, progress_args=(bot_msg,),
+                                     reply_markup=markup,
+                                     thumb=meta["thumb"]
+                                     )
+            else:
+                logging.info("Sending as video")
+                client.send_video(chat_id, video_path,
+                                  supports_streaming=True,
+                                  caption=cap,
+                                  progress=upload_hook, progress_args=(bot_msg,),
+                                  reply_markup=markup,
+                                  **meta
+                                  )
             Redis().update_metrics("video_success")
         bot_msg.edit_text('Download success!✅')
     else:
@@ -215,8 +246,26 @@ def download_handler(client: "Client", message: "types.Message"):
     temp_dir.cleanup()
 
 
-@app.on_callback_query()
-def answer(client: "Client", callback_query: types.CallbackQuery):
+@app.on_callback_query(filters.regex(r"document|video"))
+def send_method_callback(client: "Client", callback_query: types.CallbackQuery):
+    chat_id = callback_query.message.chat.id
+    data = callback_query.data
+    logging.info("Setting %s file type to %s", chat_id, data)
+    set_user_settings(chat_id, "method", data)
+    callback_query.answer(f"Your video send type was set to {callback_query.data}")
+
+
+@app.on_callback_query(filters.regex(r"high|medium|low"))
+def download_resolution_callback(client: "Client", callback_query: types.CallbackQuery):
+    chat_id = callback_query.message.chat.id
+    data = callback_query.data
+    logging.info("Setting %s file type to %s", chat_id, data)
+    set_user_settings(chat_id, "resolution", data)
+    callback_query.answer(f"Your default download quality was set to {callback_query.data}")
+
+
+@app.on_callback_query(filters.regex(r"audio"))
+def audio_callback(client: "Client", callback_query: types.CallbackQuery):
     callback_query.answer(f"Converting to audio...please wait patiently")
     Redis().update_metrics("audio_request")
 
@@ -241,6 +290,7 @@ def answer(client: "Client", callback_query: types.CallbackQuery):
 
 
 if __name__ == '__main__':
+    SQLite()
     scheduler = BackgroundScheduler()
     scheduler.add_job(Redis().reset_today, 'cron', hour=0, minute=0)
     scheduler.start()

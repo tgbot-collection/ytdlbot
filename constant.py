@@ -75,6 +75,17 @@ __I live in a place where I don't have access to Telegram Payments. So...__
     private = "This bot is for private use"
     membership_require = f"You need to join this group or channel to use this bot\n\nhttps://t.me/{REQUIRED_MEMBERSHIP}"
 
+    settings = """
+Select sending format and video quality. **Only applies to YouTube**
+High quality is recommended; Medium quality is aimed as 480P while low quality is aimed as 360P and 240P.
+    
+Remember if you choose to send as document, there will be no streaming. 
+
+Your current settings:
+Video quality: **{0}**
+Sending format: **{1}**
+"""
+
     def remaining_quota_caption(self, chat_id):
         if not ENABLE_VIP:
             return ""
