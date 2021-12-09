@@ -40,6 +40,10 @@ class Redis:
 %s
 
 
+{vnstat_banner}
+%s
+
+
 {quota_banner}
 %s
 
@@ -49,10 +53,6 @@ class Redis:
 
 
 {usage_banner}
-%s
-
-
-{vnstat_banner}
 %s
         """
 
@@ -114,7 +114,7 @@ class Redis:
         else:
             cmd = "/usr/bin/vnstat -i eth0".split()
         vnstat_text = subprocess.check_output(cmd).decode('u8')
-        return self.final_text % (db_text, quota_text, metrics_text, usage_text, vnstat_text)
+        return self.final_text % (db_text, vnstat_text, quota_text, metrics_text, usage_text)
 
     def reset_today(self):
         pairs = self.r.hgetall("metrics")
