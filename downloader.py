@@ -96,7 +96,7 @@ def check_quota(file_size, chat_id) -> ("bool", "str"):
 
 
 def convert_to_mp4(resp: dict, bot_msg):
-    default_type = ["video/x-flv","video/webm"]
+    default_type = ["video/x-flv", "video/webm"]
     if resp["status"]:
         # all_converted = []
         for path in resp["filepath"]:
@@ -130,6 +130,7 @@ def ytdl_download(url, tempdir, bm) -> dict:
         ""
     ]
     adjust_formats(chat_id, url, formats)
+    add_instagram_cookies(url, ydl_opts)
     # TODO it appears twitter download on macOS will fail. Don't know why...Linux's fine.
     for f in formats:
         if f:
@@ -189,3 +190,10 @@ def convert_flac(flac_name, tmp):
     logging.info("CMD: %s", cmd_list)
     subprocess.check_output(cmd_list)
     return flac_tmp
+
+
+def add_instagram_cookies(url: "str", opt: "dict"):
+    if url.startswith("https://www.instagram.com"):
+        opt["cookiefile"] = os.path.join(os.path.dirname(__file__), "instagram.com_cookies.txt")
+
+
