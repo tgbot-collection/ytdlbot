@@ -40,8 +40,6 @@ AUTHORIZED_USER: "str" = os.getenv("AUTHORIZED", "")
 REQUIRED_MEMBERSHIP: "str" = os.getenv("REQUIRED_MEMBERSHIP", "")
 
 # celery related
-ENABLE_CELERY = os.getenv("ENABLE_CELERY", False)
-BROKER = os.getenv("BROKER", f"redis://{REDIS}:6379/4")
 MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
 MYSQL_USER = os.getenv("MYSQL_USER", "root")
 MYSQL_PASS = os.getenv("MYSQL_PASS", "root")

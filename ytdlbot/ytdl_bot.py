@@ -20,13 +20,13 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from tgbot_ping import get_runtime
 
 from client_init import create_app
-from config import (AUTHORIZED_USER, ENABLE_CELERY, ENABLE_VIP, OWNER,
+from config import (AUTHORIZED_USER, ENABLE_VIP, OWNER,
                     REQUIRED_MEMBERSHIP)
 from constant import BotText
 from db import MySQL, Redis
 from downloader import convert_flac
 from limit import verify_payment
-from tasks import download_entrance
+from tasks import normal_download
 from utils import customize_logger, get_user_settings, set_user_settings
 
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.client", "pyrogram.connection.connection"])
@@ -93,7 +93,7 @@ def ping_handler(client: "Client", message: "types.Message"):
     if os.uname().sysname == "Darwin" or ".heroku" in os.getenv("PYTHONHOME", ""):
         bot_info = "ping unavailable."
     else:
-        bot_info = get_runtime("botsrunner_ytdl_1", "YouTube-dl")
+        bot_info = get_runtime("ytdlbot_ytdl_1", "YouTube-dl")
     if message.chat.username == OWNER:
         client.send_document(chat_id, Redis().generate_file(), caption=bot_info)
     else:
@@ -169,7 +169,7 @@ def download_handler(client: "Client", message: "types.Message"):
     bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text("Processing", quote=True)
     client.send_chat_action(chat_id, 'upload_video')
     # temp_dir = tempfile.TemporaryDirectory()
-    download_entrance(bot_msg, client, url)
+    normal_download(bot_msg, client, url)
 
     # temp_dir.cleanup()
 
@@ -228,7 +228,7 @@ if __name__ == '__main__':
  ▌  ▌ ▌ ▌ ▌  ▌  ▌ ▌ ▌ ▌ ▛▀  ▌ ▌ ▌ ▌ ▐▐▐  ▌ ▌ ▐  ▌ ▌ ▞▀▌ ▌ ▌
  ▘  ▝▀  ▝▀▘  ▘  ▝▀▘ ▀▀  ▝▀▘ ▀▀  ▝▀   ▘▘  ▘ ▘  ▘ ▝▀  ▝▀▘ ▝▀▘
 
-By @BennyThink, VIP mode: {ENABLE_VIP}, Distribution: {ENABLE_CELERY}
+By @BennyThink, VIP mode: {ENABLE_VIP}
     """
     print(banner)
     app.run()
