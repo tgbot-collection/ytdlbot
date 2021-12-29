@@ -33,5 +33,5 @@ services:
       - socat
       - redis
     volumes:
-      - ./data/instagram.com_cookies.txt:/ytdlbot/instagram.com_cookies.txt
+      - ./data/instagram.com_cookies.txt:/ytdlbot/ytdlbot/instagram.com_cookies.txt
       - ./data/vnstat/:/var/lib/vnstat/
