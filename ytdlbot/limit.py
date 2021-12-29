@@ -24,7 +24,7 @@ apply_log_formatter()
 
 
 def get_username(chat_id):
-    from ytdl import create_app
+    from ytdl_bot import create_app
     with tempfile.NamedTemporaryFile() as tmp:
         with create_app(tmp.name, 1) as app:
             data = app.get_chat(chat_id).first_name

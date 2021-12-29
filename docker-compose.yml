@@ -14,13 +14,28 @@ services:
     logging:
       driver: none
 
+  mysql:
+    image: mysql:5.7
+    restart: always
+    volumes:
+      - ./db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 'root'
+    logging:
+      driver: none
+
   ytdl:
     image: bennythink/ytdlbot
     env_file:
       - env/ytdl.env
-    volumes:
-      - ./data/vip.sqlite:/ytdlbot/vip.sqlite
     restart: always
     depends_on:
       - socat
       - redis
+
+  worker:
+    image: bennythink/ytdlbot
+    env_file:
+      - env/ytdl.env
+    restart: always
+    command: [ "/usr/local/bin/celery" ,"-A","tasks","worker","--loglevel=info","--pool=prefork","--concurrency=200" ]

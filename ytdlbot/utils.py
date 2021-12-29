@@ -9,6 +9,8 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import logging
 
+import ffmpeg
+
 from db import MySQL
 
 
@@ -70,3 +72,19 @@ def adjust_formats(user_id: "str", url: "str", formats: "list"):
         for m in mapping.get(settings[1], []):
             formats.insert(0, f"bestvideo[ext=mp4][height={m}]+bestaudio[ext=m4a]")
             formats.insert(1, f"bestvideo[vcodec^=avc][height={m}]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best")
+
+
+def get_metadata(video_path):
+    width, height, duration = 1280, 720, 0
+    try:
+        video_streams = ffmpeg.probe(video_path, select_streams="v")
+        for item in video_streams.get("streams", []):
+            height = item["height"]
+            width = item["width"]
+        duration = int(float(video_streams["format"]["duration"]))
+    except Exception as e:
+        logging.error(e)
+
+    thumb = video_path + "-thunmnail.png"
+    ffmpeg.input(video_path, ss=duration / 2).filter('scale', width, -1).output(thumb, vframes=1).run()
+    return dict(height=height, width=width, duration=duration, thumb=thumb)

@@ -10,10 +10,11 @@ __author__ = "Benny <benny.think@gmail.com>"
 import os
 
 # general settings
-WORKERS: "int" = int(os.getenv("WORKERS", 500))
+WORKERS: "int" = int(os.getenv("WORKERS", 200))
 APP_ID: "int" = int(os.getenv("APP_ID", 111))
 APP_HASH = os.getenv("APP_HASH", "111")
 TOKEN = os.getenv("TOKEN", "3703WLI")
+
 REDIS = os.getenv("REDIS")
 
 # quota settings
@@ -37,3 +38,10 @@ OWNER = os.getenv("OWNER", "BennyThink")
 AUTHORIZED_USER: "str" = os.getenv("AUTHORIZED", "")
 # membership requires: the format could be username/chat_id of channel or group
 REQUIRED_MEMBERSHIP: "str" = os.getenv("REQUIRED_MEMBERSHIP", "")
+
+# celery related
+ENABLE_CELERY = os.getenv("ENABLE_CELERY", False)
+BROKER = os.getenv("BROKER", f"redis://{REDIS}:6379/4")
+MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
+MYSQL_USER = os.getenv("MYSQL_USER", "root")
+MYSQL_PASS = os.getenv("MYSQL_PASS", "root")
