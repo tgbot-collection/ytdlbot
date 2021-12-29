@@ -17,7 +17,7 @@ import requests
 
 from config import (AFD_TOKEN, AFD_USER_ID, COFFEE_TOKEN, ENABLE_VIP, EX,
                     MULTIPLY, OWNER, QUOTA, USD2CNY)
-from db import Redis, SQLite
+from db import MySQL, Redis
 from utils import apply_log_formatter
 
 apply_log_formatter()
@@ -32,17 +32,17 @@ def get_username(chat_id):
     return data
 
 
-class VIP(Redis, SQLite):
+class VIP(Redis, MySQL):
 
     def check_vip(self, user_id: "int") -> "tuple":
-        self.cur.execute("SELECT * FROM VIP WHERE user_id=?", (user_id,))
+        self.cur.execute("SELECT * FROM VIP WHERE user_id=%s", (user_id,))
         data = self.cur.fetchone()
         return data
 
     def add_vip(self, user_data: "dict") -> ("bool", "str"):
-        sql = "INSERT INTO VIP VALUES (?,?,?,?,?,?);"
+        sql = "INSERT INTO VIP VALUES (%s,%s,%s,%s,%s,%s);"
         # first select
-        self.cur.execute("SELECT * FROM VIP WHERE payment_id=?", (user_data["payment_id"],))
+        self.cur.execute("SELECT * FROM VIP WHERE payment_id=%s", (user_data["payment_id"],))
         is_exist = self.cur.fetchone()
         if is_exist:
             return "Failed. {} is being used by user {}".format(user_data["payment_id"], is_exist[0])

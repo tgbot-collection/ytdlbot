@@ -9,7 +9,7 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import logging
 
-from db import SQLite
+from db import MySQL
 
 
 def apply_log_formatter():
@@ -27,9 +27,9 @@ def customize_logger(logger: "list"):
 
 
 def get_user_settings(user_id: "str") -> "tuple":
-    db = SQLite()
+    db = MySQL()
     cur = db.cur
-    cur.execute("SELECT * FROM settings WHERE user_id = ?", (user_id,))
+    cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
     data = cur.fetchone()
     if data is None:
         return 100, "high", "video"
@@ -37,9 +37,9 @@ def get_user_settings(user_id: "str") -> "tuple":
 
 
 def set_user_settings(user_id: int, field: "str", value: "str"):
-    db = SQLite()
+    db = MySQL()
     cur = db.cur
-    cur.execute("SELECT * FROM settings WHERE user_id = ?", (user_id,))
+    cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
     data = cur.fetchone()
     if data is None:
         resolution = method = ""
@@ -49,9 +49,9 @@ def set_user_settings(user_id: int, field: "str", value: "str"):
         if field == "method":
             method = value
             resolution = "high"
-        cur.execute("INSERT INTO settings VALUES (?,?,?)", (user_id, resolution, method))
+        cur.execute("INSERT INTO settings VALUES (%s,%s,%s)", (user_id, resolution, method))
     else:
-        cur.execute(f"UPDATE settings SET {field} = ? WHERE user_id = ?", (value, user_id))
+        cur.execute(f"UPDATE settings SET {field} =%s WHERE user_id = %s", (value, user_id))
     db.con.commit()
 
 

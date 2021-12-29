@@ -24,7 +24,7 @@ from tgbot_ping import get_runtime
 from config import (APP_HASH, APP_ID, AUTHORIZED_USER, ENABLE_VIP, OWNER,
                     REQUIRED_MEMBERSHIP, TOKEN, WORKERS)
 from constant import BotText
-from db import Redis, SQLite
+from db import MySQL, Redis
 from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
 from limit import verify_payment
 from utils import customize_logger, get_user_settings, set_user_settings
@@ -32,7 +32,9 @@ from utils import customize_logger, get_user_settings, set_user_settings
 
 def create_app(session="ytdl", workers=WORKERS):
     _app = Client(session, APP_ID, APP_HASH,
-                  bot_token=TOKEN, workers=workers)
+                  bot_token=TOKEN, workers=workers,
+                  proxy={'hostname': '127.0.0.1', 'port': 1086}
+                  )
 
     return _app
 
@@ -290,7 +292,7 @@ def audio_callback(client: "Client", callback_query: types.CallbackQuery):
 
 
 if __name__ == '__main__':
-    SQLite()
+    MySQL()
     scheduler = BackgroundScheduler()
     scheduler.add_job(Redis().reset_today, 'cron', hour=0, minute=0)
     scheduler.start()

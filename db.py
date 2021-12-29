@@ -10,16 +10,16 @@ __author__ = "Benny <benny.think@gmail.com>"
 import logging
 import os
 import re
-import sqlite3
 import subprocess
 import time
 from io import BytesIO
 
 import fakeredis
+import pymysql
 import redis
 from beautifultable import BeautifulTable
 
-from config import QUOTA, REDIS
+from config import MYSQL_HOST, MYSQL_PASS, MYSQL_USER, QUOTA, REDIS
 
 
 class Redis:
@@ -76,7 +76,7 @@ class Redis:
 
     def show_usage(self):
         from downloader import sizeof_fmt
-        db = SQLite()
+        db = MySQL()
         db.cur.execute("select * from VIP")
         data = db.cur.fetchall()
         fd = []
@@ -134,38 +134,45 @@ class Redis:
         return file
 
 
-class SQLite:
-    def __init__(self):
-        super(SQLite, self).__init__()
-        self.con = sqlite3.connect("vip.sqlite", check_same_thread=False)
-        self.cur = self.con.cursor()
-        SQL = """
-            create table if not exists VIP
-            (
-                user_id    integer 
-                    constraint VIP
-                        primary key,
-                username varchar(100),
-                payment_amount    integer,
-                payment_id varchar(100),
-                level     integer default 1,
-                quota int default %s
-            );
-        """ % QUOTA
-        self.cur.execute(SQL)
-        SQL = """
-        create table if not exists settings
-        (
-            user_id    integer
-                constraint settings_pk
-                    primary key,
-            resolution varchar(64),
-            method     varchar(64)
-        );
+class MySQL:
+    vip_sql = """
+    create table if not exists VIP
+    (
+        user_id        bigint             not null,
+        username       varchar(256)    null,
+        payment_amount int             null,
+        payment_id     varchar(256)    null,
+        level          int default 1   null,
+        quota          bigint default %s null,
+        constraint VIP_pk
+            primary key (user_id)
+    );
+            """ % QUOTA
 
-        """
-        self.cur.execute(SQL)
+    settings_sql = """
+    create table if not exists  settings
+    (
+        user_id    bigint          not null,
+        resolution varchar(128) null,
+        method     varchar(64)  null,
+        constraint settings_pk
+            primary key (user_id)
+    );
+            """
+
+    def __init__(self):
+        self.con = pymysql.connect(host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="vip", charset="utf8mb4")
+        self.cur = self.con.cursor()
+        self.init_db()
+
+    def init_db(self):
+        self.cur.execute(self.vip_sql)
+        self.cur.execute(self.settings_sql)
         self.con.commit()
 
     def __del__(self):
         self.con.close()
+
+
+if __name__ == '__main__':
+    db = MySQL()
