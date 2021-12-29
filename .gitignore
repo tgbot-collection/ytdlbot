@@ -151,3 +151,6 @@ dmypy.json
 /.idea/dataSources/bf75f0a6-c774-4ecf-9448-2086f57b70df/entities/entities.dat_i
 /.idea/dataSources/bf75f0a6-c774-4ecf-9448-2086f57b70df/entities/entities.dat_i.len
 /.idea/dataSources/bf75f0a6-c774-4ecf-9448-2086f57b70df/storage_v2/_src_/schema/main.uQUzAA.meta
+db_data/*
+env/*
+.ash_history

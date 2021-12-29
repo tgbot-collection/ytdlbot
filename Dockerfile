@@ -6,7 +6,7 @@ RUN pip3 install --user -r /tmp/requirements.txt && rm /tmp/requirements.txt
 
 
 FROM python:3.9-alpine
-WORKDIR /ytdlbot
+WORKDIR /ytdlbot/ytdlbot
 ENV TZ=Asia/Shanghai
 
 RUN apk update && apk add  --no-cache ffmpeg vnstat
@@ -15,4 +15,4 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY . /ytdlbot
 
-CMD ["/usr/local/bin/supervisord", "-c" ,"/ytdlbot/supervisor.conf"]
+CMD ["/usr/local/bin/supervisord", "-c" ,"/ytdlbot/conf/supervisor.conf"]

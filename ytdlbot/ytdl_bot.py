@@ -9,57 +9,31 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import logging
 import os
-import pathlib
 import re
 import tempfile
 import typing
 
-import ffmpeg
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from tgbot_ping import get_runtime
 
-from config import (APP_HASH, APP_ID, AUTHORIZED_USER, ENABLE_VIP, OWNER,
-                    REQUIRED_MEMBERSHIP, TOKEN, WORKERS)
+from client_init import create_app
+from config import (AUTHORIZED_USER, ENABLE_CELERY, ENABLE_VIP, OWNER,
+                    REQUIRED_MEMBERSHIP)
 from constant import BotText
 from db import MySQL, Redis
-from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
+from downloader import convert_flac
 from limit import verify_payment
+from tasks import download_entrance
 from utils import customize_logger, get_user_settings, set_user_settings
-
-
-def create_app(session="ytdl", workers=WORKERS):
-    _app = Client(session, APP_ID, APP_HASH,
-                  bot_token=TOKEN, workers=workers,
-                  proxy={'hostname': '127.0.0.1', 'port': 1086}
-                  )
-
-    return _app
-
 
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.client", "pyrogram.connection.connection"])
 app = create_app()
 bot_text = BotText()
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
-
-
-def get_metadata(video_path):
-    width, height, duration = 1280, 720, 0
-    try:
-        video_streams = ffmpeg.probe(video_path, select_streams="v")
-        for item in video_streams.get("streams", []):
-            height = item["height"]
-            width = item["width"]
-        duration = int(float(video_streams["format"]["duration"]))
-    except Exception as e:
-        logging.error(e)
-
-    thumb = video_path + "-thunmnail.png"
-    ffmpeg.input(video_path, ss=duration / 2).filter('scale', width, -1).output(thumb, vframes=1).run()
-    return dict(height=height, width=width, duration=duration, thumb=thumb)
 
 
 def private_use(func):
@@ -194,58 +168,10 @@ def download_handler(client: "Client", message: "types.Message"):
     Redis().update_metrics("video_request")
     bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text("Processing", quote=True)
     client.send_chat_action(chat_id, 'upload_video')
-    temp_dir = tempfile.TemporaryDirectory()
+    # temp_dir = tempfile.TemporaryDirectory()
+    download_entrance(bot_msg, client, url)
 
-    result = ytdl_download(url, temp_dir.name, bot_msg)
-    logging.info("Download complete.")
-
-    markup = InlineKeyboardMarkup(
-        [
-            [  # First row
-                InlineKeyboardButton(  # Generates a callback query when pressed
-                    "audio",
-                    callback_data="audio"
-                )
-            ]
-        ]
-    )
-
-    if result["status"]:
-        client.send_chat_action(chat_id, 'upload_document')
-        video_paths = result["filepath"]
-        bot_msg.edit_text('Download complete. Sending now...')
-        for video_path in video_paths:
-            filename = pathlib.Path(video_path).name
-            remain = bot_text.remaining_quota_caption(chat_id)
-            size = sizeof_fmt(os.stat(video_path).st_size)
-            meta = get_metadata(video_path)
-            cap = f"`{filename}`\n\n{url}\n\nInfo: {meta['width']}x{meta['height']} {size}\n\n{remain}"
-            settings = get_user_settings(str(chat_id))
-            if settings[2] == "document":
-                logging.info("Sending as document")
-                client.send_document(chat_id, video_path,
-                                     caption=cap,
-                                     progress=upload_hook, progress_args=(bot_msg,),
-                                     reply_markup=markup,
-                                     thumb=meta["thumb"]
-                                     )
-            else:
-                logging.info("Sending as video")
-                client.send_video(chat_id, video_path,
-                                  supports_streaming=True,
-                                  caption=cap,
-                                  progress=upload_hook, progress_args=(bot_msg,),
-                                  reply_markup=markup,
-                                  **meta
-                                  )
-            Redis().update_metrics("video_success")
-        bot_msg.edit_text('Download success!✅')
-    else:
-        client.send_chat_action(chat_id, 'typing')
-        tb = result["error"][0:4000]
-        bot_msg.edit_text(f"Download failed!❌\n\n```{tb}```", disable_web_page_preview=True)
-
-    temp_dir.cleanup()
+    # temp_dir.cleanup()
 
 
 @app.on_callback_query(filters.regex(r"document|video"))
@@ -302,7 +228,7 @@ if __name__ == '__main__':
  ▌  ▌ ▌ ▌ ▌  ▌  ▌ ▌ ▌ ▌ ▛▀  ▌ ▌ ▌ ▌ ▐▐▐  ▌ ▌ ▐  ▌ ▌ ▞▀▌ ▌ ▌
  ▘  ▝▀  ▝▀▘  ▘  ▝▀▘ ▀▀  ▝▀▘ ▀▀  ▝▀   ▘▘  ▘ ▘  ▘ ▝▀  ▝▀▘ ▝▀▘
 
-By @BennyThink, VIP mode: {ENABLE_VIP}
+By @BennyThink, VIP mode: {ENABLE_VIP}, Distribution: {ENABLE_CELERY}
     """
     print(banner)
     app.run()

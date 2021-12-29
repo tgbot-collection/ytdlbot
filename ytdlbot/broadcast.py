@@ -18,7 +18,7 @@ import time
 from tqdm import tqdm
 
 from db import Redis
-from ytdl import create_app
+from ytdl_bot import create_app
 
 parser = argparse.ArgumentParser(description='Broadcast to users')
 parser.add_argument('-m', help='message', required=True)
