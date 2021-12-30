@@ -15,7 +15,7 @@ services:
       driver: none
 
   mysql:
-    image: mysql/mysql-server:8.0
+    image: mysql:5.7
     restart: always
     volumes:
       - ./db_data:/var/lib/mysql
@@ -33,5 +33,12 @@ services:
       - socat
       - redis
     volumes:
-      - ./data/instagram.com_cookies.txt:/ytdlbot/ytdlbot/instagram.com_cookies.txt
+      - ./data/instagram.com_cookies.txt:/ytdlbot/instagram.com_cookies.txt
       - ./data/vnstat/:/var/lib/vnstat/
+
+#  worker:
+#    image: bennythink/ytdlbot
+#    env_file:
+#      - env/ytdl.env
+#    restart: always
+#    command: [ "/usr/local/bin/celery" ,"-A","tasks","worker","--loglevel=info","--pool=prefork","--concurrency=200" ]

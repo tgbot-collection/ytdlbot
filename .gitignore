@@ -154,4 +154,3 @@ dmypy.json
 db_data/*
 env/*
 .ash_history
-data/*
