@@ -1,0 +1,11 @@
+version: '3.1'
+
+services:
+  worker:
+    image: bennythink/ytdlbot
+    env_file:
+      - env/ytdl.env
+    restart: always
+    command: [ "python" ,"tasks.py" ]
+    volumes:
+      - ./data/instagram.com_cookies.txt:/ytdlbot/ytdlbot/instagram.com_cookies.txt
