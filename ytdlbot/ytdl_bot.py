@@ -29,7 +29,7 @@ from limit import verify_payment
 from tasks import download_entrance
 from utils import customize_logger, get_user_settings, set_user_settings
 
-customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.client", "pyrogram.connection.connection"])
+customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
 app = create_app()
 bot_text = BotText()
 
