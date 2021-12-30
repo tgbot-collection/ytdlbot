@@ -13,6 +13,8 @@ services:
     restart: always
     logging:
       driver: none
+    ports:
+      - "192.168.6.1:6379:6379"
 
   mysql:
     image: mysql/mysql-server:8.0
@@ -23,6 +25,8 @@ services:
       MYSQL_ROOT_PASSWORD: 'root'
     logging:
       driver: none
+    ports:
+      - "192.168.6.1:3306:3306"
 
   ytdl:
     image: bennythink/ytdlbot
@@ -35,12 +39,3 @@ services:
     volumes:
       - ./data/instagram.com_cookies.txt:/ytdlbot/ytdlbot/instagram.com_cookies.txt
       - ./data/vnstat/:/var/lib/vnstat/
-
-  worker:
-    image: bennythink/ytdlbot
-    env_file:
-      - env/ytdl.env
-    restart: always
-    command: [ "python" ,"tasks.py" ]
-    volumes:
-      - ./data/instagram.com_cookies.txt:/ytdlbot/ytdlbot/instagram.com_cookies.txt
