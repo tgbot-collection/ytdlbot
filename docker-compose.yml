@@ -42,3 +42,5 @@ services:
       - env/ytdl.env
     restart: always
     command: [ "python" ,"tasks.py" ]
+    volumes:
+      - ./data/instagram.com_cookies.txt:/ytdlbot/ytdlbot/instagram.com_cookies.txt
