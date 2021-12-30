@@ -93,7 +93,7 @@ def ping_handler(client: "Client", message: "types.Message"):
     if os.uname().sysname == "Darwin" or ".heroku" in os.getenv("PYTHONHOME", ""):
         bot_info = "ping unavailable."
     else:
-        bot_info = get_runtime("botsrunner_ytdl_1", "YouTube-dl")
+        bot_info = get_runtime("ytdlbot_ytdl_1", "YouTube-dl")
     if message.chat.username == OWNER:
         client.send_document(chat_id, Redis().generate_file(), caption=bot_info)
     else:
