@@ -107,7 +107,11 @@ def normal_download(bot_msg, client, url):
 
 
 def run_celery():
-    argv = ["-A", "tasks", 'worker', '--loglevel=info', "--pool=threads", f"--concurrency={WORKERS * 2}"]
+    argv = [
+        "-A", "tasks", 'worker', '--loglevel=info',
+        "--pool=threads", f"--concurrency={WORKERS * 2}",
+        "-n", f"{os.getenv('WORKER_NAME', '')}"
+    ]
     app.worker_main(argv)
 
 
