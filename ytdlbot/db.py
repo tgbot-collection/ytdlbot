@@ -26,9 +26,9 @@ class Redis:
     def __init__(self):
         super(Redis, self).__init__()
         if REDIS is None:
-            self.r = fakeredis.FakeStrictRedis(host=REDIS, db=4, decode_responses=True)
+            self.r = fakeredis.FakeStrictRedis(host=REDIS, db=0, decode_responses=True)
         else:
-            self.r = redis.StrictRedis(host=REDIS, db=4, decode_responses=True)
+            self.r = redis.StrictRedis(host=REDIS, db=0, decode_responses=True)
 
         db_banner = "=" * 20 + "DB data" + "=" * 20
         quota_banner = "=" * 20 + "Quota" + "=" * 20
