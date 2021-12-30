@@ -155,3 +155,4 @@ db_data/*
 env/*
 .ash_history
 ytdlbot/ytdl.session
+data/*

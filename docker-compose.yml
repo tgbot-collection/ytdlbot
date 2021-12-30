@@ -17,7 +17,7 @@ services:
       - "192.168.6.1:6379:6379"
 
   mysql:
-    image: mysql/mysql-server:8.0
+    image: mysql:5.7
     restart: always
     volumes:
       - ./db_data:/var/lib/mysql

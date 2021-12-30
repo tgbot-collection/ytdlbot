@@ -7,6 +7,7 @@ beautifultable==1.0.1
 ffmpeg-python==0.2.0
 PyMySQL==1.0.2
 celery==5.2.2
+flower
 
 supervisor
 tgbot-ping
