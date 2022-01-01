@@ -22,7 +22,8 @@ from config import BROKER, ENABLE_CELERY, WORKERS
 from constant import BotText
 from db import Redis
 from downloader import sizeof_fmt, upload_hook, ytdl_download
-from utils import get_metadata, get_user_settings, customize_logger, apply_log_formatter
+from utils import (apply_log_formatter, customize_logger, get_metadata,
+                   get_user_settings)
 
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
 apply_log_formatter()

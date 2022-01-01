@@ -39,3 +39,14 @@ services:
     volumes:
       - ./data/instagram.com_cookies.txt:/ytdlbot/ytdlbot/instagram.com_cookies.txt
       - ./data/vnstat/:/var/lib/vnstat/
+
+  flower:
+    image: bennythink/ytdlbot
+    env_file:
+      - env/ytdl.env
+    restart: on-failure
+    command: [ "/usr/local/bin/celery" ,"-A","flower_tasks","flower" ,"--basic_auth=benny:123456","--address=0.0.0.0" ]
+    volumes:
+      - ./data/instagram.com_cookies.txt:/ytdlbot/ytdlbot/instagram.com_cookies.txt
+    ports:
+      - "5555:5555"

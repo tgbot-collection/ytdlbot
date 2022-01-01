@@ -8,6 +8,8 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import logging
+import pathlib
+import uuid
 
 import ffmpeg
 
@@ -85,6 +87,11 @@ def get_metadata(video_path):
     except Exception as e:
         logging.error(e)
 
-    thumb = video_path + "-thunmnail.png"
+    thumb = pathlib.Path(video_path).parent.joinpath(f"{uuid.uuid4().hex}-thunmnail.png").as_posix()
     ffmpeg.input(video_path, ss=duration / 2).filter('scale', width, -1).output(thumb, vframes=1).run()
     return dict(height=height, width=width, duration=duration, thumb=thumb)
+
+
+if __name__ == '__main__':
+    v = "/Users/benny/Movies/vlc-record-2021-02-27-21h17m53s-逃避可耻却有用 人类加油！新春特别篇！！.NIGERUHA.HAJIDAGA.YAKUNITATSU.Ganbare.Jinrui.Shinshun.Special.SP.Chi_Jap.HDTVrip.1280X720.mp4-.mp4"
+    get_metadata(v)
