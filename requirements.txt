@@ -8,8 +8,7 @@ ffmpeg-python==0.2.0
 PyMySQL==1.0.2
 celery==5.2.2
 filetype==1.0.9
-
-flower
+flower==1.0.0
 
 supervisor
 tgbot-ping
