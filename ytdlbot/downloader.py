@@ -17,6 +17,8 @@ import time
 import fakeredis
 import filetype
 
+from utils import current_time
+
 if os.getenv("downloader") == "youtube-dl":
     import youtube_dl as ytdl
     from youtube_dl import DownloadError
@@ -100,9 +102,10 @@ def convert_to_mp4(resp: dict, bot_msg):
     if resp["status"]:
         # all_converted = []
         for path in resp["filepath"]:
-            mime = filetype.guess(path).mime
+            # if we can't guess file type, we assume it's video/mp4
+            mime = getattr(filetype.guess(path), "mime", "video/mp4")
             if mime in default_type:
-                edit_text(bot_msg, f"Converting {os.path.basename(path)} to mp4. Please wait patiently.")
+                edit_text(bot_msg, f"{current_time()}: Converting {os.path.basename(path)} to mp4. Please wait.")
                 new_name = os.path.basename(path).split(".")[0] + ".mp4"
                 new_file_path = os.path.join(os.path.dirname(path), new_name)
                 cmd = ["ffmpeg", "-i", path, new_file_path]
@@ -195,5 +198,3 @@ def convert_flac(flac_name, tmp):
 def add_instagram_cookies(url: "str", opt: "dict"):
     if url.startswith("https://www.instagram.com"):
         opt["cookiefile"] = os.path.join(os.path.dirname(__file__), "instagram.com_cookies.txt")
-
-

@@ -1,6 +1,6 @@
 pyrogram==1.2.20
 tgcrypto==1.2.2
-yt-dlp==2021.12.1
+yt-dlp==2021.12.27
 youtube-dl==2021.6.6
 APScheduler==3.7.0
 beautifultable==1.0.1

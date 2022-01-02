@@ -9,6 +9,7 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import logging
 import pathlib
+import time
 import uuid
 
 import ffmpeg
@@ -92,6 +93,7 @@ def get_metadata(video_path):
     return dict(height=height, width=width, duration=duration, thumb=thumb)
 
 
-if __name__ == '__main__':
-    v = "/Users/benny/Movies/vlc-record-2021-02-27-21h17m53s-逃避可耻却有用 人类加油！新春特别篇！！.NIGERUHA.HAJIDAGA.YAKUNITATSU.Ganbare.Jinrui.Shinshun.Special.SP.Chi_Jap.HDTVrip.1280X720.mp4-.mp4"
-    get_metadata(v)
+def current_time():
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+
+
