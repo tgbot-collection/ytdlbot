@@ -12,6 +12,7 @@ import logging
 import math
 import tempfile
 import time
+from unittest.mock import MagicMock
 
 import requests
 
@@ -70,6 +71,9 @@ class VIP(Redis, MySQL):
 
     def use_quota(self, user_id: "int", traffic: "int"):
         user_quota = self.get_user_quota(user_id)
+        # fix for standard mode
+        if isinstance(user_quota, MagicMock):
+            user_quota = 2 ** 32
         if self.r.exists(user_id):
             self.r.decr(user_id, traffic)
         else:

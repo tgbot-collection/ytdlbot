@@ -13,6 +13,7 @@ import re
 import subprocess
 import time
 from io import BytesIO
+from unittest.mock import MagicMock
 
 import fakeredis
 import pymysql
@@ -25,10 +26,10 @@ from config import MYSQL_HOST, MYSQL_PASS, MYSQL_USER, QUOTA, REDIS
 class Redis:
     def __init__(self):
         super(Redis, self).__init__()
-        if REDIS is None:
-            self.r = fakeredis.FakeStrictRedis(host=REDIS, db=0, decode_responses=True)
-        else:
+        if REDIS:
             self.r = redis.StrictRedis(host=REDIS, db=0, decode_responses=True)
+        else:
+            self.r = fakeredis.FakeStrictRedis(host=REDIS, db=0, decode_responses=True)
 
         db_banner = "=" * 20 + "DB data" + "=" * 20
         quota_banner = "=" * 20 + "Quota" + "=" * 20
@@ -161,7 +162,11 @@ class MySQL:
             """
 
     def __init__(self):
-        self.con = pymysql.connect(host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="vip", charset="utf8mb4")
+        if MYSQL_HOST:
+            self.con = pymysql.connect(host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="vip", charset="utf8mb4")
+        else:
+            self.con = MagicMock()
+
         self.cur = self.con.cursor()
         self.init_db()
 

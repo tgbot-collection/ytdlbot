@@ -10,9 +10,9 @@ celery==5.2.2
 filetype==1.0.9
 flower==1.0.0
 
+fakeredis
 supervisor
 tgbot-ping
-fakeredis
 redis
 requests
 tqdm

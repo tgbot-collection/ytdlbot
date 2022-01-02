@@ -1,21 +1,27 @@
 # ytdlbot
 
+[![docker image](https://github.com/tgbot-collection/ytdlbot/actions/workflows/builder.yaml/badge.svg)](https://github.com/tgbot-collection/ytdlbot/actions/workflows/builder.yaml)
+
 YouTube Download Bot🚀
 
 Download videos from YouTube and other platforms through a Telegram Bot
 
+-----
+
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
+Can't deploy? Fork to your personal account and deploy it there!
 
 # Usage
 
 [https://t.me/benny_ytdlbot](https://t.me/benny_ytdlbot)
 
 Send link directly to the bot. Any
-platform [supported by youtube-dl](https://ytdl-org.github.io/youtube-dl/supportedsites.html) will also work.
+Websites [supported by youtube-dl](https://ytdl-org.github.io/youtube-dl/supportedsites.html) will also work.
 
-## Limitation of my bot
+# Limitations of my bot
 
-Because I have limited resources, hundreds of Gigabytes doesn't sound like a sustainable solution.
+I don't have unlimited servers and bandwidth, so I have to make some restrictions.
 
 **In that case, I added one limitation: 5 GiB per 24 hours for each user. Might change in future**
 
@@ -33,8 +39,9 @@ You can choose to become 'VIP' if you really need large traffic. And also, you c
 6. VIP support
 7. support different video resolutions
 8. support sending as file or streaming as video
+9. supports celery worker distribution - faster than before.
 
-![](assets/2.png)
+![](assets/2.jpeg)
 
 # How to deploy?
 
@@ -42,18 +49,18 @@ You can deploy this bot on any platform that supports Python.
 
 ## Heroku
 
-Use the button above! It should work like a magic.
+Use the button above! It should work like a magic but with limited functionalities.
 
-## Normal
+## Run natively on your machine
 
 1. clone code
 2. install ffmpeg
 3. install Python 3.6+
 4. pip3 install -r requirements.txt
 5. set environment variables `TOKEN`, `APP_ID` and `APP_HASH`, and more if you like.
-6. `python3 ytdl.py`
+6. `python3 ytdl_bot.py`
 
-## Simple one line docker
+## Docker
 
 Some functions, such as VIP, ping will be disabled.
 
@@ -61,42 +68,44 @@ Some functions, such as VIP, ping will be disabled.
 docker run -e APP_ID=111 -e APP_HASH=111 -e TOKEN=370FXI bennythink/ytdlbot
 ```
 
-## docker-compose
+# Complete deployment guide for docker-compose
 
-Compatible with amd64, arm64 and armv7l
+* contains every functionality
+* compatible with amd64, arm64 and armv7l
 
-### 1. get docker-compose.yml
+## 1. get docker-compose.yml
 
-Download this file to a directory, for example `~/ytdl/docker-compose.yml`
+Download `docker-compose.yml` file to a directory
 
-### 2. create VIP database
+## 2. create data directory
 
 ```shell
-mkdir ~/ytdl/data/
-touch ~/ytdl/data/vip.sqlite
+mkdir data
+mkdir env
 ```
 
-### 3. create env file
+## 3. configuration
+
+### 3.1. set environment variables
 
 ```shell
-mkdir ~/ytdl/env/
-vim ~/ytdl/env/ytdl.env
+vim env/ytdl.env
 ```
 
 you can configure all the following environment variables:
 
-* WORKERS: default 500
+* WORKERS: default 200
 * APP_ID: **REQUIRED**
 * APP_HASH: **REQUIRED**
 * TOKEN: **REQUIRED**
-* REDIS: **REQUIRED**
+* REDIS: **REQUIRED** ⚠️ Don't publish your redis server on the internet. ⚠️
 
 * OWNER: owner username
 * QUOTA: quota in bytes
 * EX: quota expire time
 * MULTIPLY: vip quota comparing to normal quota
 * USD2CNY: exchange rate
-* VIP: enable VIP or not, default: disable
+* VIP: VIP mode, default: disable
 * AFD_LINK
 * COFFEE_LINK
 * COFFEE_TOKEN
@@ -107,11 +116,82 @@ you can configure all the following environment variables:
 * REQUIRED_MEMBERSHIP: group or channel username, user must join this group to use the bot. Could be use with
   above `AUTHORIZED_USER`
 
-### 4. run
+* ENABLE_CELERY: Distribution mode, default: disable. You'll can setup workers in different locations.
+* MYSQL_HOST: you'll have to setup MySQL if you enable VIP mode
+* MYSQL_USER
+* MYSQL_PASS
+
+## 3.2 Set up init data
+
+### 3.2.1 Create MySQL db
+
+```shell
+docker-compose up -d
+docker-compose exec mysql bash
+
+mysql -u root -p
+
+> create database vip;
+```
+
+### 3.2.2 Setup flower db in `ytdlbot/ytdlbot/data`
+
+```shell
+{} ~ python3
+Python 3.9.9 (main, Nov 21 2021, 03:22:47)
+[Clang 12.0.0 (clang-1200.0.32.29)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import dbm;dbm.open("flower","n");exit()
+```
+
+### 3.2.3 Setup instagram cookies
+
+You can use this extension
+[Get cookies.txt](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid)
+to get instagram cookies
+
+```shell
+vim  data/instagram.com_cookies.txt
+# paste your cookies
+```
+
+## 3.3 Tidy docker-compose.yml
+
+In `flower` service section, you may want to change your basic authentication username password and publish port.
+
+## 4. run
+
+### 4.1. standalone mode
+
+If you only want to run the mode without any celery worker and VIP mode, you can just start `ytdl` service
+
+```shell
+docker-compose up -d ytdl
+```
+
+### 4.2 VIP mode
+
+You'll have to start MySQL and redis to support VIP mode.
 
 ```
+docker-compose up -d mysql redis ytdl
+```
+
+### 4.3 Celery worker mode
+
+Firstly, set `ENABLE_CELERY` to true. And then, on one machine:
+
+```shell
 docker-compose up -d
 ```
+
+On the other machine:
+
+```shell
+docker-compose -f worker up -d
+```
+
+**⚠️ Bear in mind don't publish redis directly on the internet! You can use WireGuard to wrap it up.**
 
 # Command
 
@@ -133,6 +213,11 @@ https://www.youtube.com/watch?v=BaW_jenozKc
 # Test Playlist
 
 https://www.youtube.com/playlist?list=PL1Hdq7xjQCJxQnGc05gS4wzHWccvEJy0w
+
+# Donation
+
+* [Buy me a coffee](https://www.buymeacoffee.com/bennythink)
+* [Afdian](https://afdian.net/@BennyThink)
 
 # License
 
