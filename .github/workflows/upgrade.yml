@@ -18,6 +18,7 @@ jobs:
           username: root
           key: ${{ secrets.SSH_KEY }}
           script: |
+            cd /home/ytdlbot
             make bot
             make upgrade-all-worker
             curl "https://api.telegram.org/bot$BOT_TOKEN/sendMessage?chat_id=260260121&text=ytdl%20upgrade%20complete!"

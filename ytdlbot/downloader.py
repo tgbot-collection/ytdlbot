@@ -10,6 +10,7 @@ __author__ = "Benny <benny.think@gmail.com>"
 import logging
 import os
 import pathlib
+import random
 import re
 import subprocess
 import time
@@ -26,13 +27,12 @@ else:
     import yt_dlp as ytdl
     from yt_dlp import DownloadError
 
-from config import ENABLE_VIP
+from config import ENABLE_VIP, TG_MAX_SIZE
 from db import Redis
 from limit import VIP
 from utils import adjust_formats, apply_log_formatter, get_user_settings
 
 r = fakeredis.FakeStrictRedis()
-EXPIRE = 5
 apply_log_formatter()
 
 
@@ -48,7 +48,7 @@ def edit_text(bot_msg, text):
     key = f"{bot_msg.chat.id}-{bot_msg.message_id}"
     # if the key exists, we shouldn't send edit message
     if not r.exists(key):
-        r.set(key, "ok", ex=EXPIRE)
+        r.set(key, "ok", ex=random.randint(1, 5))
         bot_msg.edit_text(text)
 
 
@@ -183,6 +183,8 @@ def ytdl_download(url, tempdir, bm) -> dict:
     if settings[2] == "video":
         # only convert if send type is video
         convert_to_mp4(response, bm)
+    # disable it for now
+    # split_large_video(response)
     return response
 
 
@@ -198,3 +200,24 @@ def convert_flac(flac_name, tmp):
 def add_instagram_cookies(url: "str", opt: "dict"):
     if url.startswith("https://www.instagram.com"):
         opt["cookiefile"] = os.path.join(os.path.dirname(__file__), "instagram.com_cookies.txt")
+
+
+def run_splitter(video_path: "str"):
+    subprocess.check_output(f"sh split-video.sh {video_path} {TG_MAX_SIZE} ".split())
+    os.remove(video_path)
+
+
+def split_large_video(response: "dict"):
+    original_video = None
+    split = False
+    for original_video in response.get("filepath", []):
+        size = os.stat(original_video).st_size
+        if size > TG_MAX_SIZE:
+            split = True
+            logging.warning("file is too large %s, splitting...", size)
+            run_splitter(original_video)
+
+    if split and original_video:
+        response["filepath"] = [i.as_posix() for i in pathlib.Path(original_video).parent.glob("*")]
+
+

@@ -27,7 +27,8 @@ from db import MySQL, Redis
 from downloader import convert_flac
 from limit import verify_payment
 from tasks import download_entrance
-from utils import customize_logger, get_user_settings, set_user_settings, get_revision_tag
+from utils import (customize_logger, get_revision_tag, get_user_settings,
+                   set_user_settings)
 
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
 app = create_app()
