@@ -1,2 +1,4 @@
 env
 db_data
+.ash_history
+.DS_Store

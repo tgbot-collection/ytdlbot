@@ -159,6 +159,18 @@ vim  data/instagram.com_cookies.txt
 
 In `flower` service section, you may want to change your basic authentication username password and publish port.
 
+You can also limit CPU and RAM usage by adding an `deploy' key:
+
+```docker
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1500M
+```
+
+Be sure to use `--compatibility` when deploying.
+
 ## 4. run
 
 ### 4.1. standalone mode

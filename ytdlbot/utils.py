@@ -9,6 +9,7 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import logging
 import pathlib
+import subprocess
 import time
 import uuid
 
@@ -97,3 +98,7 @@ def current_time():
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
 
+def get_revision_tag():
+    revision = subprocess.check_output("git -C ../ rev-parse --short HEAD".split()).decode("u8").replace("\n", "")
+    tag = subprocess.check_output("git -C ../  describe --tags".split()).decode("u8").replace("\n", "")
+    return revision, tag
