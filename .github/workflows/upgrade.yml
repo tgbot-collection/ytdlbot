@@ -18,6 +18,7 @@ jobs:
           username: root
           key: ${{ secrets.SSH_KEY }}
           script: |
+            docker save bennythink/ytdlbot > ~/ytdlbot-old.tar
             cd /home/ytdlbot
             make bot
             make upgrade-all-worker

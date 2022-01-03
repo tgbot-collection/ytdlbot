@@ -98,7 +98,6 @@ def current_time():
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
 
-def get_revision_tag():
+def get_revision():
     revision = subprocess.check_output("git -C ../ rev-parse --short HEAD".split()).decode("u8").replace("\n", "")
-    tag = subprocess.check_output("git -C ../  describe --tags".split()).decode("u8").replace("\n", "")
-    return revision, tag
+    return revision

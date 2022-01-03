@@ -27,7 +27,7 @@ from db import MySQL, Redis
 from downloader import convert_flac
 from limit import verify_payment
 from tasks import download_entrance
-from utils import (customize_logger, get_revision_tag, get_user_settings,
+from utils import (customize_logger, get_revision, get_user_settings,
                    set_user_settings)
 
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
@@ -220,7 +220,6 @@ def audio_callback(client: "Client", callback_query: types.CallbackQuery):
 
 if __name__ == '__main__':
     MySQL()
-    revision_tag = get_revision_tag()
     scheduler = BackgroundScheduler()
     scheduler.add_job(Redis().reset_today, 'cron', hour=0, minute=0)
     scheduler.start()
@@ -231,7 +230,7 @@ if __name__ == '__main__':
  ▘  ▝▀  ▝▀▘  ▘  ▝▀▘ ▀▀  ▝▀▘ ▀▀  ▝▀   ▘▘  ▘ ▘  ▘ ▝▀  ▝▀▘ ▝▀▘
 
 By @BennyThink, VIP mode: {ENABLE_VIP}, Distribution: {ENABLE_CELERY}
-Version: {revision_tag[0]}@{revision_tag[1]}
+Version: {get_revision()}
     """
     print(banner)
     app.run()
