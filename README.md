@@ -218,13 +218,19 @@ terms - View Terms of Service
 settings - Set your preference
 ```
 
-# Test video
+# Test data
+
+## Test video
 
 https://www.youtube.com/watch?v=BaW_jenozKc
 
-# Test Playlist
+## Test Playlist
 
 https://www.youtube.com/playlist?list=PL1Hdq7xjQCJxQnGc05gS4wzHWccvEJy0w
+
+## Test m3u8
+
+https://dmesg.app/m3u8/prog_index.m3u8
 
 # Donation
 

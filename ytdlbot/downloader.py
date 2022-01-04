@@ -17,20 +17,14 @@ import time
 
 import fakeredis
 import filetype
-
-from utils import current_time
-
-if os.getenv("downloader") == "youtube-dl":
-    import youtube_dl as ytdl
-    from youtube_dl import DownloadError
-else:
-    import yt_dlp as ytdl
-    from yt_dlp import DownloadError
+import yt_dlp as ytdl
+from yt_dlp import DownloadError
 
 from config import ENABLE_VIP, TG_MAX_SIZE
 from db import Redis
 from limit import VIP
-from utils import adjust_formats, apply_log_formatter, get_user_settings
+from utils import (adjust_formats, apply_log_formatter, current_time,
+                   get_user_settings)
 
 r = fakeredis.FakeStrictRedis()
 apply_log_formatter()
