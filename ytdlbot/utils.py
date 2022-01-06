@@ -29,7 +29,8 @@ def apply_log_formatter():
 def customize_logger(logger: "list"):
     apply_log_formatter()
     for log in logger:
-        logging.getLogger(log).setLevel(level=logging.WARNING)
+        # TODO: bug fix: lost response sometime.
+        logging.getLogger(log).setLevel(level=logging.INFO)
 
 
 def get_user_settings(user_id: "str") -> "tuple":
