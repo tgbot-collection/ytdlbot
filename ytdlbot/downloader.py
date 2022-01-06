@@ -51,6 +51,12 @@ def remove_bash_color(text):
 
 
 def download_hook(d: dict, bot_msg):
+    # since we're using celery, server location may be located in different continent.
+    # Therefore, we can't trigger the hook very often.
+    # the key is user_id + download_link
+    original_url = d["info_dict"]["original_url"]
+    key = f"{bot_msg.chat.id}-{original_url}"
+
     if d['status'] == 'downloading':
         downloaded = d.get("downloaded_bytes", 0)
         total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
@@ -63,12 +69,13 @@ def download_hook(d: dict, bot_msg):
 
         percent = remove_bash_color(d.get("_percent_str", "N/A"))
         speed = remove_bash_color(d.get("_speed_str", "N/A"))
-        if ENABLE_VIP:
+        if ENABLE_VIP and not r.exists(key):
             result, err_msg = check_quota(total, bot_msg.chat.id)
             if result is False:
                 raise ValueError(err_msg)
         text = f'[{filesize}]: Downloading {percent} - {downloaded}/{total} @ {speed}'
         edit_text(bot_msg, text)
+        r.set(key, "ok", ex=5)
 
 
 def upload_hook(current, total, bot_msg):
@@ -213,5 +220,3 @@ def split_large_video(response: "dict"):
 
     if split and original_video:
         response["filepath"] = [i.as_posix() for i in pathlib.Path(original_video).parent.glob("*")]
-
-
