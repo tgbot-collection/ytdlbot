@@ -15,7 +15,11 @@ import uuid
 
 import ffmpeg
 
+from config import ENABLE_CELERY
 from db import MySQL
+from flower_tasks import app
+
+inspect = app.control.inspect()
 
 
 def apply_log_formatter():
@@ -95,10 +99,40 @@ def get_metadata(video_path):
     return dict(height=height, width=width, duration=duration, thumb=thumb)
 
 
-def current_time():
-    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+def current_time(ts=None):
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
 
 
 def get_revision():
     revision = subprocess.check_output("git -C ../ rev-parse --short HEAD".split()).decode("u8").replace("\n", "")
     return revision
+
+
+def get_func_queue(func) -> int:
+    count = 0
+    data = getattr(inspect, func)() or {}
+    for _, task in data.items():
+        count += len(task)
+    return count
+
+
+def get_queue_stat() -> (int, int, int, str):
+    concurrency = 0
+    if ENABLE_CELERY is False:
+        return 0, 0, 0, ""
+
+    stats = inspect.stats()
+    if stats is None:
+        err = "No worker is running."
+        logging.error(err)
+        return 0, 0, 0, err
+
+    for _, stat in stats.items():
+        concurrency += stat["pool"]["max-concurrency"]
+
+    active = get_func_queue("active")
+    reserved = get_func_queue("reserved")
+    ping = inspect.ping()
+    stats = f"concurrency {concurrency}, active {active}, reserved {reserved}.\n\n{ping}"
+
+    return concurrency, active, reserved, stats

@@ -9,10 +9,11 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import time
 
-from config import (AFD_LINK, COFFEE_LINK, ENABLE_VIP, EX, MULTIPLY,
+from config import (AFD_LINK, COFFEE_LINK, ENABLE_VIP, EX, MULTIPLY, OWNER,
                     REQUIRED_MEMBERSHIP, USD2CNY)
 from downloader import sizeof_fmt
 from limit import QUOTA, VIP
+from utils import get_queue_stat, get_func_queue
 
 
 class BotText:
@@ -109,3 +110,18 @@ Sending format: **{1}**
             return f"Hello {v[1]}, VIP{v[-2]}☺️\n\n"
         else:
             return ""
+
+    @staticmethod
+    def queue_stats():
+        _, _, _, stats = get_queue_stat()
+        return stats
+
+    @staticmethod
+    def get_receive_link_text():
+        reserved = get_func_queue("reserved")
+        if reserved == 0:
+            text = "Your task was added to active queue.\nProcessing...\n\n"
+        else:
+            text = f"Too many tasks. Your tasks was added to the reserved queue {reserved}."
+
+        return text

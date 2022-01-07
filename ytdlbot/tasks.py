@@ -18,7 +18,7 @@ from pyrogram import idle
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from client_init import create_app
-from config import BROKER, ENABLE_CELERY, WORKERS
+from config import BROKER, ENABLE_CELERY, OWNER, WORKERS
 from constant import BotText
 from db import Redis
 from downloader import sizeof_fmt, upload_hook, ytdl_download
@@ -53,6 +53,14 @@ def download_entrance(bot_msg, client, url):
         normal_download(bot_msg, client, url)
 
 
+def get_worker_status(username):
+    worker_name = os.getenv("WORKER_NAME")
+    me = celery_client.get_me()
+    if worker_name and username == OWNER:
+        return f"Downloaded by {me.mention()}-{worker_name}"
+    return f"Downloaded by {me.mention()}"
+
+
 def normal_download(bot_msg, client, url):
     chat_id = bot_msg.chat.id
     temp_dir = tempfile.TemporaryDirectory()
@@ -78,7 +86,8 @@ def normal_download(bot_msg, client, url):
             remain = bot_text.remaining_quota_caption(chat_id)
             size = sizeof_fmt(os.stat(video_path).st_size)
             meta = get_metadata(video_path)
-            cap = f"`{filename}`\n\n{url}\n\nInfo: {meta['width']}x{meta['height']} {size}\n\n{remain}"
+            worker = get_worker_status(bot_msg.chat.username)
+            cap = f"`{filename}`\n\n{url}\n\nInfo: {meta['width']}x{meta['height']} {size}\n\n{remain}\n{worker}"
             settings = get_user_settings(str(chat_id))
             if settings[2] == "document":
                 logging.info("Sending as document")

@@ -64,6 +64,7 @@ def download_hook(d: dict, bot_msg):
         filesize = sizeof_fmt(total)
         max_size = 2 * 1024 * 1024 * 1024
         if total > max_size:
+            # only for one track, e.g. video. So it's not so accurate
             raise ValueError(f"\nYour video is too large. "
                              f"{filesize} will exceed Telegram's max limit {sizeof_fmt(max_size)}")
 
@@ -87,7 +88,7 @@ def upload_hook(current, total, bot_msg):
 def check_quota(file_size, chat_id) -> ("bool", "str"):
     remain, _, ttl = VIP().check_remaining_quota(chat_id)
     if file_size > remain:
-        refresh_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ttl + time.time()))
+        refresh_time = current_time(ttl + time.time())
         err = f"Quota exceed, you have {sizeof_fmt(remain)} remaining, " \
               f"but you want to download a video with {sizeof_fmt(file_size)} in size. \n" \
               f"Try again in {ttl} seconds({refresh_time})"

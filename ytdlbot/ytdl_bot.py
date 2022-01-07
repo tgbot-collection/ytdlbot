@@ -77,7 +77,10 @@ def start_handler(client: "Client", message: "types.Message"):
     logging.info("Welcome to youtube-dl bot!")
     client.send_chat_action(chat_id, "typing")
     greeting = bot_text.get_vip_greeting(chat_id)
-    client.send_message(message.chat.id, greeting + bot_text.start + "\n\n" + bot_text.remaining_quota_caption(chat_id))
+    quota = bot_text.remaining_quota_caption(chat_id)
+    text = f"{greeting}{bot_text.start}\n\n{quota}"
+
+    client.send_message(message.chat.id, text)
 
 
 @app.on_message(filters.command(["help"]))
@@ -96,7 +99,8 @@ def ping_handler(client: "Client", message: "types.Message"):
     else:
         bot_info = get_runtime("ytdlbot_ytdl_1", "YouTube-dl")
     if message.chat.username == OWNER:
-        client.send_document(chat_id, Redis().generate_file(), caption=bot_info)
+        stats = bot_text.queue_stats()
+        client.send_document(chat_id, Redis().generate_file(), caption=f"{bot_info}\n{stats}")
     else:
         client.send_message(chat_id, f"{bot_info}")
 
@@ -156,6 +160,7 @@ def vip_handler(client: "Client", message: "types.Message"):
 def download_handler(client: "Client", message: "types.Message"):
     # check remaining quota
     chat_id = message.chat.id
+    client.send_chat_action(chat_id, 'typing')
     Redis().user_count(chat_id)
 
     url = re.sub(r'/ytdl\s*', '', message.text)
@@ -167,12 +172,10 @@ def download_handler(client: "Client", message: "types.Message"):
         return
 
     Redis().update_metrics("video_request")
-    bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text("Processing", quote=True)
+    text = bot_text.get_receive_link_text()
+    bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text(text, quote=True)
     client.send_chat_action(chat_id, 'upload_video')
-    # temp_dir = tempfile.TemporaryDirectory()
     download_entrance(bot_msg, client, url)
-
-    # temp_dir.cleanup()
 
 
 @app.on_callback_query(filters.regex(r"document|video"))

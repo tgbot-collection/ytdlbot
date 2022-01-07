@@ -22,5 +22,5 @@ upgrade-all-worker:
 	bash upgrade_worker.sh
 
 tag:
-	git tag -a v$(shell date "+%Y-%m-%d") -m v$(shell date "+%Y-%m-%d")
+	git tag -a v$(shell date "+%Y-%m-%d")_$(shell git rev-parse --short HEAD) -m v$(shell date "+%Y-%m-%d")
 	git push --tags
