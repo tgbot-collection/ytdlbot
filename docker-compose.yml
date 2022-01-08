@@ -48,7 +48,7 @@ services:
     command: [ "/usr/local/bin/celery",
                "-A", "flower_tasks", "flower",
                "--basic_auth=benny:123456",
-               "--address=0.0.0.0", "--persistent","--purge_offline_workers=1" ]
+               "--address=0.0.0.0", "--persistent","--purge_offline_workers=3600" ]
     volumes:
       - ./data/flower:/ytdlbot/ytdlbot/flower
     ports:
