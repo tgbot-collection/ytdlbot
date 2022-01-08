@@ -10,7 +10,6 @@ __author__ = "Benny <benny.think@gmail.com>"
 import logging
 import os
 import re
-import tempfile
 import typing
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -24,9 +23,8 @@ from config import (AUTHORIZED_USER, ENABLE_CELERY, ENABLE_VIP, OWNER,
                     REQUIRED_MEMBERSHIP)
 from constant import BotText
 from db import MySQL, Redis
-from downloader import convert_flac
 from limit import verify_payment
-from tasks import download_entrance
+from tasks import audio_entrance, download_entrance
 from utils import (customize_logger, get_revision, get_user_settings,
                    set_user_settings)
 
@@ -202,23 +200,7 @@ def audio_callback(client: "Client", callback_query: types.CallbackQuery):
     Redis().update_metrics("audio_request")
 
     msg = callback_query.message
-
-    chat_id = msg.chat.id
-    mp4_name = msg.video.file_name  # 'youtube-dl_test_video_a.mp4'
-    flac_name = mp4_name.replace("mp4", "m4a")
-
-    with tempfile.NamedTemporaryFile() as tmp:
-        logging.info("downloading to %s", tmp.name)
-        client.send_chat_action(chat_id, 'record_video_note')
-        client.download_media(msg, tmp.name)
-        logging.info("downloading complete %s", tmp.name)
-        # execute ffmpeg
-        client.send_chat_action(chat_id, 'record_audio')
-        flac_tmp = convert_flac(flac_name, tmp)
-        client.send_chat_action(chat_id, 'upload_audio')
-        client.send_audio(chat_id, flac_tmp)
-        Redis().update_metrics("audio_success")
-        os.unlink(flac_tmp)
+    audio_entrance(msg)
 
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@ from client_init import create_app
 from config import BROKER, ENABLE_CELERY, OWNER, WORKERS
 from constant import BotText
 from db import Redis
-from downloader import sizeof_fmt, upload_hook, ytdl_download
+from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
 from utils import (apply_log_formatter, customize_logger, get_metadata,
                    get_user_settings)
 
@@ -46,11 +46,47 @@ def download_task(chat_id, message_id, url):
     logging.info("celery tasks ended.")
 
 
+@app.task()
+def audio_task(chat_id, message_id):
+    logging.info("Audio celery tasks started for %s-%s", chat_id, message_id)
+    bot_msg = celery_client.get_messages(chat_id, message_id)
+    normal_audio(bot_msg)
+    logging.info("Audio celery tasks ended.")
+
+
 def download_entrance(bot_msg, client, url):
     if ENABLE_CELERY:
         download_task.delay(bot_msg.chat.id, bot_msg.message_id, url)
     else:
         normal_download(bot_msg, client, url)
+
+
+def audio_entrance(bot_msg):
+    if ENABLE_CELERY:
+        normal_audio(bot_msg)
+        # disable celery audio conversion for now
+        # audio_task.delay(bot_msg.chat.id, bot_msg.message_id)
+    else:
+        normal_audio(bot_msg)
+
+
+def normal_audio(bot_msg):
+    chat_id = bot_msg.chat.id
+    mp4_name = bot_msg.video.file_name  # 'youtube-dl_test_video_a.mp4'
+    flac_name = mp4_name.replace("mp4", "m4a")
+
+    with tempfile.NamedTemporaryFile() as tmp:
+        logging.info("downloading to %s", tmp.name)
+        celery_client.send_chat_action(chat_id, 'record_video_note')
+        celery_client.download_media(bot_msg, tmp.name)
+        logging.info("downloading complete %s", tmp.name)
+        # execute ffmpeg
+        celery_client.send_chat_action(chat_id, 'record_audio')
+        flac_tmp = convert_flac(flac_name, tmp)
+        celery_client.send_chat_action(chat_id, 'upload_audio')
+        celery_client.send_audio(chat_id, flac_tmp)
+        Redis().update_metrics("audio_success")
+        os.unlink(flac_tmp)
 
 
 def get_worker_status(username):
