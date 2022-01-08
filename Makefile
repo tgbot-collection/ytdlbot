@@ -1,3 +1,10 @@
+define NOLOGGING
+
+    logging:
+      driver: none
+endef
+export NOLOGGING
+
 default:
 	docker pull bennythink/ytdlbot
 
@@ -24,3 +31,6 @@ upgrade-all-worker:
 tag:
 	git tag -a v$(shell date "+%Y-%m-%d")_$(shell git rev-parse --short HEAD) -m v$(shell date "+%Y-%m-%d")
 	git push --tags
+
+nolog:
+	echo "$$NOLOGGING">> worker.yml
