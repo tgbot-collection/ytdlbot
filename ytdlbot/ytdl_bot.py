@@ -205,7 +205,7 @@ def audio_callback(client: "Client", callback_query: types.CallbackQuery):
 
 if __name__ == '__main__':
     MySQL()
-    scheduler = BackgroundScheduler()
+    scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
     scheduler.add_job(Redis().reset_today, 'cron', hour=0, minute=0)
     scheduler.start()
     banner = f"""
