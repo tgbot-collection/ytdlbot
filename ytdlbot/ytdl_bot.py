@@ -10,8 +10,10 @@ __author__ = "Benny <benny.think@gmail.com>"
 import logging
 import os
 import re
+import tempfile
 import typing
 
+import filetype
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
@@ -73,11 +75,11 @@ def private_use(func):
 
 @app.on_message(filters.command(["start"]))
 def start_handler(client: "Client", message: "types.Message"):
-    chat_id = message.chat.id
+    from_id = message.from_user.id
     logging.info("Welcome to youtube-dl bot!")
-    client.send_chat_action(chat_id, "typing")
-    greeting = bot_text.get_vip_greeting(chat_id)
-    quota = bot_text.remaining_quota_caption(chat_id)
+    client.send_chat_action(from_id, "typing")
+    greeting = bot_text.get_vip_greeting(from_id)
+    quota = bot_text.remaining_quota_caption(from_id)
     text = f"{greeting}{bot_text.start}\n\n{quota}"
 
     client.send_message(message.chat.id, text)
@@ -143,6 +145,7 @@ def settings_handler(client: "Client", message: "types.Message"):
 
 @app.on_message(filters.command(["vip"]))
 def vip_handler(client: "Client", message: "types.Message"):
+    # process as chat.id, not from_user.id
     chat_id = message.chat.id
     text = message.text.strip()
     client.send_chat_action(chat_id, "typing")
@@ -155,11 +158,11 @@ def vip_handler(client: "Client", message: "types.Message"):
         bm.edit_text(msg)
 
 
-@app.on_message(filters.incoming)
+@app.on_message(filters.incoming & filters.text)
 @private_use
 def download_handler(client: "Client", message: "types.Message"):
     # check remaining quota
-    chat_id = message.chat.id
+    chat_id = message.from_user.id
     client.send_chat_action(chat_id, 'typing')
     Redis().user_count(chat_id)
 

@@ -13,7 +13,7 @@ from config import (AFD_LINK, COFFEE_LINK, ENABLE_VIP, EX, MULTIPLY, OWNER,
                     REQUIRED_MEMBERSHIP, USD2CNY)
 from downloader import sizeof_fmt
 from limit import QUOTA, VIP
-from utils import get_queue_stat, get_func_queue
+from utils import get_func_queue, get_queue_stat
 
 
 class BotText:
