@@ -8,12 +8,15 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import logging
+import os
 import pathlib
+import signal
 import subprocess
 import time
 import uuid
 
 import ffmpeg
+import psutil
 
 from config import ENABLE_CELERY
 from db import MySQL
@@ -136,3 +139,49 @@ def get_queue_stat() -> (int, int, int, str):
     stats = f"concurrency {concurrency}, active {active}, reserved {reserved}.\n\n{ping}"
 
     return concurrency, active, reserved, stats
+
+
+def tail(f, lines=1, _buffer=4098):
+    """Tail a file and get X lines from the end"""
+    # place holder for the lines found
+    lines_found = []
+
+    # block counter will be multiplied by buffer
+    # to get the block size from the end
+    block_counter = -1
+
+    # loop until we find X lines
+    while len(lines_found) < lines:
+        try:
+            f.seek(block_counter * _buffer, os.SEEK_END)
+        except IOError:  # either file is too small, or too many lines requested
+            f.seek(0)
+            lines_found = f.readlines()
+            break
+
+        lines_found = f.readlines()
+
+        # we found enough lines, get out
+        # Removed this line because it was redundant the while will catch
+        # it, I left it for history
+        # if len(lines_found) > lines:
+        #    break
+
+        # decrement the block counter to get the
+        # next X bytes
+        block_counter -= 1
+
+    return lines_found[-lines:]
+
+
+def auto_restart():
+    indicators = ["types.UpdatesTooLong"]
+    with open("/var/log/ytdl.log") as f:
+        logs = "".join(tail(f, lines=5))
+
+    for indicator in indicators:
+        if indicator in logs:
+            logging.critical("Potential crash detected, suiciding now...")
+            psutil.Process().kill()
+
+        logging.debug("No crash detected.")

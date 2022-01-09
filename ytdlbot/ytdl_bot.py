@@ -25,10 +25,12 @@ from constant import BotText
 from db import MySQL, Redis
 from limit import verify_payment
 from tasks import audio_entrance, download_entrance
-from utils import (customize_logger, get_revision, get_user_settings,
-                   set_user_settings)
+from utils import (auto_restart, customize_logger, get_revision,
+                   get_user_settings, set_user_settings)
 
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
+logging.getLogger('apscheduler.executors.default').propagate = False
+
 app = create_app()
 bot_text = BotText()
 
@@ -207,6 +209,7 @@ if __name__ == '__main__':
     MySQL()
     scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
     scheduler.add_job(Redis().reset_today, 'cron', hour=0, minute=0)
+    scheduler.add_job(auto_restart, 'interval', seconds=5)
     scheduler.start()
     banner = f"""
 ▌ ▌         ▀▛▘     ▌       ▛▀▖              ▜            ▌

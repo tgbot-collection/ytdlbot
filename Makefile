@@ -34,3 +34,6 @@ tag:
 
 nolog:
 	echo "$$NOLOGGING">> worker.yml
+
+flower:
+	echo  'import dbm;dbm.open("data/flower","n");exit()'| python3
