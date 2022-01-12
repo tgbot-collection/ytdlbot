@@ -159,3 +159,4 @@ ytdlbot/ytdl.session
 data/*
 upgrade_worker.sh
 ytdl.session
+reinforcement/*

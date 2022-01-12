@@ -7,10 +7,10 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
+import contextlib
 import logging
 import os
 import pathlib
-import signal
 import subprocess
 import time
 import uuid
@@ -107,8 +107,9 @@ def current_time(ts=None):
 
 
 def get_revision():
-    revision = subprocess.check_output("git -C ../ rev-parse --short HEAD".split()).decode("u8").replace("\n", "")
-    return revision
+    with contextlib.suppress(subprocess.SubprocessError):
+        return subprocess.check_output("git -C ../ rev-parse --short HEAD".split()).decode("u8").replace("\n", "")
+    return "unknown"
 
 
 def get_func_queue(func) -> int:
