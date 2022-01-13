@@ -9,6 +9,7 @@ celery==5.2.3
 filetype==1.0.9
 flower==1.0.0
 psutil==5.9.0
+influxdb==5.3.1
 
 fakeredis
 supervisor

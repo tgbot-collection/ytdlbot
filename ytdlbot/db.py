@@ -7,6 +7,9 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
+import base64
+import contextlib
+import datetime
 import logging
 import os
 import re
@@ -18,7 +21,9 @@ from unittest.mock import MagicMock
 import fakeredis
 import pymysql
 import redis
+import requests
 from beautifultable import BeautifulTable
+from influxdb import InfluxDBClient
 
 from config import MYSQL_HOST, MYSQL_PASS, MYSQL_USER, QUOTA, REDIS
 
@@ -179,5 +184,62 @@ class MySQL:
         self.con.close()
 
 
-if __name__ == '__main__':
-    db = MySQL()
+class InfluxDB:
+    def __init__(self):
+        self.client = InfluxDBClient(host=os.getenv("INFLUX_HOST", "192.168.7.233"), database="celery")
+
+    def __del__(self):
+        self.client.close()
+
+    @staticmethod
+    def get_worker_data():
+        password = os.getenv("FLOWER_PASSWORD", "123456abc")
+        username = os.getenv("FLOWER_USERNAME", "benny")
+        token = base64.b64encode(f"{username}:{password}".encode()).decode()
+        headers = {"Authorization": f"Basic {token}"}
+        return requests.get("https://celery.dmesg.app/dashboard?json=1", headers=headers).json()
+
+    def __fill_worker_data(self, data):
+        json_body = []
+        for worker in data["data"]:
+            load1, load5, load15 = worker["loadavg"]
+            t = {
+                "measurement": "tasks",
+                "tags": {
+                    "hostname": worker["hostname"],
+                },
+
+                "time": datetime.datetime.utcnow(),
+                "fields": {
+                    "task-received": worker.get("task-received", 0),
+                    "task-started": worker.get("task-started", 0),
+                    "task-succeeded": worker.get("task-succeeded", 0),
+                    "task-failed": worker.get("task-failed", 0),
+                    "active": worker.get("active", 0),
+                    "load1": load1,
+                    "load5": load5,
+                    "load15": load15,
+                }
+            }
+            json_body.append(t)
+        self.client.write_points(json_body)
+
+    def __fill_overall_data(self, data):
+        active = sum([i["active"] for i in data["data"]])
+        json_body = [
+            {
+                "measurement": "active",
+                "time": datetime.datetime.utcnow(),
+                "fields": {
+                    "active": active
+                }
+            }
+        ]
+        self.client.write_points(json_body)
+
+    def collect_data(self):
+        with contextlib.suppress(Exception):
+            data = self.get_worker_data()
+            self.__fill_worker_data(data)
+            self.__fill_overall_data(data)
+            logging.debug("InfluxDB data was collected.")

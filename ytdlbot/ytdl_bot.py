@@ -24,7 +24,7 @@ from client_init import create_app
 from config import (AUTHORIZED_USER, ENABLE_CELERY, ENABLE_VIP, OWNER,
                     REQUIRED_MEMBERSHIP)
 from constant import BotText
-from db import MySQL, Redis
+from db import InfluxDB, MySQL, Redis
 from limit import verify_payment
 from tasks import audio_entrance, download_entrance
 from utils import (auto_restart, customize_logger, get_revision,
@@ -213,6 +213,7 @@ if __name__ == '__main__':
     scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
     scheduler.add_job(Redis().reset_today, 'cron', hour=0, minute=0)
     scheduler.add_job(auto_restart, 'interval', seconds=5)
+    scheduler.add_job(InfluxDB().collect_data, 'interval', seconds=60)
     scheduler.start()
     banner = f"""
 ▌ ▌         ▀▛▘     ▌       ▛▀▖              ▜            ▌
