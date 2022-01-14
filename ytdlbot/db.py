@@ -237,9 +237,27 @@ class InfluxDB:
         ]
         self.client.write_points(json_body)
 
+    def __fill_redis_metrics(self):
+        json_body = [
+            {
+                "measurement": "metrics",
+                "time": datetime.datetime.utcnow(),
+                "fields": {
+                }
+            }
+        ]
+        r = Redis().r
+        hash_keys = r.hgetall("metrics")
+        for key, value in hash_keys.items():
+            if re.findall(r"^today", key):
+                json_body[0]["fields"][key] = int(value)
+
+        self.client.write_points(json_body)
+
     def collect_data(self):
         with contextlib.suppress(Exception):
             data = self.get_worker_data()
             self.__fill_worker_data(data)
             self.__fill_overall_data(data)
+            self.__fill_redis_metrics()
             logging.debug("InfluxDB data was collected.")

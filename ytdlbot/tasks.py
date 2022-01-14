@@ -63,9 +63,7 @@ def download_entrance(bot_msg, client, url):
 
 def audio_entrance(bot_msg):
     if ENABLE_CELERY:
-        normal_audio(bot_msg)
-        # disable celery audio conversion for now
-        # audio_task.delay(bot_msg.chat.id, bot_msg.message_id)
+        audio_task.delay(bot_msg.chat.id, bot_msg.message_id)
     else:
         normal_audio(bot_msg)
 
