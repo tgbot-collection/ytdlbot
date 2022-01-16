@@ -10,10 +10,8 @@ __author__ = "Benny <benny.think@gmail.com>"
 import logging
 import os
 import re
-import tempfile
 import typing
 
-import filetype
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant

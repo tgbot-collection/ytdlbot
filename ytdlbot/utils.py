@@ -8,6 +8,7 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import contextlib
+import inspect as pyinspect
 import logging
 import os
 import pathlib
@@ -36,7 +37,6 @@ def apply_log_formatter():
 def customize_logger(logger: "list"):
     apply_log_formatter()
     for log in logger:
-        # TODO: bug fix: lost response sometime.
         logging.getLogger(log).setLevel(level=logging.INFO)
 
 
@@ -175,14 +175,51 @@ def tail(f, lines=1, _buffer=4098):
     return lines_found[-lines:]
 
 
-def auto_restart():
-    indicators = ["types.UpdatesTooLong"]
-    with open("/var/log/ytdl.log") as f:
-        logs = "".join(tail(f, lines=5))
+class Detector:
+    def __init__(self, logs: "str"):
+        self.logs = logs
 
-    for indicator in indicators:
-        if indicator in logs:
-            logging.critical("Potential crash detected, suiciding now...")
+    @staticmethod
+    def func_name():
+        with contextlib.suppress(Exception):
+            return pyinspect.stack()[1][3]
+        return "N/A"
+
+    def updates_too_long_detector(self):
+        # If you're seeing this, that means you have logged more than 10 device
+        # and this earliest account was kicked out. Restart the program could get you back in.
+        indicators = ["types.UpdatesTooLong"]
+        for indicator in indicators:
+            if indicator in self.logs:
+                logging.warning("Potential crash detected by %s, it's time to commit suicide...", self.func_name())
+                return True
+        logging.debug("No crash detected.")
+
+    def next_salt_detector(self):
+        text = "Next salt in"
+        if self.logs.count(text) >= 4:
+            logging.warning("Potential crash detected by %s, it's time to commit suicide...", self.func_name())
+            return True
+
+    def idle_detector(self):
+        mtime = os.stat("/var/log/ytdl.log").st_mtime
+        cur_ts = time.time()
+        if cur_ts - mtime > 300:
+            logging.warning("Potential crash detected by %s, it's time to commit suicide...", self.func_name())
+            return True
+
+
+def auto_restart():
+    with open("/var/log/ytdl.log") as f:
+        logs = "".join(tail(f, lines=10))
+
+    det = Detector(logs)
+    method_list = [getattr(det, func) for func in dir(det) if func.endswith("_detector")]
+    for method in method_list:
+        if method():
+            logging.critical("Bye bye world!☠️")
             psutil.Process().kill()
 
-        logging.debug("No crash detected.")
+
+if __name__ == '__main__':
+    auto_restart()

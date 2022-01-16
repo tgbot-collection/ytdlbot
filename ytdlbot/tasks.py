@@ -34,7 +34,6 @@ bot_text = BotText()
 app = Celery('tasks', broker=BROKER)
 
 celery_client = create_app(":memory:")
-celery_client.start()
 
 
 @app.task()
@@ -151,6 +150,7 @@ def normal_download(bot_msg, client, url):
 
 
 def run_celery():
+    celery_client.start()
     argv = [
         "-A", "tasks", 'worker', '--loglevel=info',
         "--pool=threads", f"--concurrency={WORKERS * 2}",
