@@ -210,7 +210,10 @@ class Detector:
 
 
 def auto_restart():
-    with open("/var/log/ytdl.log") as f:
+    log_path = "/var/log/ytdl.log"
+    if not os.path.exists(log_path):
+        return
+    with open(log_path) as f:
         logs = "".join(tail(f, lines=10))
 
     det = Detector(logs)
