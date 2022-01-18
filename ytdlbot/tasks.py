@@ -12,6 +12,7 @@ import os
 import pathlib
 import tempfile
 import threading
+import time
 
 from celery import Celery
 from pyrogram import idle
@@ -36,11 +37,19 @@ app = Celery('tasks', broker=BROKER)
 celery_client = create_app(":memory:")
 
 
+def get_messages(chat_id, message_id):
+    try:
+        return celery_client.get_messages(chat_id, message_id)
+    except ConnectionError as e:
+        logging.critical("WTH!!! %s", e)
+        celery_client.start()
+        return celery_client.get_messages(chat_id, message_id)
+
+
 @app.task()
 def download_task(chat_id, message_id, url):
     logging.info("celery tasks started for %s", url)
-    # print(celery_client.get_me())
-    bot_msg = celery_client.get_messages(chat_id, message_id)
+    bot_msg = get_messages(chat_id, message_id)
     normal_download(bot_msg, celery_client, url)
     logging.info("celery tasks ended.")
 
@@ -48,7 +57,7 @@ def download_task(chat_id, message_id, url):
 @app.task()
 def audio_task(chat_id, message_id):
     logging.info("Audio celery tasks started for %s-%s", chat_id, message_id)
-    bot_msg = celery_client.get_messages(chat_id, message_id)
+    bot_msg = get_messages(chat_id, message_id)
     normal_audio(bot_msg)
     logging.info("Audio celery tasks ended.")
 
@@ -150,7 +159,6 @@ def normal_download(bot_msg, client, url):
 
 
 def run_celery():
-    celery_client.start()
     argv = [
         "-A", "tasks", 'worker', '--loglevel=info',
         "--pool=threads", f"--concurrency={WORKERS * 2}",
@@ -160,6 +168,9 @@ def run_celery():
 
 
 if __name__ == '__main__':
+    celery_client.start()
+    print("Bootstrapping Celery worker now.....")
+    time.sleep(5)
     threading.Thread(target=run_celery, daemon=True).start()
     idle()
     celery_client.stop()
