@@ -216,6 +216,7 @@ ytdl - Download video in group
 vip - Join VIP
 terms - View Terms of Service
 settings - Set your preference
+direct - Download file directly
 ```
 
 # Test data

@@ -10,19 +10,23 @@ __author__ = "Benny <benny.think@gmail.com>"
 import logging
 import os
 import pathlib
+import re
 import tempfile
 import threading
 import time
+from urllib.parse import quote_plus
 
+import requests
 from celery import Celery
 from pyrogram import idle
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from client_init import create_app
-from config import BROKER, ENABLE_CELERY, OWNER, WORKERS
+from config import BROKER, ENABLE_CELERY, ENABLE_VIP, OWNER, WORKERS
 from constant import BotText
 from db import Redis
 from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
+from limit import VIP
 from utils import (apply_log_formatter, customize_logger, get_metadata,
                    get_user_settings)
 
@@ -47,11 +51,11 @@ def get_messages(chat_id, message_id):
 
 
 @app.task()
-def download_task(chat_id, message_id, url):
-    logging.info("celery tasks started for %s", url)
+def ytdl_download_task(chat_id, message_id, url):
+    logging.info("YouTube celery tasks started for %s", url)
     bot_msg = get_messages(chat_id, message_id)
-    normal_download(bot_msg, celery_client, url)
-    logging.info("celery tasks ended.")
+    ytdl_normal_download(bot_msg, celery_client, url)
+    logging.info("YouTube celery tasks ended.")
 
 
 @app.task()
@@ -62,11 +66,28 @@ def audio_task(chat_id, message_id):
     logging.info("Audio celery tasks ended.")
 
 
-def download_entrance(bot_msg, client, url):
+@app.task()
+def direct_download_task(chat_id, message_id, url):
+    logging.info("Direct download celery tasks started for %s", url)
+    bot_msg = get_messages(chat_id, message_id)
+    direct_normal_download(bot_msg, celery_client, url)
+    logging.info("Direct download celery tasks ended.")
+
+
+def ytdl_download_entrance(bot_msg, client, url):
     if ENABLE_CELERY:
-        download_task.delay(bot_msg.chat.id, bot_msg.message_id, url)
+        ytdl_download_task.delay(bot_msg.chat.id, bot_msg.message_id, url)
     else:
-        normal_download(bot_msg, client, url)
+        ytdl_normal_download(bot_msg, client, url)
+
+
+def direct_download_entrance(bot_msg, client, url):
+    if ENABLE_CELERY:
+        # TODO disable it for now
+        direct_normal_download(bot_msg, client, url)
+        # direct_download_task.delay(bot_msg.chat.id, bot_msg.message_id, url)
+    else:
+        direct_normal_download(bot_msg, client, url)
 
 
 def audio_entrance(bot_msg):
@@ -74,6 +95,53 @@ def audio_entrance(bot_msg):
         audio_task.delay(bot_msg.chat.id, bot_msg.message_id)
     else:
         normal_audio(bot_msg)
+
+
+def direct_normal_download(bot_msg, client, url):
+    chat_id = bot_msg.chat.id
+    headers = {
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36"}
+    vip = VIP()
+
+    if ENABLE_VIP:
+        remain, _, _ = vip.check_remaining_quota(chat_id)
+        try:
+            head_req = requests.head(url, headers=headers)
+            length = int(head_req.headers.get("content-length"))
+        except:
+            length = 0
+        if remain < length:
+            bot_msg.reply_text(f"Sorry, you have reached your quota.\n")
+            return
+
+    req = ""
+    try:
+        req = requests.get(url, headers=headers)
+        filename = re.findall("filename=(.+)", req.headers.get("content-disposition"))[0]
+    except TypeError:
+        filename = getattr(req, "url", "").rsplit("/")[-1]
+    except Exception as e:
+        bot_msg.edit_text(f"Download failed!❌\n\n```{e}```", disable_web_page_preview=True)
+        return
+
+    if not filename:
+        filename = quote_plus(url)
+
+    with tempfile.TemporaryDirectory() as f:
+        filepath = f"{f}/{filename}"
+        print(filepath)
+        with open(filepath, "wb") as fp:
+            fp.write(req.content)
+        logging.info("Downloaded file %s", filename)
+        st_size = os.stat(filepath).st_size
+        if ENABLE_VIP:
+            vip.use_quota(chat_id, st_size)
+        client.send_chat_action(chat_id, "upload_document")
+        client.send_document(bot_msg.chat.id, filepath,
+                             caption=f"filesize: {sizeof_fmt(st_size)}",
+                             progress=upload_hook, progress_args=(bot_msg,),
+                             )
+        bot_msg.edit_text(f"Download success!✅")
 
 
 def normal_audio(bot_msg):
@@ -103,7 +171,7 @@ def get_worker_status(username):
     return f"Downloaded by {me.mention()}"
 
 
-def normal_download(bot_msg, client, url):
+def ytdl_normal_download(bot_msg, client, url):
     chat_id = bot_msg.chat.id
     temp_dir = tempfile.TemporaryDirectory()
 

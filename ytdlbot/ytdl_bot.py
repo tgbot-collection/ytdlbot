@@ -24,7 +24,8 @@ from config import (AUTHORIZED_USER, ENABLE_CELERY, ENABLE_VIP, OWNER,
 from constant import BotText
 from db import InfluxDB, MySQL, Redis
 from limit import verify_payment
-from tasks import audio_entrance, download_entrance
+from tasks import (audio_entrance, direct_download_entrance,
+                   ytdl_download_entrance)
 from utils import (auto_restart, customize_logger, get_revision,
                    get_user_settings, set_user_settings)
 
@@ -119,6 +120,22 @@ def terms_handler(client: "Client", message: "types.Message"):
     client.send_message(chat_id, bot_text.terms)
 
 
+@app.on_message(filters.command(["direct"]))
+def direct_handler(client: "Client", message: "types.Message"):
+    chat_id = message.from_user.id
+    client.send_chat_action(chat_id, "typing")
+    url = re.sub(r'/direct\s*', '', message.text)
+    logging.info("direct start %s", url)
+    if not re.findall(r"^https?://", url.lower()):
+        Redis().update_metrics("bad_request")
+        message.reply_text("Send me a DIRECT LINK.", quote=True)
+        return
+
+    bot_msg = message.reply_text("Request received.", quote=True)
+    Redis().update_metrics("direct_request")
+    direct_download_entrance(bot_msg, client, url)
+
+
 @app.on_message(filters.command(["settings"]))
 def settings_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
@@ -176,7 +193,7 @@ def download_handler(client: "Client", message: "types.Message"):
     text = bot_text.get_receive_link_text()
     bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text(text, quote=True)
     client.send_chat_action(chat_id, 'upload_video')
-    download_entrance(bot_msg, client, url)
+    ytdl_download_entrance(bot_msg, client, url)
 
 
 @app.on_callback_query(filters.regex(r"document|video"))
