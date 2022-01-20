@@ -18,7 +18,7 @@ TOKEN = os.getenv("TOKEN", "3703WLI")
 REDIS = os.getenv("REDIS")
 
 # quota settings
-QUOTA = os.getenv("QUOTA", 5 * 1024 * 1024 * 1024)  # 5G
+QUOTA = int(os.getenv("QUOTA", 10 * 1024 * 1024 * 1024))  # 10G
 if os.uname().sysname == "Darwin":
     QUOTA = 10 * 1024 * 1024  # 10M
 
