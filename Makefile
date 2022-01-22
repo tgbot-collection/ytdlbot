@@ -37,3 +37,13 @@ nolog:
 
 flower:
 	echo  'import dbm;dbm.open("data/flower","n");exit()'| python3
+
+up:
+	docker build -t bennythink/ytdlbot:latest .
+	docker-compose -f docker-compose.yml -f worker.yml up -d
+
+ps:
+	docker-compose -f docker-compose.yml -f worker.yml ps
+
+down:
+	docker-compose -f docker-compose.yml -f worker.yml down
