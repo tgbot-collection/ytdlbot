@@ -6,6 +6,6 @@ services:
     env_file:
       - env/ytdl.env
     restart: always
-    command: [ "python" ,"tasks.py" ]
+    command: ["/usr/local/bin/supervisord", "-c" ,"/ytdlbot/conf/supervisor_worker.conf"]
     volumes:
       - ./data/instagram.com_cookies.txt:/ytdlbot/ytdlbot/instagram.com_cookies.txt

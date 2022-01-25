@@ -20,6 +20,7 @@ import requests
 from celery import Celery
 from pyrogram import idle
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from client_init import create_app
 from config import BROKER, ENABLE_CELERY, ENABLE_VIP, OWNER, WORKERS
@@ -27,12 +28,13 @@ from constant import BotText
 from db import Redis
 from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
 from limit import VIP
-from utils import (apply_log_formatter, customize_logger, get_metadata,
-                   get_user_settings)
+from utils import (apply_log_formatter, auto_restart, customize_logger,
+                   get_metadata, get_user_settings)
 
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
 apply_log_formatter()
 bot_text = BotText()
+logging.getLogger('apscheduler.executors.default').propagate = False
 
 # celery -A tasks worker --loglevel=info --pool=solo
 # app = Celery('celery', broker=BROKER, accept_content=['pickle'], task_serializer='pickle')
@@ -240,5 +242,10 @@ if __name__ == '__main__':
     print("Bootstrapping Celery worker now.....")
     time.sleep(5)
     threading.Thread(target=run_celery, daemon=True).start()
+
+    scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
+    scheduler.add_job(auto_restart, 'interval', seconds=5)
+    scheduler.start()
+
     idle()
     celery_client.stop()

@@ -15,4 +15,4 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY . /ytdlbot
 
-CMD ["/usr/local/bin/supervisord", "-c" ,"/ytdlbot/conf/supervisor.conf"]
+CMD ["/usr/local/bin/supervisord", "-c" ,"/ytdlbot/conf/supervisor_main.conf"]
