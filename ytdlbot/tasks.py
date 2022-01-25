@@ -17,16 +17,17 @@ import time
 from urllib.parse import quote_plus
 
 import requests
+from apscheduler.schedulers.background import BackgroundScheduler
 from celery import Celery
 from pyrogram import idle
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from apscheduler.schedulers.background import BackgroundScheduler
 
 from client_init import create_app
 from config import BROKER, ENABLE_CELERY, ENABLE_VIP, OWNER, WORKERS
 from constant import BotText
 from db import Redis
-from downloader import convert_flac, sizeof_fmt, upload_hook, ytdl_download
+from downloader import (convert_flac, edit_text, sizeof_fmt, tqdm_progress,
+                        upload_hook, ytdl_download)
 from limit import VIP
 from utils import (apply_log_formatter, auto_restart, customize_logger,
                    get_metadata, get_user_settings)
@@ -104,7 +105,7 @@ def direct_normal_download(bot_msg, client, url):
     headers = {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36"}
     vip = VIP()
-
+    length = 0
     if ENABLE_VIP:
         remain, _, _ = vip.check_remaining_quota(chat_id)
         try:
@@ -116,9 +117,10 @@ def direct_normal_download(bot_msg, client, url):
             bot_msg.reply_text(f"Sorry, you have reached your quota.\n")
             return
 
-    req = ""
+    req = None
     try:
-        req = requests.get(url, headers=headers)
+        req = requests.get(url, headers=headers, stream=True)
+        length = int(req.headers.get("content-length"))
         filename = re.findall("filename=(.+)", req.headers.get("content-disposition"))[0]
     except TypeError:
         filename = getattr(req, "url", "").rsplit("/")[-1]
@@ -131,9 +133,14 @@ def direct_normal_download(bot_msg, client, url):
 
     with tempfile.TemporaryDirectory() as f:
         filepath = f"{f}/{filename}"
-        print(filepath)
-        with open(filepath, "wb") as fp:
-            fp.write(req.content)
+        # consume the req.content
+        downloaded = 0
+        for chunk in req.iter_content(1024 * 1024):
+            text = tqdm_progress("Downloading...", length, downloaded)
+            edit_text(bot_msg, text)
+            with open(filepath, "ab") as fp:
+                fp.write(chunk)
+            downloaded += len(chunk)
         logging.info("Downloaded file %s", filename)
         st_size = os.stat(filepath).st_size
         if ENABLE_VIP:
@@ -167,10 +174,14 @@ def normal_audio(bot_msg):
 
 def get_worker_status(username):
     worker_name = os.getenv("WORKER_NAME")
-    me = celery_client.get_me()
+    try:
+        me = celery_client.get_me()
+        mention = me.mention()
+    except Exception:
+        mention = "YouTube Downloader"
     if worker_name and username == OWNER:
-        return f"Downloaded by {me.mention()}-{worker_name}"
-    return f"Downloaded by {me.mention()}"
+        return f"Downloaded by {mention}-{worker_name}"
+    return f"Downloaded by {mention}"
 
 
 def ytdl_normal_download(bot_msg, client, url):

@@ -9,8 +9,8 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import time
 
-from config import (AFD_LINK, COFFEE_LINK, ENABLE_VIP, EX, MULTIPLY, OWNER,
-                    REQUIRED_MEMBERSHIP, USD2CNY)
+from config import (AFD_LINK, COFFEE_LINK, ENABLE_CELERY, ENABLE_VIP, EX,
+                    MULTIPLY, REQUIRED_MEMBERSHIP, USD2CNY)
 from downloader import sizeof_fmt
 from limit import QUOTA, VIP
 from utils import get_func_queue, get_queue_stat
@@ -118,10 +118,10 @@ Sending format: **{1}**
 
     @staticmethod
     def get_receive_link_text():
-        reserved = get_func_queue("reserved")
-        if reserved == 0:
-            text = "Your task was added to active queue.\nProcessing...\n\n"
-        else:
+        if ENABLE_CELERY:
+            reserved = get_func_queue("reserved")
             text = f"Too many tasks. Your tasks was added to the reserved queue {reserved}."
+        else:
+            text = "Your task was added to active queue.\nProcessing...\n\n"
 
         return text

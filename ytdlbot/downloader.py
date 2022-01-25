@@ -10,14 +10,15 @@ __author__ = "Benny <benny.think@gmail.com>"
 import logging
 import os
 import pathlib
-import random
 import re
 import subprocess
 import time
+from io import StringIO
 
 import fakeredis
 import filetype
 import yt_dlp as ytdl
+from tqdm import tqdm
 from yt_dlp import DownloadError
 
 from config import ENABLE_VIP, TG_MAX_SIZE
@@ -42,12 +43,39 @@ def edit_text(bot_msg, text):
     key = f"{bot_msg.chat.id}-{bot_msg.message_id}"
     # if the key exists, we shouldn't send edit message
     if not r.exists(key):
-        r.set(key, "ok", ex=random.randint(1, 5))
+        r.set(key, "ok", ex=3)
         bot_msg.edit_text(text)
 
 
+def tqdm_progress(desc, total, finished, speed="", eta=""):
+    def more(title, initial):
+        if initial:
+            return f"{title}:{initial}"
+        else:
+            return ""
+
+    f = StringIO()
+    tqdm(total=total, initial=finished, file=f, ascii=False, unit_scale=True, ncols=50,
+         bar_format="{l_bar}{bar} |{n_fmt}/{total_fmt} "
+         )
+    raw_output = f.getvalue()
+    tqdm_output = raw_output.split("|")
+    progress = f"[{tqdm_output[1]}]"
+    detail = tqdm_output[2]
+    text = f"""
+{desc}
+
+{progress}
+{detail}
+{more("Speed: ", speed)}
+{more("ETA: ", eta)}
+    """
+    f.close()
+    return text
+
+
 def remove_bash_color(text):
-    return re.sub(r'\u001b|\[0;94m|\u001b\[0m|\[0;32m|\[0m', "", text)
+    return re.sub(r'\u001b|\[0;94m|\u001b\[0m|\[0;32m|\[0m|\[0;33m', "", text)
 
 
 def download_hook(d: dict, bot_msg):
@@ -60,7 +88,6 @@ def download_hook(d: dict, bot_msg):
     if d['status'] == 'downloading':
         downloaded = d.get("downloaded_bytes", 0)
         total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
-        # total = 0
         filesize = sizeof_fmt(total)
         max_size = 2 * 1024 * 1024 * 1024
         if total > max_size:
@@ -74,14 +101,15 @@ def download_hook(d: dict, bot_msg):
             result, err_msg = check_quota(total, bot_msg.chat.id)
             if result is False:
                 raise ValueError(err_msg)
-        text = f'[{filesize}]: Downloading {percent} - {downloaded}/{total} @ {speed}'
+        eta = remove_bash_color(d.get("_eta_str", d.get("eta")))
+        text = tqdm_progress("Downloading...", total, downloaded, speed, eta)
         edit_text(bot_msg, text)
         r.set(key, "ok", ex=5)
 
 
 def upload_hook(current, total, bot_msg):
-    filesize = sizeof_fmt(total)
-    text = f'[{filesize}]: Uploading {round(current / total * 100, 2)}% - {current}/{total}'
+    # filesize = sizeof_fmt(total)
+    text = tqdm_progress("Uploading...", total, current)
     edit_text(bot_msg, text)
 
 
