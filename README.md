@@ -22,8 +22,8 @@ Websites [supported by youtube-dl](https://ytdl-org.github.io/youtube-dl/support
 # Limitations of my bot
 
 I don't have unlimited servers and bandwidth, so I have to make some restrictions.
-
-**In that case, I added one limitation: 10 GiB per 24 hours for each user. Might change in future**
+* 10 GiB one-way traffic per 24 hours for each user
+* maximum 10 minutes streaming conversion support 
 
 You can choose to become 'VIP' if you really need large traffic. And also, you could always deploy your own bot.
 

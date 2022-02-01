@@ -210,7 +210,8 @@ def ytdl_normal_download(bot_msg, client, url):
             size = sizeof_fmt(os.stat(video_path).st_size)
             meta = get_metadata(video_path)
             worker = get_worker_status(bot_msg.chat.username)
-            cap = f"`{filename}`\n\n{url}\n\nInfo: {meta['width']}x{meta['height']} {size}\n\n{remain}\n{worker}"
+            cap = f"`{filename}`\n\n{url}\n\nInfo: {meta['width']}x{meta['height']} {size} {meta['duration']}s" \
+                  f"\n{remain}\n{worker}"
             settings = get_user_settings(str(chat_id))
             if settings[2] == "document":
                 logging.info("Sending as document")

@@ -27,9 +27,11 @@ If it stops responding, please wait a few minutes or let me know on Telegram or 
 In order to avoid being abused, 
 every one can use this bot within **{sizeof_fmt(QUOTA)} of quota for every {int(EX / 3600)} hours.**
 
-3. You can optionally choose to become 'VIP' user if you need more traffic. Type /vip for more information.
+3. Free users can't receive streaming formats of one video whose duration is longer than 600 seconds.
 
-4. Source code for this bot will always stay open, here-> https://github.com/tgbot-collection/ytdlbot
+4. You can optionally choose to become 'VIP' user if you need more traffic. Type /vip for more information.
+
+5. Source code for this bot will always stay open, here-> https://github.com/tgbot-collection/ytdlbot
     """ if ENABLE_VIP else "Help text"
 
     about = "YouTube-DL by @BennyThink. Open source on GitHub: https://github.com/tgbot-collection/ytdlbot"
@@ -40,13 +42,15 @@ every one can use this bot within **{sizeof_fmt(QUOTA)} of quota for every {int(
 2. The above traffic, is counted for one-way. 
 For example, if you download a video of 1GB, your current quota will be 9GB instead of 8GB.
 
-3. I won't gather any personal information, which means I don't know how many and what videos did you download.
+3. Streaming support is limited due to high costs of conversion.
 
-4. Please try not to abuse this service.
+4. I won't gather any personal information, which means I don't know how many and what videos did you download.
 
-5. It's a open source project, you can always deploy your own bot.
+5. Please try not to abuse this service.
 
-6. For VIPs, please refer to /vip command
+6. It's a open source project, you can always deploy your own bot.
+
+7. For VIPs, please refer to /vip command
     """ if ENABLE_VIP else "Please contact the actual owner of this bot"
 
     vip = f"""
@@ -60,6 +64,7 @@ For example, if you download a video of 1GB, your current quota will be 9GB inst
 2. VIP1: ${MULTIPLY} or ¥{MULTIPLY * USD2CNY}, {sizeof_fmt(QUOTA * 5)} per {int(EX / 3600)} hours
 3. VIP2: ${MULTIPLY * 2} or ¥{MULTIPLY * USD2CNY * 2}, {sizeof_fmt(QUOTA * 5 * 2)} per {int(EX / 3600)} hours
 4. VIP4....VIPn.
+5. Unlimited streaming conversion support.
 Note: If you pay $9, you'll become VIP1 instead of VIP2.
 
 **Payment method:**

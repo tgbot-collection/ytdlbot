@@ -14,14 +14,16 @@ import re
 import subprocess
 import time
 from io import StringIO
+from unittest.mock import MagicMock
 
 import fakeredis
+import ffmpeg
 import filetype
 import yt_dlp as ytdl
 from tqdm import tqdm
 from yt_dlp import DownloadError
 
-from config import ENABLE_VIP, TG_MAX_SIZE
+from config import ENABLE_VIP, MAX_DURATION, TG_MAX_SIZE
 from db import Redis
 from limit import VIP
 from utils import (adjust_formats, apply_log_formatter, current_time,
@@ -135,6 +137,13 @@ def convert_to_mp4(resp: dict, bot_msg):
             # if we can't guess file type, we assume it's video/mp4
             mime = getattr(filetype.guess(path), "mime", "video/mp4")
             if mime in default_type:
+                if not can_convert_mp4(path, bot_msg.chat.id):
+                    logging.warning("Conversion abort for non VIP %s", bot_msg.chat.id)
+                    bot_msg._client.send_message(
+                        bot_msg.chat.id,
+                        "You're not VIP, so you can't convert longer video to streaming formats.")
+                    break
+
                 edit_text(bot_msg, f"{current_time()}: Converting {os.path.basename(path)} to mp4. Please wait.")
                 new_name = os.path.basename(path).split(".")[0] + ".mp4"
                 new_file_path = os.path.join(os.path.dirname(path), new_name)
@@ -145,6 +154,19 @@ def convert_to_mp4(resp: dict, bot_msg):
                 resp["filepath"][index] = new_file_path
 
         return resp
+
+
+def can_convert_mp4(video_path, uid):
+    video_streams = ffmpeg.probe(video_path, select_streams="v")
+    try:
+        duration = int(float(video_streams["format"]["duration"]))
+    except Exception:
+        duration = 0
+    if duration > MAX_DURATION and not VIP().check_vip(uid):
+        logging.info("Video duration: %s, not vip, can't convert", duration)
+        return False
+    else:
+        return True
 
 
 def ytdl_download(url, tempdir, bm) -> dict:
@@ -210,7 +232,7 @@ def ytdl_download(url, tempdir, bm) -> dict:
 
     # convert format if necessary
     settings = get_user_settings(str(chat_id))
-    if settings[2] == "video":
+    if settings[2] == "video" or isinstance(settings[2], MagicMock):
         # only convert if send type is video
         convert_to_mp4(response, bm)
     # disable it for now
