@@ -123,8 +123,8 @@ Sending format: **{1}**
 
     @staticmethod
     def get_receive_link_text():
-        if ENABLE_CELERY:
-            reserved = get_func_queue("reserved")
+        reserved = get_func_queue("reserved")
+        if ENABLE_CELERY and reserved:
             text = f"Too many tasks. Your tasks was added to the reserved queue {reserved}."
         else:
             text = "Your task was added to active queue.\nProcessing...\n\n"
