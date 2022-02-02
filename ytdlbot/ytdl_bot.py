@@ -24,7 +24,8 @@ from config import (AUTHORIZED_USER, ENABLE_CELERY, ENABLE_VIP, OWNER,
 from constant import BotText
 from db import InfluxDB, MySQL, Redis
 from limit import verify_payment
-from tasks import (audio_entrance, direct_download_entrance,
+from tasks import app as celery_app
+from tasks import (audio_entrance, direct_download_entrance, hot_patch,
                    ytdl_download_entrance)
 from utils import (auto_restart, customize_logger, get_revision,
                    get_user_settings, set_user_settings)
@@ -89,6 +90,17 @@ def help_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
     client.send_message(chat_id, bot_text.help, disable_web_page_preview=True)
+
+
+@app.on_message(filters.command(["hot_patch"]))
+def help_handler(client: "Client", message: "types.Message"):
+    username = message.from_user.username
+    chat_id = message.chat.id
+    if username == OWNER:
+        celery_app.control.broadcast("hot_patch")
+        client.send_chat_action(chat_id, "typing")
+        client.send_message(chat_id, "Oorah!")
+        hot_patch()
 
 
 @app.on_message(filters.command(["ping"]))

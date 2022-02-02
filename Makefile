@@ -47,3 +47,6 @@ ps:
 
 down:
 	docker-compose -f docker-compose.yml -f worker.yml down
+
+logs:
+	docker-compose -f docker-compose.yml -f worker.yml logs -f worker ytdl

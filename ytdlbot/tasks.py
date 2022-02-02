@@ -11,14 +11,17 @@ import logging
 import os
 import pathlib
 import re
+import subprocess
 import tempfile
 import threading
 import time
 from urllib.parse import quote_plus
 
+import psutil
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from celery import Celery
+from celery.worker.control import Panel
 from pyrogram import idle
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
@@ -238,6 +241,24 @@ def ytdl_normal_download(bot_msg, client, url):
         bot_msg.edit_text(f"Download failed!❌\n\n```{tb}```", disable_web_page_preview=True)
 
     temp_dir.cleanup()
+
+
+@Panel.register
+def hot_patch(*args):
+    git_path = pathlib.Path().cwd().parent.as_posix()
+    logging.info("Hot patching on path %s...", git_path)
+
+    unset = "/usr/bin/git config --unset http.https://github.com/.extraheader"
+    pull_unshallow = "/usr/bin/git pull origin --unshallow"
+    pull = "git pull"
+
+    subprocess.call(unset, shell=True, cwd=git_path)
+    if subprocess.call(pull_unshallow, shell=True, cwd=git_path) != 0:
+        logging.info("Already unshallow, pulling now...")
+        subprocess.call(pull, shell=True, cwd=git_path)
+
+    logging.info("Code is updated, applying hot patch now...")
+    psutil.Process().kill()
 
 
 def run_celery():
