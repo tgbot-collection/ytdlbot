@@ -30,7 +30,7 @@ MULTIPLY = os.getenv("MULTIPLY", 5)  # VIP1 is 5*5-25G, VIP2 is 50G
 USD2CNY = os.getenv("USD2CNY", 6)  # $5 --> ¥30
 
 ENABLE_VIP = os.getenv("VIP", False)
-MAX_DURATION = int(os.getenv("MAX_DURATION", 600))
+MAX_DURATION = int(os.getenv("MAX_DURATION", 300))
 AFD_LINK = os.getenv("AFD_LINK", "https://afdian.net/@BennyThink")
 COFFEE_LINK = os.getenv("COFFEE_LINK", "https://www.buymeacoffee.com/bennythink")
 COFFEE_TOKEN = os.getenv("COFFEE_TOKEN")

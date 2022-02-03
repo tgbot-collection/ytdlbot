@@ -26,7 +26,7 @@ class BotText:
 In order to avoid being abused, 
 every one can use this bot within **{sizeof_fmt(QUOTA)} of quota for every {int(EX / 3600)} hours.**
 
-3. Free users can't receive streaming formats of one video whose duration is longer than 600 seconds.
+3. Free users can't receive streaming formats of one video whose duration is longer than 300 seconds.
 
 4. You can optionally choose to become 'VIP' user if you need more traffic. Type /vip for more information.
 
