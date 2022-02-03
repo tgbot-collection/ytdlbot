@@ -248,8 +248,8 @@ def hot_patch(*args):
     git_path = pathlib.Path().cwd().parent.as_posix()
     logging.info("Hot patching on path %s...", git_path)
 
-    unset = "/usr/bin/git config --unset http.https://github.com/.extraheader"
-    pull_unshallow = "/usr/bin/git pull origin --unshallow"
+    unset = "git config --unset http.https://github.com/.extraheader"
+    pull_unshallow = "git pull origin --unshallow"
     pull = "git pull"
 
     subprocess.call(unset, shell=True, cwd=git_path)

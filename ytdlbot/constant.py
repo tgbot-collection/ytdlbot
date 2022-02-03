@@ -20,8 +20,7 @@ class BotText:
     start = "Welcome to YouTube Download bot. Type /help for more information."
 
     help = f"""
-1. This bot should works at all times. 
-If it stops responding, please wait a few minutes or let me know on Telegram or GitHub.
+1. This bot should works at all times. If it doesn't, try to send the link again or DM @BennyThink
 
 2. At this time of writing, this bot consumes hundreds of GigaBytes of network traffic per day. 
 In order to avoid being abused, 
