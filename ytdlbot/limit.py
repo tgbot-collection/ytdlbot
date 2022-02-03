@@ -83,13 +83,18 @@ class VIP(Redis, MySQL):
             self.r.set(user_id, user_quota - traffic, ex=EX)
 
     def subscribe_channel(self, user_id: "int", share_link: "str"):
+        if ENABLE_VIP:
+            self.cur.execute("select count(user_id) from subscribe where user_id=%s", (user_id,))
+            usage = int(self.cur.fetchone()[0])
+            if usage >= 3 and not self.check_vip(user_id):
+                return "You have subscribed too many channels. Please upgrade to VIP to subscribe more channels."
+
         data = self.get_channel_info(share_link)
-        self.cur.execute(
-            "INSERT INTO channel values(%(link)s,%(title)s,%(description)s,%(channel_id)s,%(playlist)s,%(last_video)s)",
-            data)
+        self.cur.execute("INSERT IGNORE INTO channel values("
+                         "%(link)s,%(title)s,%(description)s,%(channel_id)s,%(playlist)s,%(last_video)s)", data)
         self.cur.execute("INSERT INTO subscribe values(%s,%s)", (user_id, data["channel_id"]))
         self.con.commit()
-        return data["title"]
+        return "Subscribed to {}".format(data["title"])
 
     def unsubscribe_channel(self, user_id: "int", channel_id: "str"):
         affected_rows = self.cur.execute("DELETE FROM subscribe WHERE user_id=%s AND channel_id=%s",

@@ -92,21 +92,20 @@ def help_handler(client: "Client", message: "types.Message"):
     client.send_message(chat_id, bot_text.help, disable_web_page_preview=True)
 
 
-@app.on_message(filters.command(["subscribe"]))
+@app.on_message(filters.command(["sub"]))
 def subscribe_handler(client: "Client", message: "types.Message"):
     vip = VIP()
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
-    if message.text == "/subscribe":
+    if message.text == "/sub":
         result = vip.get_user_subscription(chat_id)
     else:
         link = message.text.split(" ")[1]
-        title = vip.subscribe_channel(chat_id, link)
-        result = f"Subscribed to {title}"
+        result = vip.subscribe_channel(chat_id, link)
     client.send_message(chat_id, result, disable_web_page_preview=True)
 
 
-@app.on_message(filters.command(["unsubscribe"]))
+@app.on_message(filters.command(["unsub"]))
 def unsubscribe_handler(client: "Client", message: "types.Message"):
     vip = VIP()
     chat_id = message.chat.id
