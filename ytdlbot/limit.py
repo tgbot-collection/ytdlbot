@@ -87,6 +87,7 @@ class VIP(Redis, MySQL):
             self.cur.execute("select count(user_id) from subscribe where user_id=%s", (user_id,))
             usage = int(self.cur.fetchone()[0])
             if usage >= 3 and not self.check_vip(user_id):
+                logging.warning("User %s is not VIP but has subscribed %s channels", user_id, usage)
                 return "You have subscribed too many channels. Please upgrade to VIP to subscribe more channels."
 
         data = self.get_channel_info(share_link)
@@ -94,19 +95,21 @@ class VIP(Redis, MySQL):
                          "%(link)s,%(title)s,%(description)s,%(channel_id)s,%(playlist)s,%(last_video)s)", data)
         self.cur.execute("INSERT INTO subscribe values(%s,%s)", (user_id, data["channel_id"]))
         self.con.commit()
+        logging.info("User %s subscribed channel %s", user_id, data["title"])
         return "Subscribed to {}".format(data["title"])
 
     def unsubscribe_channel(self, user_id: "int", channel_id: "str"):
         affected_rows = self.cur.execute("DELETE FROM subscribe WHERE user_id=%s AND channel_id=%s",
                                          (user_id, channel_id))
         self.con.commit()
+        logging.info("User %s unsubscribed channel %s", user_id, channel_id)
         return affected_rows
 
     @staticmethod
     def get_channel_info(url: "str"):
         api_key = os.getenv("GOOGLE_API_KEY")
         html_doc = requests.get(url).text
-        soup = BeautifulSoup(html_doc, 'html.parser')
+        soup = BeautifulSoup(html_doc, "html.parser")
         element = soup.find("link", rel="canonical")
         channel_id = element['href'].split("https://www.youtube.com/channel/")[1]
         channel_api = f"https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&" \
@@ -133,13 +136,19 @@ class VIP(Redis, MySQL):
                     f"playlistId={playlist_id}&key={api_key}"
         data = requests.get(video_api).json()
         video_id = data['items'][0]['snippet']['resourceId']['videoId']
+        logging.info(f"Latest video %s from %s", video_id, data['items'][0]['snippet']['channelTitle'])
         return f"https://www.youtube.com/watch?v={video_id}"
 
-    def has_newer_update(self, playlist_id: "str"):
-        self.cur.execute("SELECT last_video FROM channel WHERE playlist=%s", (playlist_id,))
-        old_video = self.cur.fetchone()[0]
+    def has_newer_update(self, channel_id: "str"):
+        self.cur.execute("SELECT playlist,latest_video FROM channel WHERE channel_id=%s", (channel_id,))
+        data = self.cur.fetchone()
+        playlist_id = data[0]
+        old_video = data[1]
         newest_video = VIP.get_latest_video(playlist_id)
         if old_video != newest_video:
+            logging.info("Newer update found for %s %s", channel_id, newest_video)
+            self.cur.execute("UPDATE channel SET latest_video=%s WHERE channel_id=%s", (newest_video, channel_id))
+            self.con.commit()
             return newest_video
 
     def get_user_subscription(self, user_id: "int"):
@@ -153,6 +162,16 @@ class VIP(Redis, MySQL):
         for item in data:
             text += "[{}]({}) `{}\n`".format(*item)
         return text
+
+    def group_subscriber(self):
+        # {"channel_id": [user_id, user_id, ...]}
+        self.cur.execute("select * from subscribe")
+        data = self.cur.fetchall()
+        group = {}
+        for item in data:
+            group.setdefault(item[1], []).append(item[0])
+        logging.info("Checking peroidic subscriber...")
+        return group
 
 
 class BuyMeACoffee:
@@ -254,6 +273,13 @@ def verify_payment(user_id, unique) -> "str":
         return message
 
 
+def subscribe_query():
+    vip = VIP()
+    for cid, uid in vip.group_subscriber().items():
+        has = vip.has_newer_update(cid)
+        if has:
+            print(f"{has} - {uid}")
+
+
 if __name__ == '__main__':
-    res = Redis().generate_file()
-    print(res.getvalue().decode())
+    subscribe_query()

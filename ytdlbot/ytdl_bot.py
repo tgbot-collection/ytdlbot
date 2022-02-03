@@ -9,9 +9,10 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import logging
 import os
+import random
 import re
+import time
 import typing
-from io import BytesIO, StringIO
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
@@ -102,7 +103,7 @@ def subscribe_handler(client: "Client", message: "types.Message"):
     else:
         link = message.text.split(" ")[1]
         result = vip.subscribe_channel(chat_id, link)
-    client.send_message(chat_id, result, disable_web_page_preview=True)
+    client.send_message(chat_id, result or "You have no subscription.", disable_web_page_preview=True)
 
 
 @app.on_message(filters.command(["unsub"]))
@@ -266,12 +267,25 @@ def audio_callback(client: "Client", callback_query: types.CallbackQuery):
     audio_entrance(msg)
 
 
+def periodic_sub_check():
+    vip = VIP()
+    for cid, uids in vip.group_subscriber().items():
+        video_url = vip.has_newer_update(cid)
+        if video_url:
+            logging.info(f"periodic update:{video_url} - {uids}")
+            for uid in uids:
+                # TODO can we send and forward?
+                app.send_message(uid, video_url)
+                time.sleep(random.random())
+
+
 if __name__ == '__main__':
     MySQL()
     scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
     scheduler.add_job(Redis().reset_today, 'cron', hour=0, minute=0)
     scheduler.add_job(auto_restart, 'interval', seconds=5)
     scheduler.add_job(InfluxDB().collect_data, 'interval', seconds=60)
+    scheduler.add_job(periodic_sub_check, 'interval', seconds=60)
     scheduler.start()
     banner = f"""
 ▌ ▌         ▀▛▘     ▌       ▛▀▖              ▜            ▌
