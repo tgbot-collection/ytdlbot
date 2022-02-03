@@ -166,6 +166,28 @@ class MySQL:
     );
             """
 
+    channel_sql = """
+    create table if not exists channel
+    (
+        link              varchar(256) null,
+        title             varchar(256) null,
+        description       text         null,
+        channel_id        varchar(256),
+        playlist          varchar(256) null,
+        latest_video varchar(256) null,
+        constraint channel_pk
+            primary key (channel_id)
+    );
+    """
+
+    subscribe_sql = """
+    create table if not exists subscribe
+    (
+        user_id    bigint       null,
+        channel_id varchar(256) null
+    );
+    """
+
     def __init__(self):
         if MYSQL_HOST:
             self.con = pymysql.connect(host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="vip", charset="utf8mb4")
@@ -178,6 +200,8 @@ class MySQL:
     def init_db(self):
         self.cur.execute(self.vip_sql)
         self.cur.execute(self.settings_sql)
+        self.cur.execute(self.channel_sql)
+        self.cur.execute(self.subscribe_sql)
         self.con.commit()
 
     def __del__(self):

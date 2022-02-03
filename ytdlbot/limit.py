@@ -10,12 +10,15 @@ __author__ = "Benny <benny.think@gmail.com>"
 import hashlib
 import logging
 import math
+import os
 import tempfile
 import time
 from unittest.mock import MagicMock
 
 import requests
 
+import requests
+from bs4 import BeautifulSoup
 from config import (AFD_TOKEN, AFD_USER_ID, COFFEE_TOKEN, ENABLE_VIP, EX,
                     MULTIPLY, OWNER, QUOTA, USD2CNY)
 from db import MySQL, Redis
@@ -78,6 +81,73 @@ class VIP(Redis, MySQL):
             self.r.decr(user_id, traffic)
         else:
             self.r.set(user_id, user_quota - traffic, ex=EX)
+
+    def subscribe_channel(self, user_id: "int", share_link: "str"):
+        data = self.get_channel_info(share_link)
+        self.cur.execute(
+            "INSERT INTO channel values(%(link)s,%(title)s,%(description)s,%(channel_id)s,%(playlist)s,%(last_video)s)",
+            data)
+        self.cur.execute("INSERT INTO subscribe values(%s,%s)", (user_id, data["channel_id"]))
+        self.con.commit()
+        return data["title"]
+
+    def unsubscribe_channel(self, user_id: "int", channel_id: "str"):
+        affected_rows = self.cur.execute("DELETE FROM subscribe WHERE user_id=%s AND channel_id=%s",
+                                         (user_id, channel_id))
+        self.con.commit()
+        return affected_rows
+
+    @staticmethod
+    def get_channel_info(url: "str"):
+        api_key = os.getenv("GOOGLE_API_KEY")
+        html_doc = requests.get(url).text
+        soup = BeautifulSoup(html_doc, 'html.parser')
+        element = soup.find("link", rel="canonical")
+        channel_id = element['href'].split("https://www.youtube.com/channel/")[1]
+        channel_api = f"https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&" \
+                      f"id={channel_id}&key={api_key}"
+        data = requests.get(channel_api).json()
+        snippet = data['items'][0]['snippet']
+        title = snippet['title']
+        description = snippet['description']
+        playlist = data['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+
+        return {
+            "link": url,
+            "title": title,
+            "description": description,
+            "channel_id": channel_id,
+            "playlist": playlist,
+            "last_video": VIP.get_latest_video(playlist)
+        }
+
+    @staticmethod
+    def get_latest_video(playlist_id: "str"):
+        api_key = os.getenv("GOOGLE_API_KEY")
+        video_api = f"https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=1&" \
+                    f"playlistId={playlist_id}&key={api_key}"
+        data = requests.get(video_api).json()
+        video_id = data['items'][0]['snippet']['resourceId']['videoId']
+        return f"https://www.youtube.com/watch?v={video_id}"
+
+    def has_newer_update(self, playlist_id: "str"):
+        self.cur.execute("SELECT last_video FROM channel WHERE playlist=%s", (playlist_id,))
+        old_video = self.cur.fetchone()[0]
+        newest_video = VIP.get_latest_video(playlist_id)
+        if old_video != newest_video:
+            return newest_video
+
+    def get_user_subscription(self, user_id: "int"):
+        self.cur.execute(
+            """
+               select title, link, channel.channel_id from channel, subscribe 
+               where subscribe.user_id = %s and channel.channel_id = subscribe.channel_id
+            """, (user_id,))
+        data = self.cur.fetchall()
+        text = ""
+        for item in data:
+            text += "[{}]({}) `{}\n`".format(*item)
+        return text
 
 
 class BuyMeACoffee:

@@ -11,7 +11,7 @@ import logging
 import os
 import re
 import typing
-
+from io import BytesIO, StringIO
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
@@ -23,7 +23,7 @@ from config import (AUTHORIZED_USER, ENABLE_CELERY, ENABLE_VIP, OWNER,
                     REQUIRED_MEMBERSHIP)
 from constant import BotText
 from db import InfluxDB, MySQL, Redis
-from limit import verify_payment
+from limit import verify_payment, VIP
 from tasks import app as celery_app
 from tasks import (audio_entrance, direct_download_entrance, hot_patch,
                    ytdl_download_entrance)
@@ -90,6 +90,38 @@ def help_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
     client.send_message(chat_id, bot_text.help, disable_web_page_preview=True)
+
+
+@app.on_message(filters.command(["subscribe"]))
+def subscribe_handler(client: "Client", message: "types.Message"):
+    vip = VIP()
+    chat_id = message.chat.id
+    client.send_chat_action(chat_id, "typing")
+    if message.text == "/subscribe":
+        result = vip.get_user_subscription(chat_id)
+    else:
+        link = message.text.split(" ")[1]
+        title = vip.subscribe_channel(chat_id, link)
+        result = f"Subscribed to {title}"
+    client.send_message(chat_id, result, disable_web_page_preview=True)
+
+
+@app.on_message(filters.command(["unsubscribe"]))
+def unsubscribe_handler(client: "Client", message: "types.Message"):
+    vip = VIP()
+    chat_id = message.chat.id
+    client.send_chat_action(chat_id, "typing")
+    text = message.text.split(" ")
+    if len(text) == 1:
+        client.send_message(chat_id, "/unsubscribe channel_id", disable_web_page_preview=True)
+        return
+
+    rows = vip.unsubscribe_channel(chat_id, text[1])
+    if rows:
+        text = f"Unsubscribed from {text[1]}"
+    else:
+        text = "Unable to find the channel."
+    client.send_message(chat_id, text, disable_web_page_preview=True)
 
 
 @app.on_message(filters.command(["hot_patch"]))
