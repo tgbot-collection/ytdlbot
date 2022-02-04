@@ -24,6 +24,7 @@ Websites [supported by youtube-dl](https://ytdl-org.github.io/youtube-dl/support
 I don't have unlimited servers and bandwidth, so I have to make some restrictions.
 * 10 GiB one-way traffic per 24 hours for each user
 * maximum 5 minutes streaming conversion support 
+* maximum 3 subscriptions
 
 You can choose to become 'VIP' if you really need large traffic. And also, you could always deploy your own bot.
 
@@ -40,6 +41,7 @@ You can choose to become 'VIP' if you really need large traffic. And also, you c
 7. support different video resolutions
 8. support sending as file or streaming as video
 9. supports celery worker distribution - faster than before.
+10. subscriptions to YouTube Channels
 
 ![](assets/2.jpeg)
 
@@ -209,14 +211,16 @@ docker-compose -f worker up -d
 
 ```
 start - Let's start
-about - Want to contribute?
+about - What's this bot?
 ping - Bot running status
-help - Anything troubles you?
+help - Help
 ytdl - Download video in group
 vip - Join VIP
 terms - View Terms of Service
 settings - Set your preference
 direct - Download file directly
+sub - Subscribe to YouTube Channel
+unsub - Unsubscribe from YouTube Channel
 ```
 
 # Test data

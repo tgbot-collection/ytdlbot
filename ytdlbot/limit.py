@@ -8,6 +8,7 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import hashlib
+import re
 import logging
 import math
 import os
@@ -82,6 +83,8 @@ class VIP(Redis, MySQL):
             self.r.set(user_id, user_quota - traffic, ex=EX)
 
     def subscribe_channel(self, user_id: "int", share_link: "str"):
+        if not re.findall(r"youtube\.com|youtu\.be", share_link):
+            raise ValueError("Is this a valid YouTube Channel link?")
         if ENABLE_VIP:
             self.cur.execute("select count(user_id) from subscribe where user_id=%s", (user_id,))
             usage = int(self.cur.fetchone()[0])
@@ -101,7 +104,7 @@ class VIP(Redis, MySQL):
         affected_rows = self.cur.execute("DELETE FROM subscribe WHERE user_id=%s AND channel_id=%s",
                                          (user_id, channel_id))
         self.con.commit()
-        logging.info("User %s unsubscribed channel %s", user_id, channel_id)
+        logging.info("User %s tried to unsubscribe channel %s", user_id, channel_id)
         return affected_rows
 
     @staticmethod
@@ -289,5 +292,5 @@ def subscribe_query():
 
 
 if __name__ == '__main__':
-    a=VIP.extract_canonical_link("https://youtu.be/FUACKXI-1BA?t=71")
+    a = VIP.extract_canonical_link("https://youtu.be/FUACKXI-1BA?t=71")
     print(a)
