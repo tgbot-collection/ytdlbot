@@ -286,7 +286,7 @@ if __name__ == '__main__':
     scheduler.add_job(auto_restart, 'interval', seconds=5)
     scheduler.add_job(InfluxDB().collect_data, 'interval', seconds=60)
     #  default quota allocation of 10,000 units per day,
-    scheduler.add_job(periodic_sub_check, 'interval', seconds=60)
+    scheduler.add_job(periodic_sub_check, 'interval', seconds=60 * 30)
     scheduler.start()
     banner = f"""
 ▌ ▌         ▀▛▘     ▌       ▛▀▖              ▜            ▌

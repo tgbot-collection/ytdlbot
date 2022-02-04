@@ -80,9 +80,37 @@ def direct_download_task(chat_id, message_id, url):
     logging.info("Direct download celery tasks ended.")
 
 
+def forward_video(chat_id, url, client):
+    red = Redis()
+    vip = VIP()
+    settings = get_user_settings(str(chat_id))
+    clink = vip.extract_canonical_link(url)
+    unique = "{}{}{}".format(clink, *settings[1:])
+    data = red.get_send_cache(unique)
+    if not data:
+        return False
+
+    uid, mid = data
+    try:
+        result_msg = client.get_messages(uid, mid)
+        result_msg.forward(chat_id)
+        red.update_metrics("cache_hit")
+        if ENABLE_VIP:
+            file_size = getattr(result_msg.document, "file_size", None) or getattr(result_msg.video, "file_size", 1024)
+            vip.use_quota(chat_id, file_size)
+            return True
+    except Exception:
+        red.del_send_cache(unique)
+        red.update_metrics("cache_miss")
+
+
 def ytdl_download_entrance(bot_msg, client, url):
+    chat_id = bot_msg.chat.id
+    if forward_video(chat_id, url, client):
+        return
+
     if ENABLE_CELERY:
-        ytdl_download_task.delay(bot_msg.chat.id, bot_msg.message_id, url)
+        ytdl_download_task.delay(chat_id, bot_msg.message_id, url)
     else:
         ytdl_normal_download(bot_msg, client, url)
 
@@ -190,7 +218,7 @@ def get_worker_status(username):
 def ytdl_normal_download(bot_msg, client, url):
     chat_id = bot_msg.chat.id
     temp_dir = tempfile.TemporaryDirectory()
-
+    red = Redis()
     result = ytdl_download(url, temp_dir.name, bot_msg)
     logging.info("Download complete.")
     markup = InlineKeyboardMarkup(
@@ -208,6 +236,7 @@ def ytdl_normal_download(bot_msg, client, url):
         video_paths = result["filepath"]
         bot_msg.edit_text('Download complete. Sending now...')
         for video_path in video_paths:
+            # normally there's only one video in that path...
             filename = pathlib.Path(video_path).name
             remain = bot_text.remaining_quota_caption(chat_id)
             size = sizeof_fmt(os.stat(video_path).st_size)
@@ -218,22 +247,25 @@ def ytdl_normal_download(bot_msg, client, url):
             settings = get_user_settings(str(chat_id))
             if settings[2] == "document":
                 logging.info("Sending as document")
-                client.send_document(chat_id, video_path,
-                                     caption=cap,
-                                     progress=upload_hook, progress_args=(bot_msg,),
-                                     reply_markup=markup,
-                                     thumb=meta["thumb"]
-                                     )
+                res_msg = client.send_document(chat_id, video_path,
+                                               caption=cap,
+                                               progress=upload_hook, progress_args=(bot_msg,),
+                                               reply_markup=markup,
+                                               thumb=meta["thumb"]
+                                               )
             else:
                 logging.info("Sending as video")
-                client.send_video(chat_id, video_path,
-                                  supports_streaming=True,
-                                  caption=cap,
-                                  progress=upload_hook, progress_args=(bot_msg,),
-                                  reply_markup=markup,
-                                  **meta
-                                  )
-            Redis().update_metrics("video_success")
+                res_msg = client.send_video(chat_id, video_path,
+                                            supports_streaming=True,
+                                            caption=cap,
+                                            progress=upload_hook, progress_args=(bot_msg,),
+                                            reply_markup=markup,
+                                            **meta
+                                            )
+            clink = VIP().extract_canonical_link(url)
+            unique = "{}{}{}".format(clink, *settings[1:])
+            red.add_send_cache(unique, res_msg.chat.id, res_msg.message_id)
+            red.update_metrics("video_success")
         bot_msg.edit_text('Download success!✅')
     else:
         client.send_chat_action(chat_id, 'typing')
