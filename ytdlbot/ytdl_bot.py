@@ -12,6 +12,7 @@ import os
 import random
 import re
 import time
+import traceback
 import typing
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -103,7 +104,10 @@ def subscribe_handler(client: "Client", message: "types.Message"):
         result = vip.get_user_subscription(chat_id)
     else:
         link = message.text.split(" ")[1]
-        result = vip.subscribe_channel(chat_id, link)
+        try:
+            result = vip.subscribe_channel(chat_id, link)
+        except (IndexError,ValueError):
+            result = f"Error: \n{traceback.format_exc()}"
     client.send_message(chat_id, result or "You have no subscription.", disable_web_page_preview=True)
 
 
