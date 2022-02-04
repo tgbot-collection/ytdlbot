@@ -106,12 +106,20 @@ class VIP(Redis, MySQL):
         return affected_rows
 
     @staticmethod
-    def get_channel_info(url: "str"):
+    def extract_canonical_link(url):
+        # canonic link works for many websites. It will strip out unnecessary stuff
+        try:
+            html_doc = requests.get(url).text
+            soup = BeautifulSoup(html_doc, "html.parser")
+            element = soup.find("link", rel="canonical")
+            return element['href']
+        except Exception:
+            return url
+
+    def get_channel_info(self, url: "str"):
         api_key = os.getenv("GOOGLE_API_KEY")
-        html_doc = requests.get(url).text
-        soup = BeautifulSoup(html_doc, "html.parser")
-        element = soup.find("link", rel="canonical")
-        channel_id = element['href'].split("https://www.youtube.com/channel/")[1]
+        canonical_link = self.extract_canonical_link(url)
+        channel_id = canonical_link.split("https://www.youtube.com/channel/")[1]
         channel_api = f"https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&" \
                       f"id={channel_id}&key={api_key}"
         data = requests.get(channel_api).json()
@@ -282,4 +290,5 @@ def subscribe_query():
 
 
 if __name__ == '__main__':
-    subscribe_query()
+    a=VIP.extract_canonical_link("https://youtu.be/FUACKXI-1BA?t=71")
+    print(a)
