@@ -139,6 +139,16 @@ class Redis:
         file.name = f"{date}.txt"
         return file
 
+    def add_send_cache(self, unique, uid, mid):
+        # unique: video_url+resolution+send_type
+        self.r.hset(unique, uid, mid)
+
+    def get_send_cache(self, unique) -> "dict":
+        return self.r.hgetall(unique)
+
+    def del_send_cache(self, unique, uid):
+        self.r.hdel(unique, uid)
+
 
 class MySQL:
     vip_sql = """

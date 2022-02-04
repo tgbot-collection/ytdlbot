@@ -13,6 +13,7 @@ import random
 import re
 import time
 import typing
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
@@ -24,7 +25,7 @@ from config import (AUTHORIZED_USER, ENABLE_CELERY, ENABLE_VIP, OWNER,
                     REQUIRED_MEMBERSHIP)
 from constant import BotText
 from db import InfluxDB, MySQL, Redis
-from limit import verify_payment, VIP
+from limit import VIP, verify_payment
 from tasks import app as celery_app
 from tasks import (audio_entrance, direct_download_entrance, hot_patch,
                    ytdl_download_entrance)
@@ -286,7 +287,7 @@ if __name__ == '__main__':
     scheduler.add_job(auto_restart, 'interval', seconds=5)
     scheduler.add_job(InfluxDB().collect_data, 'interval', seconds=60)
     #  default quota allocation of 10,000 units per day,
-    scheduler.add_job(periodic_sub_check, 'interval', seconds=60)
+    scheduler.add_job(periodic_sub_check, 'interval', seconds=60 * 30)
     scheduler.start()
     banner = f"""
 ▌ ▌         ▀▛▘     ▌       ▛▀▖              ▜            ▌
