@@ -8,10 +8,10 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import hashlib
-import re
 import logging
 import math
 import os
+import re
 import tempfile
 import time
 from unittest.mock import MagicMock

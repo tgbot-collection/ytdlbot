@@ -72,7 +72,8 @@ class Redis:
         self.r.hincrby("metrics", all_)
         self.r.hincrby("metrics", today)
 
-    def generate_table(self, header, all_data: "list"):
+    @staticmethod
+    def generate_table(header, all_data: "list"):
         table = BeautifulTable()
         for data in all_data:
             table.rows.append(data)
@@ -107,7 +108,7 @@ class Redis:
 
         fd = []
         for key in self.r.keys("*"):
-            if re.findall(r"\d+", key):
+            if re.findall(r"^\d+$", key):
                 value = self.r.get(key)
                 date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self.r.ttl(key) + time.time()))
                 fd.append([key, value, sizeof_fmt(int(value)), date])

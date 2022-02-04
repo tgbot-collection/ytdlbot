@@ -97,7 +97,7 @@ def download_hook(d: dict, bot_msg):
             raise ValueError(f"\nYour video is too large. "
                              f"{filesize} will exceed Telegram's max limit {sizeof_fmt(max_size)}")
 
-        percent = remove_bash_color(d.get("_percent_str", "N/A"))
+        # percent = remove_bash_color(d.get("_percent_str", "N/A"))
         speed = remove_bash_color(d.get("_speed_str", "N/A"))
         if ENABLE_VIP and not r.exists(key):
             result, err_msg = check_quota(total, bot_msg.chat.id)
