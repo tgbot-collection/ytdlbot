@@ -226,19 +226,25 @@ def vip_handler(client: "Client", message: "types.Message"):
 @private_use
 def download_handler(client: "Client", message: "types.Message"):
     # check remaining quota
+    red = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, 'typing')
-    Redis().user_count(chat_id)
+    red.user_count(chat_id)
 
     url = re.sub(r'/ytdl\s*', '', message.text)
     logging.info("start %s", url)
 
     if not re.findall(r"^https?://", url.lower()):
-        Redis().update_metrics("bad_request")
+        red.update_metrics("bad_request")
         message.reply_text("I think you should send me a link.", quote=True)
         return
 
-    Redis().update_metrics("video_request")
+    if re.findall(r"^https://www.youtube.com/channel/", VIP.extract_canonical_link(url)):
+        message.reply_text("Channel download is disabled now. Please send me individual video link.", quote=True)
+        red.update_metrics("reject_channel")
+        return
+
+    red.update_metrics("video_request")
     text = bot_text.get_receive_link_text()
     bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text(text, quote=True)
     client.send_chat_action(chat_id, 'upload_video')
