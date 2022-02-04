@@ -27,15 +27,6 @@ from utils import apply_log_formatter
 apply_log_formatter()
 
 
-def get_username(chat_id):
-    from ytdl_bot import create_app
-    with tempfile.NamedTemporaryFile() as tmp:
-        with create_app(tmp.name, 1) as app:
-            data = app.get_chat(chat_id).first_name
-
-    return data
-
-
 class VIP(Redis, MySQL):
 
     def check_vip(self, user_id: "int") -> "tuple":
@@ -258,7 +249,7 @@ class Afdian:
         return level, amount, trade_no
 
 
-def verify_payment(user_id, unique) -> "str":
+def verify_payment(user_id, unique, client) -> "str":
     if not ENABLE_VIP:
         return "VIP is not enabled."
     logging.info("Verifying payment for %s - %s", user_id, unique)
@@ -278,7 +269,7 @@ def verify_payment(user_id, unique) -> "str":
         vip = VIP()
         ud = {
             "user_id": user_id,
-            "username": get_username(user_id),
+            "username": client.get_chat(user_id).first_name,
             "payment_amount": amount,
             "payment_id": pay_id,
             "level": level,

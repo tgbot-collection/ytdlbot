@@ -218,7 +218,7 @@ def vip_handler(client: "Client", message: "types.Message"):
     else:
         bm: typing.Union["types.Message", "typing.Any"] = message.reply_text(bot_text.vip_pay, quote=True)
         unique = text.replace("/vip", "").strip()
-        msg = verify_payment(chat_id, unique)
+        msg = verify_payment(chat_id, unique, client)
         bm.edit_text(msg)
 
 
