@@ -16,9 +16,8 @@ import time
 from unittest.mock import MagicMock
 
 import requests
-
-import requests
 from bs4 import BeautifulSoup
+
 from config import (AFD_TOKEN, AFD_USER_ID, COFFEE_TOKEN, ENABLE_VIP, EX,
                     MULTIPLY, OWNER, QUOTA, USD2CNY)
 from db import MySQL, Redis

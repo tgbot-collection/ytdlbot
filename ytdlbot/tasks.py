@@ -85,23 +85,30 @@ def forward_video(chat_id, url, client):
     vip = VIP()
     settings = get_user_settings(str(chat_id))
     clink = vip.extract_canonical_link(url)
-    unique = "{}{}{}".format(clink, *settings[1:])
+    unique = "{}?p={}{}".format(clink, *settings[1:])
+
     data = red.get_send_cache(unique)
     if not data:
         return False
 
-    uid, mid = data
-    try:
-        result_msg = client.get_messages(uid, mid)
-        result_msg.forward(chat_id)
-        red.update_metrics("cache_hit")
-        if ENABLE_VIP:
-            file_size = getattr(result_msg.document, "file_size", None) or getattr(result_msg.video, "file_size", 1024)
-            vip.use_quota(chat_id, file_size)
+    for uid, mid in data.items():
+        uid, mid = int(uid), int(mid)
+        try:
+            result_msg = client.get_messages(uid, mid)
+            logging.info("Forwarding message from %s %s to %s", uid, mid, chat_id)
+            m = result_msg.forward(chat_id)
+            red.update_metrics("cache_hit")
+            if ENABLE_VIP:
+                file_size = getattr(result_msg.document, "file_size", None) or \
+                            getattr(result_msg.video, "file_size", 1024)
+                # TODO: forward file size may exceed the limit
+                vip.use_quota(chat_id, file_size)
+            red.add_send_cache(unique, chat_id, m.message_id)
             return True
-    except Exception:
-        red.del_send_cache(unique)
-        red.update_metrics("cache_miss")
+        except Exception as e:
+            logging.error("Failed to forward message %s", e)
+            red.del_send_cache(unique, uid)
+            red.update_metrics("cache_miss")
 
 
 def ytdl_download_entrance(bot_msg, client, url):
@@ -263,7 +270,7 @@ def ytdl_normal_download(bot_msg, client, url):
                                             **meta
                                             )
             clink = VIP().extract_canonical_link(url)
-            unique = "{}{}{}".format(clink, *settings[1:])
+            unique = "{}?p={}{}".format(clink, *settings[1:])
             red.add_send_cache(unique, res_msg.chat.id, res_msg.message_id)
             red.update_metrics("video_success")
         bot_msg.edit_text('Download success!✅')
