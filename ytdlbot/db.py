@@ -72,7 +72,8 @@ class Redis:
         self.r.hincrby("metrics", all_)
         self.r.hincrby("metrics", today)
 
-    def generate_table(self, header, all_data: "list"):
+    @staticmethod
+    def generate_table(header, all_data: "list"):
         table = BeautifulTable()
         for data in all_data:
             table.rows.append(data)
@@ -107,7 +108,7 @@ class Redis:
 
         fd = []
         for key in self.r.keys("*"):
-            if re.findall(r"\d+", key):
+            if re.findall(r"^\d+$", key):
                 value = self.r.get(key)
                 date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self.r.ttl(key) + time.time()))
                 fd.append([key, value, sizeof_fmt(int(value)), date])
@@ -152,7 +153,7 @@ class Redis:
 
 class MySQL:
     vip_sql = """
-    create table if not exists VIP
+    create table if not exists vip
     (
         user_id        bigint             not null,
         username       varchar(256)    null,
@@ -187,7 +188,7 @@ class MySQL:
         latest_video varchar(256) null,
         constraint channel_pk
             primary key (channel_id)
-    );
+    ) CHARSET=utf8mb4;
     """
 
     subscribe_sql = """
@@ -195,12 +196,12 @@ class MySQL:
     (
         user_id    bigint       null,
         channel_id varchar(256) null
-    );
+    ) CHARSET=utf8mb4;
     """
 
     def __init__(self):
         if MYSQL_HOST:
-            self.con = pymysql.connect(host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="vip", charset="utf8mb4")
+            self.con = pymysql.connect(host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl", charset="utf8mb4")
         else:
             self.con = MagicMock()
 

@@ -12,12 +12,12 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 import tempfile
 import threading
 import time
 from urllib.parse import quote_plus
 
-import psutil
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from celery import Celery
@@ -287,17 +287,19 @@ def hot_patch(*args):
     git_path = pathlib.Path().cwd().parent.as_posix()
     logging.info("Hot patching on path %s...", git_path)
 
+    pip_install = "pip install -r requirements.txt"
     unset = "git config --unset http.https://github.com/.extraheader"
     pull_unshallow = "git pull origin --unshallow"
     pull = "git pull"
 
+    subprocess.call(pip_install, shell=True, cwd=git_path)
     subprocess.call(unset, shell=True, cwd=git_path)
     if subprocess.call(pull_unshallow, shell=True, cwd=git_path) != 0:
         logging.info("Already unshallow, pulling now...")
         subprocess.call(pull, shell=True, cwd=git_path)
 
     logging.info("Code is updated, applying hot patch now...")
-    psutil.Process().kill()
+    sys.exit(2)
 
 
 def run_celery():

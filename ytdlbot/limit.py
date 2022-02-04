@@ -8,10 +8,10 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import hashlib
-import re
 import logging
 import math
 import os
+import re
 import tempfile
 import time
 from unittest.mock import MagicMock
@@ -93,9 +93,15 @@ class VIP(Redis, MySQL):
                 return "You have subscribed too many channels. Please upgrade to VIP to subscribe more channels."
 
         data = self.get_channel_info(share_link)
-        self.cur.execute("INSERT IGNORE INTO channel values("
-                         "%(link)s,%(title)s,%(description)s,%(channel_id)s,%(playlist)s,%(last_video)s)", data)
-        self.cur.execute("INSERT INTO subscribe values(%s,%s)", (user_id, data["channel_id"]))
+        channel_id = data["channel_id"]
+
+        self.cur.execute("select user_id from subscribe where user_id=%s and channel_id=%s", (user_id, channel_id))
+        if self.cur.fetchall():
+            raise ValueError("You have already subscribed this channel.")
+
+        self.cur.execute("INSERT IGNORE INTO channel values"
+                         "(%(link)s,%(title)s,%(description)s,%(channel_id)s,%(playlist)s,%(last_video)s)", data)
+        self.cur.execute("INSERT INTO subscribe values(%s,%s)", (user_id, channel_id))
         self.con.commit()
         logging.info("User %s subscribed channel %s", user_id, data["title"])
         return "Subscribed to {}".format(data["title"])
