@@ -84,7 +84,7 @@ class Redis:
     def show_usage(self):
         from downloader import sizeof_fmt
         db = MySQL()
-        db.cur.execute("select * from VIP")
+        db.cur.execute("select * from vip")
         data = db.cur.fetchall()
         fd = []
         for item in data:
