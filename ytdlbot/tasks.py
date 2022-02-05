@@ -95,7 +95,7 @@ def forward_video(chat_id, url, client):
         uid, mid = int(uid), int(mid)
         try:
             result_msg = client.get_messages(uid, mid)
-            logging.info("Forwarding message from %s %s to %s", uid, mid, chat_id)
+            logging.info("Forwarding message from %s %s %s to %s", clink, uid, mid, chat_id)
             m = result_msg.forward(chat_id)
             red.update_metrics("cache_hit")
             if ENABLE_VIP:
