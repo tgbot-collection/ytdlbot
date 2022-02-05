@@ -299,7 +299,7 @@ def run_celery():
     argv = [
         "-A", "tasks", 'worker', '--loglevel=info',
         "--pool=threads", f"--concurrency={WORKERS * 2}",
-        "-n", f"{os.getenv('WORKER_NAME', '')}"
+        "-n", os.getenv("WORKER_NAME", "")
     ]
     app.worker_main(argv)
 

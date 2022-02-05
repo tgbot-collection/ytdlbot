@@ -118,7 +118,7 @@ class VIP(Redis, MySQL):
                 if href not in ["null", "", None]:
                     return href
             except Exception:
-                logging.warning("Canonical exception %s soup.find(%s, %s=%s) --> %s", url, tag, kw, v, result)
+                logging.warning("Canonical exception %s", url)
 
         return url
 
