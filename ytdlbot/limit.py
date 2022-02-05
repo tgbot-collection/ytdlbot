@@ -12,7 +12,6 @@ import logging
 import math
 import os
 import re
-import tempfile
 import time
 from unittest.mock import MagicMock
 
@@ -107,13 +106,21 @@ class VIP(Redis, MySQL):
     @staticmethod
     def extract_canonical_link(url):
         # canonic link works for many websites. It will strip out unnecessary stuff
-        try:
-            html_doc = requests.get(url).text
-            soup = BeautifulSoup(html_doc, "html.parser")
-            element = soup.find("link", rel="canonical")
-            return element['href']
-        except Exception:
-            return url
+        props = ["canonical", "alternate", "shortlinkUrl"]
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"}
+        html_doc = requests.get(url, headers=headers, timeout=5).text
+        soup = BeautifulSoup(html_doc, "html.parser")
+        for prop in props:
+            element = soup.find("link", rel=prop)
+            try:
+                href = element["href"]
+                if href not in ["null", "", None]:
+                    return href
+            except Exception:
+                logging.warning("Canonical exception %s soup.find(%s, %s=%s) --> %s", url, tag, kw, v, result)
+
+        return url
 
     def get_channel_info(self, url: "str"):
         api_key = os.getenv("GOOGLE_API_KEY")
@@ -289,5 +296,5 @@ def subscribe_query():
 
 
 if __name__ == '__main__':
-    a = VIP.extract_canonical_link("https://youtu.be/FUACKXI-1BA?t=71")
+    a = VIP.extract_canonical_link("https://www.youtube.com/shorts/YrnvPPGznXM")
     print(a)
