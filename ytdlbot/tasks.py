@@ -210,16 +210,9 @@ def normal_audio(bot_msg):
         os.unlink(flac_tmp)
 
 
-def get_worker_status(username):
+def get_worker_status():
     worker_name = os.getenv("WORKER_NAME")
-    try:
-        me = celery_client.get_me()
-        mention = me.mention()
-    except Exception:
-        mention = "YouTube Downloader"
-    if worker_name and username == OWNER:
-        return f"Downloaded by {mention}-{worker_name}"
-    return f"Downloaded by {mention}"
+    return f"Downloaded by  {worker_name}"
 
 
 def ytdl_normal_download(bot_msg, client, url):
@@ -248,7 +241,7 @@ def ytdl_normal_download(bot_msg, client, url):
             remain = bot_text.remaining_quota_caption(chat_id)
             size = sizeof_fmt(os.stat(video_path).st_size)
             meta = get_metadata(video_path)
-            worker = get_worker_status(bot_msg.chat.username)
+            worker = "Downloaded by {}".format(os.getenv("WORKER_NAME", "Unknown"))
             cap = f"`{filename}`\n\n{url}\n\nInfo: {meta['width']}x{meta['height']} {size} {meta['duration']}s" \
                   f"\n{remain}\n{worker}"
             settings = get_user_settings(str(chat_id))
