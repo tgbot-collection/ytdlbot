@@ -10,6 +10,7 @@ __author__ = "Benny <benny.think@gmail.com>"
 import logging
 import os
 import pathlib
+import random
 import re
 import subprocess
 import time
@@ -43,6 +44,7 @@ def sizeof_fmt(num: int, suffix='B'):
 
 def edit_text(bot_msg, text):
     key = f"{bot_msg.chat.id}-{bot_msg.message_id}"
+    time.sleep(random.random())
     # if the key exists, we shouldn't send edit message
     if not r.exists(key):
         r.set(key, "ok", ex=3)

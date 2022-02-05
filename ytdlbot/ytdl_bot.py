@@ -246,6 +246,7 @@ def download_handler(client: "Client", message: "types.Message"):
 
     red.update_metrics("video_request")
     text = bot_text.get_receive_link_text()
+    time.sleep(random.random() * 3)
     bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text(text, quote=True)
     client.send_chat_action(chat_id, 'upload_video')
     ytdl_download_entrance(bot_msg, client, url)
