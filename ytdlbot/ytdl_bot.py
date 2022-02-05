@@ -14,7 +14,9 @@ import re
 import time
 import traceback
 import typing
+from io import BytesIO
 
+import pyrogram.errors
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
@@ -247,7 +249,20 @@ def download_handler(client: "Client", message: "types.Message"):
     red.update_metrics("video_request")
     text = bot_text.get_receive_link_text()
     time.sleep(random.random() * 3)
-    bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text(text, quote=True)
+    try:
+        # raise pyrogram.errors.exceptions.FloodWait(10)
+        bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text(text, quote=True)
+    except pyrogram.errors.Flood as e:
+        f = BytesIO()
+        f.write(str(e).encode())
+        f.write(b"Your job will be done soon. Just wait! Don't rush.")
+        f.name = "Please don't flood me.txt"
+        bot_msg = message.reply_document(f, caption=f"Flood wait! Please wait {e.x} seconds...."
+                                                    f"Your job will start automatically", quote=True)
+        f.close()
+        client.send_message(OWNER, f"Flood wait! 🙁 {e.x} seconds....")
+        time.sleep(e.x)
+
     client.send_chat_action(chat_id, 'upload_video')
     ytdl_download_entrance(bot_msg, client, url)
 
