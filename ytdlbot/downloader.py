@@ -44,9 +44,9 @@ def sizeof_fmt(num: int, suffix='B'):
 
 def edit_text(bot_msg, text):
     key = f"{bot_msg.chat.id}-{bot_msg.message_id}"
-    time.sleep(random.random())
     # if the key exists, we shouldn't send edit message
     if not r.exists(key):
+        time.sleep(random.random())
         r.set(key, "ok", ex=3)
         bot_msg.edit_text(text)
 
@@ -145,10 +145,9 @@ def convert_to_mp4(resp: dict, bot_msg):
                         bot_msg.chat.id,
                         "You're not VIP, so you can't convert longer video to streaming formats.")
                     break
-
-                edit_text(bot_msg, f"{current_time()}: Converting {os.path.basename(path)} to mp4. Please wait.")
-                new_name = os.path.basename(path).split(".")[0] + ".mp4"
-                new_file_path = os.path.join(os.path.dirname(path), new_name)
+                pobj = pathlib.Path(path)
+                edit_text(bot_msg, f"{current_time()}: Converting {pobj.name} to mp4. Please wait.")
+                new_file_path = pobj.with_suffix(".mp4")
                 cmd = ["ffmpeg", "-i", path, new_file_path]
                 logging.info("Detected %s, converting to mp4...", mime)
                 subprocess.check_output(cmd)
@@ -174,7 +173,7 @@ def can_convert_mp4(video_path, uid):
 def ytdl_download(url, tempdir, bm) -> dict:
     chat_id = bm.chat.id
     response = {"status": True, "error": "", "filepath": []}
-    output = os.path.join(tempdir, '%(title).50s.%(ext)s')
+    output = pathlib.Path(tempdir, "%(title).70s.%(ext)s").as_posix()
     ydl_opts = {
         'progress_hooks': [lambda d: download_hook(d, bm)],
         'outtmpl': output,
@@ -200,15 +199,10 @@ def ytdl_download(url, tempdir, bm) -> dict:
             response["error"] = ""
             break
 
-        except DownloadError as e:
-            err = str(e)
+        except (ValueError, DownloadError) as e:
             logging.error("Download failed for %s ", url)
             response["status"] = False
-            response["error"] = err
-            # can't return here
-        except ValueError as e:
-            response["status"] = False
-            response["error"] = str(e)
+            response["error"] = e
         except Exception as e:
             logging.error("UNKNOWN EXCEPTION: %s", e)
 
@@ -244,7 +238,7 @@ def ytdl_download(url, tempdir, bm) -> dict:
 
 def add_instagram_cookies(url: "str", opt: "dict"):
     if url.startswith("https://www.instagram.com"):
-        opt["cookiefile"] = os.path.join(os.path.dirname(__file__), "instagram.com_cookies.txt")
+        opt["cookiefi22"] = pathlib.Path(__file__).parent.joinpath("instagram.com_cookies.txt").as_posix()
 
 
 def run_splitter(video_path: "str"):

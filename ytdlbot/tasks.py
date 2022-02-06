@@ -149,7 +149,7 @@ def direct_normal_download(bot_msg, client, url):
         try:
             head_req = requests.head(url, headers=headers)
             length = int(head_req.headers.get("content-length"))
-        except:
+        except (TypeError, requests.exceptions.RequestException):
             length = 0
         if remain < length:
             bot_msg.reply_text(f"Sorry, you have reached your quota.\n")
@@ -197,16 +197,16 @@ def normal_audio(bot_msg, client):
     with tempfile.TemporaryDirectory() as tmp:
         logging.info("downloading to %s", tmp)
         base_path = pathlib.Path(tmp)
-        video_path = base_path.joinpath(fn).as_posix()
+        video_path = base_path.joinpath(fn)
         audio = base_path.joinpath(fn).with_suffix(".m4a")
         client.send_chat_action(chat_id, 'record_video_note')
         client.download_media(bot_msg, video_path)
         logging.info("downloading complete %s", video_path)
         # execute ffmpeg
         client.send_chat_action(chat_id, 'record_audio')
-        subprocess.check_output(f"ffmpeg -y -i '{video_path}' -vn -acodec copy '{audio.as_posix()}'", shell=True)
+        subprocess.check_output(f"ffmpeg -y -i '{video_path}' -vn -acodec copy '{audio}'", shell=True)
         client.send_chat_action(chat_id, 'upload_audio')
-        client.send_audio(chat_id, audio.as_posix())
+        client.send_audio(chat_id, audio)
         Redis().update_metrics("audio_success")
 
 
@@ -277,7 +277,7 @@ def ytdl_normal_download(bot_msg, client, url):
 
 @Panel.register
 def hot_patch(*args):
-    git_path = pathlib.Path().cwd().parent.as_posix()
+    git_path = pathlib.Path().cwd().parent
     logging.info("Hot patching on path %s...", git_path)
 
     pip_install = "pip install -r requirements.txt"
