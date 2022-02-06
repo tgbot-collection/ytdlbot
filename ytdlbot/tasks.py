@@ -29,8 +29,8 @@ from client_init import create_app
 from config import BROKER, ENABLE_CELERY, ENABLE_VIP, WORKERS
 from constant import BotText
 from db import Redis
-from downloader import (convert_flac, edit_text, sizeof_fmt, tqdm_progress,
-                        upload_hook, ytdl_download)
+from downloader import (edit_text, sizeof_fmt, tqdm_progress, upload_hook,
+                        ytdl_download)
 from limit import VIP
 from utils import (apply_log_formatter, auto_restart, customize_logger,
                    get_metadata, get_user_settings)
@@ -193,21 +193,21 @@ def direct_normal_download(bot_msg, client, url):
 
 def normal_audio(bot_msg, client):
     chat_id = bot_msg.chat.id
-    mp4_name = bot_msg.video.file_name  # 'youtube-dl_test_video_a.mp4'
-    flac_name = mp4_name.replace("mp4", "m4a")
-
-    with tempfile.NamedTemporaryFile() as tmp:
-        logging.info("downloading to %s", tmp.name)
+    fn = getattr(bot_msg.video, "file_name", None) or getattr(bot_msg.document, "file_name", None)
+    with tempfile.TemporaryDirectory() as tmp:
+        logging.info("downloading to %s", tmp)
+        base_path = pathlib.Path(tmp)
+        video_path = base_path.joinpath(fn).as_posix()
+        audio = base_path.joinpath(fn).with_suffix(".m4a")
         client.send_chat_action(chat_id, 'record_video_note')
-        client.download_media(bot_msg, tmp.name)
-        logging.info("downloading complete %s", tmp.name)
+        client.download_media(bot_msg, video_path)
+        logging.info("downloading complete %s", video_path)
         # execute ffmpeg
         client.send_chat_action(chat_id, 'record_audio')
-        flac_tmp = convert_flac(flac_name, tmp)
+        subprocess.check_output(f"ffmpeg -y -i '{video_path}' -vn -acodec copy '{audio.as_posix()}'", shell=True)
         client.send_chat_action(chat_id, 'upload_audio')
-        client.send_audio(chat_id, flac_tmp)
+        client.send_audio(chat_id, audio.as_posix())
         Redis().update_metrics("audio_success")
-        os.unlink(flac_tmp)
 
 
 def get_worker_status():

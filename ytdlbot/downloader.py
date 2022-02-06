@@ -242,15 +242,6 @@ def ytdl_download(url, tempdir, bm) -> dict:
     return response
 
 
-def convert_flac(flac_name, tmp):
-    logging.info("converting to flac")
-    flac_tmp = pathlib.Path(tmp.name).parent.joinpath(flac_name).as_posix()
-    cmd_list = ["ffmpeg", "-y", "-i", tmp.name, "-vn", "-acodec", "copy", flac_tmp]
-    logging.info("CMD: %s", cmd_list)
-    subprocess.check_output(cmd_list)
-    return flac_tmp
-
-
 def add_instagram_cookies(url: "str", opt: "dict"):
     if url.startswith("https://www.instagram.com"):
         opt["cookiefile"] = os.path.join(os.path.dirname(__file__), "instagram.com_cookies.txt")
