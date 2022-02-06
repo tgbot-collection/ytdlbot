@@ -291,7 +291,7 @@ def audio_callback(client: "Client", callback_query: types.CallbackQuery):
     Redis().update_metrics("audio_request")
 
     msg = callback_query.message
-    audio_entrance(msg)
+    audio_entrance(msg, client)
 
 
 def periodic_sub_check():

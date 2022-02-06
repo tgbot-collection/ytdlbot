@@ -26,7 +26,7 @@ from pyrogram import idle
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from client_init import create_app
-from config import BROKER, ENABLE_CELERY, ENABLE_VIP, OWNER, WORKERS
+from config import BROKER, ENABLE_CELERY, ENABLE_VIP, WORKERS
 from constant import BotText
 from db import Redis
 from downloader import (convert_flac, edit_text, sizeof_fmt, tqdm_progress,
@@ -68,7 +68,7 @@ def ytdl_download_task(chat_id, message_id, url):
 def audio_task(chat_id, message_id):
     logging.info("Audio celery tasks started for %s-%s", chat_id, message_id)
     bot_msg = get_messages(chat_id, message_id)
-    normal_audio(bot_msg)
+    normal_audio(bot_msg, celery_client)
     logging.info("Audio celery tasks ended.")
 
 
@@ -131,11 +131,11 @@ def direct_download_entrance(bot_msg, client, url):
         direct_normal_download(bot_msg, client, url)
 
 
-def audio_entrance(bot_msg):
+def audio_entrance(bot_msg, client):
     if ENABLE_CELERY:
         audio_task.delay(bot_msg.chat.id, bot_msg.message_id)
     else:
-        normal_audio(bot_msg)
+        normal_audio(bot_msg, client)
 
 
 def direct_normal_download(bot_msg, client, url):
@@ -191,21 +191,21 @@ def direct_normal_download(bot_msg, client, url):
         bot_msg.edit_text(f"Download success!✅")
 
 
-def normal_audio(bot_msg):
+def normal_audio(bot_msg, client):
     chat_id = bot_msg.chat.id
     mp4_name = bot_msg.video.file_name  # 'youtube-dl_test_video_a.mp4'
     flac_name = mp4_name.replace("mp4", "m4a")
 
     with tempfile.NamedTemporaryFile() as tmp:
         logging.info("downloading to %s", tmp.name)
-        celery_client.send_chat_action(chat_id, 'record_video_note')
-        celery_client.download_media(bot_msg, tmp.name)
+        client.send_chat_action(chat_id, 'record_video_note')
+        client.download_media(bot_msg, tmp.name)
         logging.info("downloading complete %s", tmp.name)
         # execute ffmpeg
-        celery_client.send_chat_action(chat_id, 'record_audio')
+        client.send_chat_action(chat_id, 'record_audio')
         flac_tmp = convert_flac(flac_name, tmp)
-        celery_client.send_chat_action(chat_id, 'upload_audio')
-        celery_client.send_audio(chat_id, flac_tmp)
+        client.send_chat_action(chat_id, 'upload_audio')
+        client.send_audio(chat_id, flac_tmp)
         Redis().update_metrics("audio_success")
         os.unlink(flac_tmp)
 
