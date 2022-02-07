@@ -26,7 +26,7 @@ from pyrogram import idle
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from client_init import create_app
-from config import BROKER, ENABLE_CELERY, ENABLE_VIP, WORKERS
+from config import AUDIO_FORMAT, BROKER, ENABLE_CELERY, ENABLE_VIP, WORKERS
 from constant import BotText
 from db import Redis
 from downloader import (edit_text, sizeof_fmt, tqdm_progress, upload_hook,
@@ -206,13 +206,17 @@ def normal_audio(bot_msg, client):
         logging.info("downloading to %s", tmp)
         base_path = pathlib.Path(tmp)
         video_path = base_path.joinpath(fn)
-        audio = base_path.joinpath(fn).with_suffix(".m4a")
+        audio = base_path.joinpath(fn).with_suffix(f".{AUDIO_FORMAT}")
         client.send_chat_action(chat_id, 'record_video_note')
         client.download_media(bot_msg, video_path)
         logging.info("downloading complete %s", video_path)
         # execute ffmpeg
         client.send_chat_action(chat_id, 'record_audio')
-        subprocess.check_output(f"ffmpeg -y -i '{video_path}' -vn -acodec copy '{audio}'", shell=True)
+        try:
+            subprocess.check_output(f"ffmpeg -y -i '{video_path}' -vn -acodec copy '{audio}'", shell=True)
+        except subprocess.CalledProcessError:
+            subprocess.check_output(f"ffmpeg -y -i '{video_path}' '{audio}'", shell=True)
+
         client.send_chat_action(chat_id, 'upload_audio')
         client.send_audio(chat_id, audio)
         Redis().update_metrics("audio_success")

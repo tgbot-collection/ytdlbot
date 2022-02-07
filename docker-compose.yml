@@ -13,8 +13,6 @@ services:
     restart: always
     logging:
       driver: none
-    ports:
-      - "192.168.6.1:6379:6379"
 
   mysql:
     image: mysql:5.7
@@ -25,8 +23,6 @@ services:
       MYSQL_ROOT_PASSWORD: 'root'
     logging:
       driver: none
-    ports:
-      - "192.168.6.1:3306:3306"
 
   ytdl:
     image: bennythink/ytdlbot

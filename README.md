@@ -22,8 +22,9 @@ Websites [supported by youtube-dl](https://ytdl-org.github.io/youtube-dl/support
 # Limitations of my bot
 
 I don't have unlimited servers and bandwidth, so I have to make some restrictions.
+
 * 10 GiB one-way traffic per 24 hours for each user
-* maximum 5 minutes streaming conversion support 
+* maximum 5 minutes streaming conversion support
 * maximum 3 subscriptions
 
 You can choose to become 'VIP' if you really need large traffic. And also, you could always deploy your own bot.
@@ -96,11 +97,12 @@ vim env/ytdl.env
 
 you can configure all the following environment variables:
 
-* WORKERS: default 200
-* APP_ID: **REQUIRED**
+* PYRO_WORKERS: number of workers for pyrogram, default is 100
+* WORKERS: workers count for celery,it'll be doubled.
+* APP_ID: **REQUIRED**, get it from https://core.telegram.org/
 * APP_HASH: **REQUIRED**
 * TOKEN: **REQUIRED**
-* REDIS: **REQUIRED** ⚠️ Don't publish your redis server on the internet. ⚠️
+* REDIS: **REQUIRED if you need VIP mode** ⚠️ Don't publish your redis server on the internet. ⚠️
 
 * OWNER: owner username
 * QUOTA: quota in bytes
@@ -122,10 +124,17 @@ you can configure all the following environment variables:
 * MYSQL_HOST: you'll have to setup MySQL if you enable VIP mode
 * MYSQL_USER
 * MYSQL_PASS
+* GOOGLE_API_KEY: YouTube API key, required for YouTube video subscription.
+* AUDIO_FORMAT: audio format, default is m4a. You can set to any known and supported format for ffmpeg. For
+  example,`mp3`, `flac`, etc. ⚠️ m4a is the fastest. Other formats may affect performance.
 
 ## 3.2 Set up init data
 
+If you only need basic functionality, you can skip this step.
+
 ### 3.2.1 Create MySQL db
+
+Required for VIP, settings, YouTube subscription and notification.
 
 ```shell
 docker-compose up -d
@@ -133,10 +142,12 @@ docker-compose exec mysql bash
 
 mysql -u root -p
 
-> create database vip;
+> create database ytdl;
 ```
 
 ### 3.2.2 Setup flower db in `ytdlbot/ytdlbot/data`
+
+Required if you enable celery and want to monitor the workers.
 
 ```shell
 {} ~ python3
@@ -147,6 +158,8 @@ Type "help", "copyright", "credits" or "license" for more information.
 ```
 
 ### 3.2.3 Setup instagram cookies
+
+Required if you want to support instagram.
 
 You can use this extension
 [Get cookies.txt](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid)
@@ -185,7 +198,7 @@ docker-compose up -d ytdl
 
 ### 4.2 VIP mode
 
-You'll have to start MySQL and redis to support VIP mode.
+You'll have to start MySQL and redis to support VIP mode, subscription and settings.
 
 ```
 docker-compose up -d mysql redis ytdl
@@ -202,7 +215,7 @@ docker-compose up -d
 On the other machine:
 
 ```shell
-docker-compose -f worker up -d
+docker-compose -f worker.yml up -d
 ```
 
 **⚠️ Bear in mind don't publish redis directly on the internet! You can use WireGuard to wrap it up.**

@@ -9,10 +9,10 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 from pyrogram import Client
 
-from config import APP_HASH, APP_ID, TOKEN
+from config import APP_HASH, APP_ID, PYRO_WORKERS, TOKEN
 
 
-def create_app(session="ytdl", workers=100):
+def create_app(session="ytdl", workers=PYRO_WORKERS):
     _app = Client(session, APP_ID, APP_HASH,
                   bot_token=TOKEN, workers=workers,
                   # proxy={"hostname": "host.docker.internal", "port": 1080}
