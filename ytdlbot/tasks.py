@@ -72,6 +72,14 @@ def audio_task(chat_id, message_id):
     logging.info("Audio celery tasks ended.")
 
 
+def get_unique_clink(clink, settings):
+    try:
+        unique = "{}?p={}{}".format(clink, *settings[1:])
+    except IndexError:
+        unique = clink
+    return unique
+
+
 @app.task()
 def direct_download_task(chat_id, message_id, url):
     logging.info("Direct download celery tasks started for %s", url)
@@ -85,7 +93,7 @@ def forward_video(chat_id, url, client):
     vip = VIP()
     settings = get_user_settings(str(chat_id))
     clink = vip.extract_canonical_link(url)
-    unique = "{}?p={}{}".format(clink, *settings[1:])
+    unique = get_unique_clink(clink, settings)
 
     data = red.get_send_cache(unique)
     if not data:
@@ -263,7 +271,7 @@ def ytdl_normal_download(bot_msg, client, url):
                                             **meta
                                             )
             clink = VIP().extract_canonical_link(url)
-            unique = "{}?p={}{}".format(clink, *settings[1:])
+            unique = get_unique_clink(clink, settings)
             red.add_send_cache(unique, res_msg.chat.id, res_msg.message_id)
             red.update_metrics("video_success")
         bot_msg.edit_text('Download success!✅')

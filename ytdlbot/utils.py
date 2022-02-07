@@ -113,11 +113,14 @@ def get_revision():
 
 
 def get_func_queue(func) -> int:
-    count = 0
-    data = getattr(inspect, func)() or {}
-    for _, task in data.items():
-        count += len(task)
-    return count
+    try:
+        count = 0
+        data = getattr(inspect, func)() or {}
+        for _, task in data.items():
+            count += len(task)
+        return count
+    except Exception:
+        return 0
 
 
 def get_queue_stat() -> (int, int, int, str):
