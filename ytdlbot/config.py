@@ -52,3 +52,4 @@ MYSQL_USER = os.getenv("MYSQL_USER", "root")
 MYSQL_PASS = os.getenv("MYSQL_PASS", "root")
 
 AUDIO_FORMAT = os.getenv("AUDIO_FORMAT", "m4a")
+ARCHIVE_ID = os.getenv("ARCHIVE_ID")

@@ -43,6 +43,7 @@ You can choose to become 'VIP' if you really need large traffic. And also, you c
 8. support sending as file or streaming as video
 9. supports celery worker distribution - faster than before.
 10. subscriptions to YouTube Channels
+11. cache mechanism - for the same video you'll only have to download once.
 
 ![](assets/2.jpeg)
 
@@ -102,7 +103,7 @@ you can configure all the following environment variables:
 * APP_ID: **REQUIRED**, get it from https://core.telegram.org/
 * APP_HASH: **REQUIRED**
 * TOKEN: **REQUIRED**
-* REDIS: **REQUIRED if you need VIP mode** ⚠️ Don't publish your redis server on the internet. ⚠️
+* REDIS: **REQUIRED if you need VIP mode and cache** ⚠️ Don't publish your redis server on the internet. ⚠️
 
 * OWNER: owner username
 * QUOTA: quota in bytes
@@ -127,6 +128,7 @@ you can configure all the following environment variables:
 * GOOGLE_API_KEY: YouTube API key, required for YouTube video subscription.
 * AUDIO_FORMAT: audio format, default is m4a. You can set to any known and supported format for ffmpeg. For
   example,`mp3`, `flac`, etc. ⚠️ m4a is the fastest. Other formats may affect performance.
+* ARCHIVE_ID: group or channel id/username. All downloads will send to this group first and then forward to end user.
 
 ## 3.2 Set up init data
 
@@ -134,7 +136,7 @@ If you only need basic functionality, you can skip this step.
 
 ### 3.2.1 Create MySQL db
 
-Required for VIP, settings, YouTube subscription and notification.
+Required for VIP, settings, YouTube subscription.
 
 ```shell
 docker-compose up -d

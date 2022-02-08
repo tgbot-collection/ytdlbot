@@ -26,7 +26,8 @@ from pyrogram import idle
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from client_init import create_app
-from config import AUDIO_FORMAT, BROKER, ENABLE_CELERY, ENABLE_VIP, WORKERS
+from config import (ARCHIVE_ID, AUDIO_FORMAT, BROKER, ENABLE_CELERY,
+                    ENABLE_VIP, WORKERS)
 from constant import BotText
 from db import Redis
 from downloader import (edit_text, sizeof_fmt, tqdm_progress, upload_hook,
@@ -257,6 +258,8 @@ def ytdl_normal_download(bot_msg, client, url):
             cap = f"`{filename}`\n\n{url}\n\nInfo: {meta['width']}x{meta['height']} {size} {meta['duration']}s" \
                   f"\n{remain}\n{worker}"
             settings = get_user_settings(str(chat_id))
+            if ARCHIVE_ID:
+                chat_id = ARCHIVE_ID
             if settings[2] == "document":
                 logging.info("Sending as document")
                 res_msg = client.send_document(chat_id, video_path,
@@ -284,6 +287,8 @@ def ytdl_normal_download(bot_msg, client, url):
             unique = get_unique_clink(clink, settings)
             red.add_send_cache(unique, res_msg.chat.id, res_msg.message_id)
             red.update_metrics("video_success")
+            if ARCHIVE_ID:
+                client.forward_messages(bot_msg.chat.id, ARCHIVE_ID, res_msg.message_id)
         bot_msg.edit_text('Download success!✅')
     else:
         client.send_chat_action(chat_id, 'typing')
