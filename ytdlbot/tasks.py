@@ -27,7 +27,7 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from client_init import create_app
 from config import (ARCHIVE_ID, AUDIO_FORMAT, BROKER, ENABLE_CELERY,
-                    ENABLE_VIP, WORKERS)
+                    ENABLE_VIP, TG_MAX_SIZE, WORKERS)
 from constant import BotText
 from db import Redis
 from downloader import (edit_text, sizeof_fmt, tqdm_progress, upload_hook,
@@ -228,6 +228,17 @@ def get_worker_status():
     return f"Downloaded by  {worker_name}"
 
 
+def upload_transfer_sh(video_paths) -> "str":
+    file = {}
+    for p in video_paths:
+        file[p.name] = p.open("rb")
+    try:
+        req = requests.post("https://transfer.sh", files=file)
+        return req.text
+    except requests.exceptions as e:
+        return f"Upload failed!❌\n\n```{e}```"
+
+
 def ytdl_normal_download(bot_msg, client, url):
     chat_id = bot_msg.chat.id
     temp_dir = tempfile.TemporaryDirectory()
@@ -252,7 +263,15 @@ def ytdl_normal_download(bot_msg, client, url):
             # normally there's only one video in that path...
             filename = pathlib.Path(video_path).name
             remain = bot_text.remaining_quota_caption(chat_id)
-            size = sizeof_fmt(os.stat(video_path).st_size)
+            st_size = os.stat(video_path).st_size
+            size = sizeof_fmt(st_size)
+            if st_size > TG_MAX_SIZE:
+                t = f"Your video size is {size} which is too large for Telegram. I'll upload it to transfer.sh"
+                bot_msg.edit_text(t)
+                client.send_chat_action(chat_id, 'upload_document')
+                client.send_message(chat_id, upload_transfer_sh(video_paths))
+                return
+
             meta = get_metadata(video_path)
             worker = "Downloaded by {}".format(os.getenv("WORKER_NAME", "Unknown"))
             cap = f"`{filename}`\n\n{url}\n\nInfo: {meta['width']}x{meta['height']} {size} {meta['duration']}s" \
