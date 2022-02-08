@@ -131,7 +131,7 @@ def unsubscribe_handler(client: "Client", message: "types.Message"):
     client.send_message(chat_id, text, disable_web_page_preview=True)
 
 
-@app.on_message(filters.command(["hot_patch"]))
+@app.on_message(filters.command(["patch"]))
 def patch_handler(client: "Client", message: "types.Message"):
     username = message.from_user.username
     chat_id = message.chat.id
@@ -195,7 +195,8 @@ def settings_handler(client: "Client", message: "types.Message"):
         [
             [  # First row
                 InlineKeyboardButton("send as document", callback_data="document"),
-                InlineKeyboardButton("send as video", callback_data="video")
+                InlineKeyboardButton("send as video", callback_data="video"),
+                InlineKeyboardButton("send as audio", callback_data="audio")
             ],
             [  # second row
                 InlineKeyboardButton("High Quality", callback_data="high"),
@@ -248,7 +249,7 @@ def download_handler(client: "Client", message: "types.Message"):
 
     red.update_metrics("video_request")
     text = bot_text.get_receive_link_text()
-    time.sleep(random.random() * 3)
+    time.sleep(random.random() * 2)
     try:
         # raise pyrogram.errors.exceptions.FloodWait(10)
         bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text(text, quote=True)
@@ -267,13 +268,13 @@ def download_handler(client: "Client", message: "types.Message"):
     ytdl_download_entrance(bot_msg, client, url)
 
 
-@app.on_callback_query(filters.regex(r"document|video"))
+@app.on_callback_query(filters.regex(r"document|video|audio"))
 def send_method_callback(client: "Client", callback_query: types.CallbackQuery):
     chat_id = callback_query.message.chat.id
     data = callback_query.data
     logging.info("Setting %s file type to %s", chat_id, data)
     set_user_settings(chat_id, "method", data)
-    callback_query.answer(f"Your video send type was set to {callback_query.data}")
+    callback_query.answer(f"Your send type was set to {callback_query.data}")
 
 
 @app.on_callback_query(filters.regex(r"high|medium|low"))
@@ -285,7 +286,7 @@ def download_resolution_callback(client: "Client", callback_query: types.Callbac
     callback_query.answer(f"Your default download quality was set to {callback_query.data}")
 
 
-@app.on_callback_query(filters.regex(r"audio"))
+@app.on_callback_query(filters.regex(r"convert"))
 def audio_callback(client: "Client", callback_query: types.CallbackQuery):
     callback_query.answer(f"Converting to audio...please wait patiently")
     Redis().update_metrics("audio_request")

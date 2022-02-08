@@ -85,6 +85,9 @@ def adjust_formats(user_id: "str", url: "str", formats: "list"):
             formats.insert(0, f"bestvideo[ext=mp4][height={m}]+bestaudio[ext=m4a]")
             formats.insert(1, f"bestvideo[vcodec^=avc][height={m}]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best")
 
+    if settings[2] == "audio":
+        formats.insert(0, "bestaudio[ext=m4a]")
+
 
 def get_metadata(video_path):
     width, height, duration = 1280, 720, 0
@@ -96,9 +99,12 @@ def get_metadata(video_path):
         duration = int(float(video_streams["format"]["duration"]))
     except Exception as e:
         logging.error(e)
+    try:
+        thumb = pathlib.Path(video_path).parent.joinpath(f"{uuid.uuid4().hex}-thunmnail.png").as_posix()
+        ffmpeg.input(video_path, ss=duration / 2).filter('scale', width, -1).output(thumb, vframes=1).run()
+    except ffmpeg._run.Error:
+        thumb = None
 
-    thumb = pathlib.Path(video_path).parent.joinpath(f"{uuid.uuid4().hex}-thunmnail.png").as_posix()
-    ffmpeg.input(video_path, ss=duration / 2).filter('scale', width, -1).output(thumb, vframes=1).run()
     return dict(height=height, width=width, duration=duration, thumb=thumb)
 
 

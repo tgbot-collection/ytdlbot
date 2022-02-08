@@ -213,7 +213,7 @@ def normal_audio(bot_msg, client):
         # execute ffmpeg
         client.send_chat_action(chat_id, 'record_audio')
         try:
-            subprocess.check_output(f"ffmpeg -y -i '{video_path}' -vn -acodec copy '{audio}'", shell=True)
+            subprocess.check_output(f'ffmpeg -y -i "{video_path}" -vn -acodec copy "{audio}"', shell=True)
         except subprocess.CalledProcessError:
             subprocess.check_output(f"ffmpeg -y -i '{video_path}' '{audio}'", shell=True)
 
@@ -237,8 +237,8 @@ def ytdl_normal_download(bot_msg, client, url):
         [
             [  # First row
                 InlineKeyboardButton(  # Generates a callback query when pressed
-                    "audio",
-                    callback_data="audio"
+                    f"convert to audio({AUDIO_FORMAT})",
+                    callback_data="convert"
                 )
             ]
         ]
@@ -265,6 +265,12 @@ def ytdl_normal_download(bot_msg, client, url):
                                                reply_markup=markup,
                                                thumb=meta["thumb"]
                                                )
+            elif settings[2] == "audio":
+                logging.info("Sending as audio")
+                res_msg = client.send_audio(chat_id, video_path,
+                                            caption=cap,
+                                            progress=upload_hook, progress_args=(bot_msg,),
+                                            )
             else:
                 logging.info("Sending as video")
                 res_msg = client.send_video(chat_id, video_path,

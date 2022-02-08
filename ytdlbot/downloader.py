@@ -158,6 +158,8 @@ def convert_to_mp4(resp: dict, bot_msg):
 
 
 def can_convert_mp4(video_path, uid):
+    if not ENABLE_VIP:
+        return True
     video_streams = ffmpeg.probe(video_path, select_streams="v")
     try:
         duration = int(float(video_streams["format"]["duration"]))
