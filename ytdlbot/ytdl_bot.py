@@ -302,8 +302,8 @@ def periodic_sub_check():
         if video_url:
             logging.info(f"periodic update:{video_url} - {uids}")
             for uid in uids:
-                # TODO can we send and forward?
-                app.send_message(uid, video_url)
+                bot_msg = app.send_message(uid, f"{video_url} is downloading...", disable_web_page_preview=True)
+                ytdl_download_entrance(bot_msg, app, video_url)
                 time.sleep(random.random())
 
 
