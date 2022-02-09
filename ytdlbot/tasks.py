@@ -12,12 +12,12 @@ import os
 import pathlib
 import re
 import subprocess
-import psutil
 import tempfile
 import threading
 import time
 from urllib.parse import quote_plus
 
+import psutil
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from celery import Celery
@@ -223,9 +223,11 @@ def normal_audio(bot_msg, client):
         Redis().update_metrics("audio_success")
 
 
-def get_worker_status():
+def get_dl_source():
     worker_name = os.getenv("WORKER_NAME")
-    return f"Downloaded by  {worker_name}"
+    if worker_name:
+        return f"Downloaded by  {worker_name}"
+    return ""
 
 
 def upload_transfer_sh(video_paths) -> "str":
@@ -273,7 +275,7 @@ def ytdl_normal_download(bot_msg, client, url):
                 return
 
             meta = get_metadata(video_path)
-            worker = "Downloaded by {}".format(os.getenv("WORKER_NAME", "Unknown"))
+            worker = get_dl_source()
             cap = f"`{filename}`\n\n{url}\n\nInfo: {meta['width']}x{meta['height']} {size} {meta['duration']}s" \
                   f"\n{remain}\n{worker}"
             settings = get_user_settings(str(chat_id))

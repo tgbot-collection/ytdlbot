@@ -295,6 +295,3 @@ def subscribe_query():
             print(f"{has} - {uid}")
 
 
-if __name__ == '__main__':
-    a = VIP.extract_canonical_link("https://www.youtube.com/shorts/YrnvPPGznXM")
-    print(a)

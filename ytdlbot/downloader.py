@@ -24,7 +24,7 @@ import yt_dlp as ytdl
 from tqdm import tqdm
 from yt_dlp import DownloadError
 
-from config import ENABLE_VIP, MAX_DURATION, TG_MAX_SIZE
+from config import AUDIO_FORMAT, ENABLE_VIP, MAX_DURATION, TG_MAX_SIZE
 from db import Redis
 from limit import VIP
 from utils import (adjust_formats, apply_log_formatter, current_time,
@@ -139,10 +139,9 @@ def convert_to_mp4(resp: dict, bot_msg):
                         bot_msg.chat.id,
                         "You're not VIP, so you can't convert longer video to streaming formats.")
                     break
-                pobj = pathlib.Path(path)
-                edit_text(bot_msg, f"{current_time()}: Converting {pobj.name} to mp4. Please wait.")
-                new_file_path = pobj.with_suffix(".mp4")
-                cmd = ["ffmpeg", "-i", path, new_file_path]
+                edit_text(bot_msg, f"{current_time()}: Converting {path.name} to mp4. Please wait.")
+                new_file_path = path.with_suffix(".mp4")
+                cmd = ["ffmpeg", "-y", "-i", path, new_file_path]
                 logging.info("Detected %s, converting to mp4...", mime)
                 subprocess.check_output(cmd)
                 index = resp["filepath"].index(path)
@@ -183,7 +182,6 @@ def ytdl_download(url, tempdir, bm) -> dict:
     ]
     adjust_formats(chat_id, url, formats)
     add_instagram_cookies(url, ydl_opts)
-    # TODO it appears twitter download on macOS will fail. Don't know why...Linux's fine.
     for f in formats:
         if f:
             ydl_opts["format"] = f
@@ -207,7 +205,7 @@ def ytdl_download(url, tempdir, bm) -> dict:
         return response
 
     for i in os.listdir(tempdir):
-        p: "str" = os.path.join(tempdir, i)
+        p = pathlib.Path(tempdir, i)
         file_size = os.stat(p).st_size
         if ENABLE_VIP:
             remain, _, ttl = VIP().check_remaining_quota(chat_id)
@@ -227,9 +225,26 @@ def ytdl_download(url, tempdir, bm) -> dict:
     if settings[2] == "video" or isinstance(settings[2], MagicMock):
         # only convert if send type is video
         convert_to_mp4(response, bm)
+    if settings[2] == "audio":
+        check_audio_format(response)
     # disable it for now
     # split_large_video(response)
     return response
+
+
+def check_audio_format(resp: "dict"):
+    if resp["status"]:
+        # all_converted = []
+        path: pathlib.PosixPath
+        for path in resp["filepath"]:
+            # if we can't guess file type, we assume it's video/mp4
+            if path.suffix != f".{AUDIO_FORMAT}":
+                new_path = path.with_suffix(f".{AUDIO_FORMAT}")
+                cmd = 'ffmpeg -y -i "{}" "{}"'.format(path, new_path)
+                subprocess.check_output(cmd, shell=True)
+                path.unlink()
+                index = resp["filepath"].index(path)
+                resp["filepath"][index] = new_path
 
 
 def add_instagram_cookies(url: "str", opt: "dict"):
