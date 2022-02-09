@@ -187,6 +187,18 @@ class VIP(Redis, MySQL):
         logging.info("Checking peroidic subscriber...")
         return group
 
+    def sub_count(self):
+        sql = """
+        select user_id, channel.title, channel.link
+        from subscribe, channel where subscribe.channel_id = channel.channel_id
+        """
+        self.cur.execute(sql)
+        data = self.cur.fetchall()
+        text = f"Total {len(data)} subscriptions found.\n\n"
+        for item in data:
+            text += "{} ==> [{}]({})\n".format(*item)
+        return text
+
 
 class BuyMeACoffee:
     def __init__(self):
@@ -293,5 +305,3 @@ def subscribe_query():
         has = vip.has_newer_update(cid)
         if has:
             print(f"{has} - {uid}")
-
-

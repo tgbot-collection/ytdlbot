@@ -171,6 +171,14 @@ def terms_handler(client: "Client", message: "types.Message"):
     client.send_message(chat_id, bot_text.terms)
 
 
+@app.on_message(filters.command(["sub_count"]))
+def sub_count_handler(client: "Client", message: "types.Message"):
+    username = message.from_user.username
+    chat_id = message.chat.id
+    if username == OWNER:
+        client.send_message(chat_id, VIP().sub_count())
+
+
 @app.on_message(filters.command(["direct"]))
 def direct_handler(client: "Client", message: "types.Message"):
     chat_id = message.from_user.id

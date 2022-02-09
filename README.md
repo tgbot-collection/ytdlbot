@@ -237,6 +237,7 @@ settings - Set your preference
 direct - Download file directly
 sub - Subscribe to YouTube Channel
 unsub - Unsubscribe from YouTube Channel
+sub_count - Check subscription status, owner only.
 ```
 
 # Test data
