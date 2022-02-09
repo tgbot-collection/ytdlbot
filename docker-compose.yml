@@ -2,7 +2,7 @@ version: '3.1'
 
 services:
   socat:
-    image: jmb12686/socat
+    image: bennythink/socat
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
