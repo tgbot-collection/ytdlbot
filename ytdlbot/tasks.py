@@ -12,7 +12,7 @@ import os
 import pathlib
 import re
 import subprocess
-import sys
+import psutil
 import tempfile
 import threading
 import time
@@ -334,7 +334,7 @@ def hot_patch(*args):
         subprocess.call(pull, shell=True, cwd=git_path)
 
     logging.info("Code is updated, applying hot patch now...")
-    sys.exit(2)
+    psutil.Process().kill()
 
 
 def run_celery():
