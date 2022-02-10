@@ -13,7 +13,7 @@ influxdb==5.3.1
 beautifulsoup4==4.10.0
 fakeredis==1.7.0
 supervisor==4.2.4
-tgbot-ping==1.0.2
+tgbot-ping==1.0.3
 redis==4.0.2
 requests==2.27.1
 tqdm==4.62.3
