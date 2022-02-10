@@ -201,7 +201,8 @@ class MySQL:
 
     def __init__(self):
         if MYSQL_HOST:
-            self.con = pymysql.connect(host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl", charset="utf8mb4")
+            self.con = pymysql.connect(host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl",
+                                       charset="utf8mb4")
         else:
             self.con = MagicMock()
 
@@ -222,7 +223,7 @@ class MySQL:
 class InfluxDB:
     def __init__(self):
         self.client = InfluxDBClient(host=os.getenv("INFLUX_HOST", "192.168.7.233"), database="celery")
-        self.data = self.get_worker_data()
+        self.data = None
 
     def __del__(self):
         self.client.close()
@@ -297,6 +298,7 @@ class InfluxDB:
 
     def collect_data(self):
         with contextlib.suppress(Exception):
+            self.data = self.get_worker_data()
             self.__fill_worker_data()
             self.__fill_overall_data()
             self.__fill_redis_metrics()
