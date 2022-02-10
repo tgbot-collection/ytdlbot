@@ -343,7 +343,7 @@ def hot_patch(*args):
 def run_celery():
     argv = [
         "-A", "tasks", 'worker', '--loglevel=info',
-        "--pool=threads", f"--concurrency={WORKERS * 2}",
+        "--pool=threads", f"--concurrency={WORKERS}",
         "-n", os.getenv("WORKER_NAME", "")
     ]
     app.worker_main(argv)

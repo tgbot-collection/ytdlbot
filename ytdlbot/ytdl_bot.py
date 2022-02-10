@@ -138,8 +138,8 @@ def patch_handler(client: "Client", message: "types.Message"):
     if username == OWNER:
         celery_app.control.broadcast("hot_patch")
         client.send_chat_action(chat_id, "typing")
-        client.send_message(chat_id, "Oorah!")
         hot_patch()
+        client.send_message(chat_id, "Oorah!")
 
 
 @app.on_message(filters.command(["ping"]))
