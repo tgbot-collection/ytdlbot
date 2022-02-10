@@ -141,9 +141,8 @@ def convert_to_mp4(resp: dict, bot_msg):
                     break
                 edit_text(bot_msg, f"{current_time()}: Converting {path.name} to mp4. Please wait.")
                 new_file_path = path.with_suffix(".mp4")
-                cmd = ["ffmpeg", "-y", "-i", path, new_file_path]
                 logging.info("Detected %s, converting to mp4...", mime)
-                subprocess.check_output(cmd)
+                subprocess.check_output(["ffmpeg", "-y", "-i", path, new_file_path])
                 index = resp["filepath"].index(path)
                 resp["filepath"][index] = new_file_path
 
@@ -237,11 +236,9 @@ def check_audio_format(resp: "dict"):
         # all_converted = []
         path: pathlib.PosixPath
         for path in resp["filepath"]:
-            # if we can't guess file type, we assume it's video/mp4
             if path.suffix != f".{AUDIO_FORMAT}":
                 new_path = path.with_suffix(f".{AUDIO_FORMAT}")
-                cmd = 'ffmpeg -y -i "{}" "{}"'.format(path, new_path)
-                subprocess.check_output(cmd, shell=True)
+                subprocess.check_output(["ffmpeg", "-y", "-i", path, new_path])
                 path.unlink()
                 index = resp["filepath"].index(path)
                 resp["filepath"][index] = new_path

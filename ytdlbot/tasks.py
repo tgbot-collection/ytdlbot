@@ -214,9 +214,10 @@ def normal_audio(bot_msg, client):
         # execute ffmpeg
         client.send_chat_action(chat_id, 'record_audio')
         try:
-            subprocess.check_output(f'ffmpeg -y -i "{video_path}" -vn -acodec copy "{audio}"', shell=True)
+            subprocess.check_output(["ffmpeg", "-y", "-i", video_path, "-vn", "-acodec", "copy", audio])
         except subprocess.CalledProcessError:
-            subprocess.check_output(f"ffmpeg -y -i '{video_path}' '{audio}'", shell=True)
+            # CPU consuming if re-encoding.
+            subprocess.check_output(["ffmpeg", "-y", "-i", video_path, audio])
 
         client.send_chat_action(chat_id, 'upload_audio')
         client.send_audio(chat_id, audio)
