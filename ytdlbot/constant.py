@@ -11,9 +11,10 @@ import time
 
 from config import (AFD_LINK, COFFEE_LINK, ENABLE_CELERY, ENABLE_VIP, EX,
                     MULTIPLY, REQUIRED_MEMBERSHIP, USD2CNY)
+from db import InfluxDB
 from downloader import sizeof_fmt
 from limit import QUOTA, VIP
-from utils import get_func_queue, get_queue_stat
+from utils import get_func_queue
 
 
 class BotText:
@@ -116,11 +117,6 @@ Sending format: **{1}**
             return ""
 
     @staticmethod
-    def queue_stats():
-        _, _, _, stats = get_queue_stat()
-        return stats
-
-    @staticmethod
     def get_receive_link_text():
         reserved = get_func_queue("reserved")
         if ENABLE_CELERY and reserved:
@@ -129,3 +125,17 @@ Sending format: **{1}**
             text = "Your task was added to active queue.\nProcessing...\n\n"
 
         return text
+
+    @staticmethod
+    def ping_worker():
+        workers = InfluxDB().extract_dashboard_data()
+        text = ""
+        for worker in workers:
+            fields = worker["fields"]
+            hostname = worker["tags"]["hostname"]
+            status = {True: "✅"}.get(fields["status"], "❌")
+            active = fields["active"]
+            load = "{},{},{}".format(fields["load1"], fields["load5"], fields["load15"])
+            text += f"{status}{hostname} **{active}** {load}\n"
+        return text
+

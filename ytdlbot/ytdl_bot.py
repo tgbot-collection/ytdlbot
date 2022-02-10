@@ -151,8 +151,8 @@ def ping_handler(client: "Client", message: "types.Message"):
     else:
         bot_info = get_runtime("ytdlbot_ytdl_1", "YouTube-dl")
     if message.chat.username == OWNER:
-        stats = bot_text.queue_stats()
-        client.send_document(chat_id, Redis().generate_file(), caption=f"{bot_info}\n{stats}")
+        stats = bot_text.ping_worker()
+        client.send_document(chat_id, Redis().generate_file(), caption=f"{bot_info}\n\n{stats}")
     else:
         client.send_message(chat_id, f"{bot_info}")
 

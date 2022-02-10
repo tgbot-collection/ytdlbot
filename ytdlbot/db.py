@@ -222,6 +222,7 @@ class MySQL:
 class InfluxDB:
     def __init__(self):
         self.client = InfluxDBClient(host=os.getenv("INFLUX_HOST", "192.168.7.233"), database="celery")
+        self.data = self.get_worker_data()
 
     def __del__(self):
         self.client.close()
@@ -234,9 +235,9 @@ class InfluxDB:
         headers = {"Authorization": f"Basic {token}"}
         return requests.get("https://celery.dmesg.app/dashboard?json=1", headers=headers).json()
 
-    def __fill_worker_data(self, data):
+    def extract_dashboard_data(self):
         json_body = []
-        for worker in data["data"]:
+        for worker in self.data["data"]:
             load1, load5, load15 = worker["loadavg"]
             t = {
                 "measurement": "tasks",
@@ -251,16 +252,21 @@ class InfluxDB:
                     "task-succeeded": worker.get("task-succeeded", 0),
                     "task-failed": worker.get("task-failed", 0),
                     "active": worker.get("active", 0),
+                    "status": worker.get("status", False),
                     "load1": load1,
                     "load5": load5,
                     "load15": load15,
                 }
             }
             json_body.append(t)
+        return json_body
+
+    def __fill_worker_data(self):
+        json_body = self.extract_dashboard_data()
         self.client.write_points(json_body)
 
-    def __fill_overall_data(self, data):
-        active = sum([i["active"] for i in data["data"]])
+    def __fill_overall_data(self):
+        active = sum([i["active"] for i in self.data["data"]])
         json_body = [
             {
                 "measurement": "active",
@@ -291,8 +297,7 @@ class InfluxDB:
 
     def collect_data(self):
         with contextlib.suppress(Exception):
-            data = self.get_worker_data()
-            self.__fill_worker_data(data)
-            self.__fill_overall_data(data)
+            self.__fill_worker_data()
+            self.__fill_overall_data()
             self.__fill_redis_metrics()
             logging.debug("InfluxDB data was collected.")

@@ -129,27 +129,6 @@ def get_func_queue(func) -> int:
         return 0
 
 
-def get_queue_stat() -> (int, int, int, str):
-    concurrency = 0
-    if ENABLE_CELERY is False:
-        return 0, 0, 0, ""
-
-    stats = inspect.stats()
-    if stats is None:
-        err = "No worker is running."
-        logging.error(err)
-        return 0, 0, 0, err
-
-    for _, stat in stats.items():
-        concurrency += stat["pool"]["max-concurrency"]
-
-    active = get_func_queue("active")
-    reserved = get_func_queue("reserved")
-    ping = inspect.ping()
-    stats = f"concurrency {concurrency}, active {active}, reserved {reserved}.\n\n{ping}"
-
-    return concurrency, active, reserved, stats
-
 
 def tail(f, lines=1, _buffer=4098):
     """Tail a file and get X lines from the end"""
