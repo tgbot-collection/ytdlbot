@@ -35,7 +35,7 @@ from downloader import (edit_text, sizeof_fmt, tqdm_progress, upload_hook,
                         ytdl_download)
 from limit import VIP
 from utils import (apply_log_formatter, auto_restart, customize_logger,
-                   get_metadata, get_user_settings)
+                   get_metadata, get_revision, get_user_settings)
 
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
 apply_log_formatter()
@@ -319,6 +319,11 @@ def ytdl_normal_download(bot_msg, client, url):
         bot_msg.edit_text(f"Download failed!❌\n\n```{tb}```", disable_web_page_preview=True)
 
     temp_dir.cleanup()
+
+
+@Panel.register
+def ping_revision(*args):
+    return get_revision()
 
 
 @Panel.register

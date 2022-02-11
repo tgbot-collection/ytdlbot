@@ -128,7 +128,14 @@ Sending format: **{1}**
 
     @staticmethod
     def ping_worker():
+        from tasks import app as celery_app
         workers = InfluxDB().extract_dashboard_data()
+        # [{'celery@BennyのMBP': 'abc'}, {'celery@BennyのMBP': 'abc'}]
+        response = celery_app.control.broadcast("ping_revision", reply=True)
+        revision = {}
+        for item in response:
+            revision.update(item)
+
         text = ""
         for worker in workers:
             fields = worker["fields"]
@@ -136,6 +143,7 @@ Sending format: **{1}**
             status = {True: "✅"}.get(fields["status"], "❌")
             active = fields["active"]
             load = "{},{},{}".format(fields["load1"], fields["load5"], fields["load15"])
-            text += f"{status}{hostname} **{active}** {load}\n"
-        return text
+            rev = revision.get(hostname, "")
+            text += f"{status}{hostname} **{active}** {load} {rev}\n"
 
+        return text
