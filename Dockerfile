@@ -9,7 +9,8 @@ FROM python:3.9-alpine
 WORKDIR /ytdlbot/ytdlbot
 ENV TZ=Asia/Shanghai
 
-RUN apk update && apk add  --no-cache ffmpeg vnstat git
+COPY apk.txt /tmp/
+RUN apk update && xargs apk add  < /tmp/apk.txt
 COPY --from=builder /root/.local /usr/local
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo

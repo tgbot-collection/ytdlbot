@@ -323,21 +323,23 @@ def ytdl_normal_download(bot_msg, client, url):
 
 @Panel.register
 def hot_patch(*args):
-    git_path = pathlib.Path().cwd().parent
-    logging.info("Hot patching on path %s...", git_path)
+    app_path = pathlib.Path().cwd().parent
+    logging.info("Hot patching on path %s...", app_path)
 
+    apk_install = "xargs apk add  < apk.txt"
     pip_install = "pip install -r requirements.txt"
     unset = "git config --unset http.https://github.com/.extraheader"
     pull_unshallow = "git pull origin --unshallow"
     pull = "git pull"
 
-    subprocess.call(pip_install, shell=True, cwd=git_path)
-    subprocess.call(unset, shell=True, cwd=git_path)
-    if subprocess.call(pull_unshallow, shell=True, cwd=git_path) != 0:
+    subprocess.check_output(unset, shell=True, cwd=app_path)
+    if subprocess.check_output(pull_unshallow, shell=True, cwd=app_path) != 0:
         logging.info("Already unshallow, pulling now...")
-        subprocess.call(pull, shell=True, cwd=git_path)
+        subprocess.check_output(pull, shell=True, cwd=app_path)
 
     logging.info("Code is updated, applying hot patch now...")
+    subprocess.check_output(apk_install, shell=True, cwd=app_path)
+    subprocess.check_output(pip_install, shell=True, cwd=app_path)
     psutil.Process().kill()
 
 
