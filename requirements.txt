@@ -17,3 +17,4 @@ tgbot-ping==1.0.3
 redis==4.0.2
 requests==2.27.1
 tqdm==4.62.3
+requests-toolbelt==0.9.1
