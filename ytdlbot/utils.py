@@ -46,7 +46,7 @@ def get_user_settings(user_id: "str") -> "tuple":
     cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
     data = cur.fetchone()
     if data is None:
-        return 100, "high", "video"
+        return 100, "high", "video", "Celery"
     return data
 
 

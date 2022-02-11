@@ -24,6 +24,7 @@ from celery import Celery
 from celery.worker.control import Panel
 from pyrogram import idle
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 from client_init import create_app
 from config import (ARCHIVE_ID, AUDIO_FORMAT, BROKER, ENABLE_CELERY,
@@ -124,8 +125,8 @@ def ytdl_download_entrance(bot_msg, client, url):
     chat_id = bot_msg.chat.id
     if forward_video(chat_id, url, client):
         return
-
-    if ENABLE_CELERY:
+    mode = get_user_settings(str(chat_id))[-1]
+    if ENABLE_CELERY and mode in [None, "Celery"]:
         ytdl_download_task.delay(chat_id, bot_msg.message_id, url)
     else:
         ytdl_normal_download(bot_msg, client, url)
@@ -231,14 +232,14 @@ def get_dl_source():
     return ""
 
 
-def upload_transfer_sh(video_paths) -> "str":
-    file = {}
-    for p in video_paths:
-        file[p.name] = p.open("rb")
+def upload_transfer_sh(paths: list) -> "str":
+    d = {p.name: (p.name, p.open("rb")) for p in paths}
+    m = MultipartEncoder(fields=d)
+    headers = {'Content-Type': m.content_type}
     try:
-        req = requests.post("https://transfer.sh", files=file)
-        return req.text
-    except requests.exceptions as e:
+        req = requests.post("https://transfer.sh", data=m, headers=headers)
+        return re.sub(r"https://", "\nhttps://", req.text)
+    except requests.exceptions.RequestException as e:
         return f"Upload failed!❌\n\n```{e}```"
 
 
@@ -264,7 +265,7 @@ def ytdl_normal_download(bot_msg, client, url):
         bot_msg.edit_text('Download complete. Sending now...')
         for video_path in video_paths:
             # normally there's only one video in that path...
-            filename = pathlib.Path(video_path).name
+            filename = video_path.name
             remain = bot_text.remaining_quota_caption(chat_id)
             st_size = os.stat(video_path).st_size
             size = sizeof_fmt(st_size)

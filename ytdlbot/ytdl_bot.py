@@ -199,6 +199,15 @@ def direct_handler(client: "Client", message: "types.Message"):
 def settings_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
+    data = get_user_settings(str(chat_id))
+    set_mode = (data[-1])
+    text = {"Local": "Celery", "Celery": "Local"}.get(set_mode, "Local")
+    mode_text = f"Download mode: **{set_mode}**"
+    if message.chat.username == OWNER:
+        extra = [InlineKeyboardButton(f"Change download mode to {text}", callback_data=text)]
+    else:
+        extra = []
+
     markup = InlineKeyboardMarkup(
         [
             [  # First row
@@ -211,11 +220,11 @@ def settings_handler(client: "Client", message: "types.Message"):
                 InlineKeyboardButton("Medium Quality", callback_data="medium"),
                 InlineKeyboardButton("Low Quality", callback_data="low"),
             ],
+            extra
         ]
     )
 
-    data = get_user_settings(str(chat_id))
-    client.send_message(chat_id, bot_text.settings.format(data[1], data[2]), reply_markup=markup)
+    client.send_message(chat_id, bot_text.settings.format(data[1], data[2]) + mode_text, reply_markup=markup)
 
 
 @app.on_message(filters.command(["vip"]))
@@ -301,6 +310,13 @@ def audio_callback(client: "Client", callback_query: types.CallbackQuery):
 
     msg = callback_query.message
     audio_entrance(msg, client)
+
+
+@app.on_callback_query(filters.regex(r"Local|Celery"))
+def owner_local_callback(client: "Client", callback_query: types.CallbackQuery):
+    chat_id = callback_query.message.chat.id
+    set_user_settings(chat_id, "mode", callback_query.data)
+    callback_query.answer(f"Download mode was changed to {callback_query.data}")
 
 
 def periodic_sub_check():

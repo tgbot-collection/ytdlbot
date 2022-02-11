@@ -172,6 +172,7 @@ class MySQL:
         user_id    bigint          not null,
         resolution varchar(128) null,
         method     varchar(64)  null,
+        mode varchar(32) default 'Celery' null,
         constraint settings_pk
             primary key (user_id)
     );
