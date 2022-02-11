@@ -237,6 +237,7 @@ class InfluxDB:
         return requests.get("https://celery.dmesg.app/dashboard?json=1", headers=headers).json()
 
     def extract_dashboard_data(self):
+        self.data = self.get_worker_data()
         json_body = []
         for worker in self.data["data"]:
             load1, load5, load15 = worker["loadavg"]
