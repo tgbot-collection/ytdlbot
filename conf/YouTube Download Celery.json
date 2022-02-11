@@ -53,7 +53,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1642161412928,
+  "iteration": 1644554238421,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -232,7 +232,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "percent"
         },
         "overrides": []
       },
@@ -242,7 +243,7 @@
         "x": 12,
         "y": 0
       },
-      "id": 8,
+      "id": 10,
       "options": {
         "legend": {
           "calcs": [],
@@ -277,7 +278,7 @@
           "measurement": "metrics",
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT \nmean(\"today_audio_request\") as audio_request,\nmean(\"today_audio_success\") as audio_success,\n\nmean(\"today_bad_request\") as bad_request,\n\nmean(\"today_video_request\") as video_request,\nmean(\"today_video_success\") as video_success\nFROM \"metrics\" WHERE $timeFilter GROUP BY time($__interval), * ORDER BY asc ",
+          "query": "\nSELECT \nmean(\"today_audio_success\")/mean(\"today_audio_request\")*100 as audio_success,\nmean(\"today_video_success\")/mean(\"today_video_request\")*100 as video_success\n\nFROM \"metrics\" WHERE $timeFilter GROUP BY time($__interval), * ORDER BY asc ",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
@@ -298,7 +299,7 @@
           "tags": []
         }
       ],
-      "title": "Video & Audio",
+      "title": "Video & Audio Success Rate",
       "type": "timeseries"
     },
     {
@@ -436,7 +437,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "percent"
         },
         "overrides": []
       },
@@ -446,7 +448,7 @@
         "x": 12,
         "y": 8
       },
-      "id": 4,
+      "id": 9,
       "options": {
         "legend": {
           "calcs": [],
@@ -460,6 +462,133 @@
       "targets": [
         {
           "alias": "$tag_hostname:$col",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_CELERY}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "tasks",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "\nSELECT mean(\"task-succeeded\")/mean(\"task-received\")*100  AS success_rate,  mean(\"task-failed\")/mean(\"task-received\")*100 AS fail_rate\n\nFROM \"tasks\" WHERE (\"hostname\" =~ /^$hostname$/) AND $timeFilter GROUP BY time($__interval) ,* ORDER BY asc ",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "task-received"
+                ],
+                "type": "field"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "hostname",
+              "operator": "=~",
+              "value": "/^$hostname$/"
+            }
+          ]
+        }
+      ],
+      "title": "Task Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_CELERY}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 13,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "alias": "$tag_hostname:$col",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_CELERY}"
+          },
           "groupBy": [
             {
               "params": [
@@ -488,10 +617,6 @@
                   "task-received"
                 ],
                 "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
               }
             ]
           ],
@@ -505,6 +630,126 @@
         }
       ],
       "title": "Task Status",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_CELERY}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "alias": "$col",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_CELERY}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "metrics",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT \nmean(\"today_audio_request\") as audio_request,\nmean(\"today_audio_success\") as audio_success,\n\nmean(\"today_bad_request\") as bad_request,\n\nmean(\"today_video_request\") as video_request,\nmean(\"today_video_success\") as video_success\nFROM \"metrics\" WHERE $timeFilter GROUP BY time($__interval), * ORDER BY asc ",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "today_audio_success"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "title": "Video & Audio",
       "type": "timeseries"
     }
   ],
@@ -544,6 +789,6 @@
   "timezone": "",
   "title": "YouTube Download Celery",
   "uid": "9yXGmc1nk",
-  "version": 4,
+  "version": 14,
   "weekStart": ""
 }
