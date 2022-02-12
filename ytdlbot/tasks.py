@@ -337,14 +337,14 @@ def hot_patch(*args):
     pull_unshallow = "git pull origin --unshallow"
     pull = "git pull"
 
-    subprocess.check_output(unset, shell=True, cwd=app_path)
-    if subprocess.check_output(pull_unshallow, shell=True, cwd=app_path) != 0:
+    subprocess.call(unset, shell=True, cwd=app_path)
+    if subprocess.call(pull_unshallow, shell=True, cwd=app_path) != 0:
         logging.info("Already unshallow, pulling now...")
-        subprocess.check_output(pull, shell=True, cwd=app_path)
+        subprocess.call(pull, shell=True, cwd=app_path)
 
     logging.info("Code is updated, applying hot patch now...")
-    subprocess.check_output(apk_install, shell=True, cwd=app_path)
-    subprocess.check_output(pip_install, shell=True, cwd=app_path)
+    subprocess.call(apk_install, shell=True, cwd=app_path)
+    subprocess.call(pip_install, shell=True, cwd=app_path)
     psutil.Process().kill()
 
 
