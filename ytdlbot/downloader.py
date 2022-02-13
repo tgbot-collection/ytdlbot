@@ -195,7 +195,7 @@ def ytdl_download(url, tempdir, bm) -> dict:
         except (ValueError, DownloadError) as e:
             logging.error("Download failed for %s ", url)
             response["status"] = False
-            response["error"] = e
+            response["error"] = str(e)
         except Exception as e:
             logging.error("UNKNOWN EXCEPTION: %s", e)
 

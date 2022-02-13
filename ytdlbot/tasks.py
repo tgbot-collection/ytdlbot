@@ -7,6 +7,7 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
+import json
 import logging
 import os
 import pathlib
@@ -97,24 +98,27 @@ def forward_video(chat_id, url, client):
     clink = vip.extract_canonical_link(url)
     unique = get_unique_clink(clink, settings)
 
-    data = red.get_send_cache(unique)
-    if not data:
+    cache = red.get_send_cache(unique)
+    if not cache:
         return False
 
-    for uid, mid in data.items():
-        uid, mid = int(uid), int(mid)
+    for uid, mid in cache.items():
+        uid, mid = int(uid), json.loads(mid)
         try:
-            result_msg = client.get_messages(uid, mid)
-            logging.info("Forwarding message from %s %s %s to %s", clink, uid, mid, chat_id)
-            m = result_msg.forward(chat_id)
+            fwd_msg = client.forward_messages(chat_id, uid, mid)
+            if not fwd_msg:
+                raise ValueError("Failed to forward message")
             red.update_metrics("cache_hit")
-            if ENABLE_VIP:
-                file_size = getattr(result_msg.document, "file_size", None) or \
-                            getattr(result_msg.video, "file_size", 1024)
-                # TODO: forward file size may exceed the limit
-                vip.use_quota(chat_id, file_size)
-            red.add_send_cache(unique, chat_id, m.message_id)
+            if not isinstance(fwd_msg, list):
+                fwd_msg = [fwd_msg]
+            for fwd in fwd_msg:
+                if ENABLE_VIP:
+                    file_size = getattr(fwd.document, "file_size", None) or getattr(fwd.video, "file_size", 1024)
+                    # TODO: forward file size may exceed the limit
+                    vip.use_quota(chat_id, file_size)
+                red.add_send_cache(unique, chat_id, fwd.message_id)
             return True
+
         except Exception as e:
             logging.error("Failed to forward message %s", e)
             red.del_send_cache(unique, uid)

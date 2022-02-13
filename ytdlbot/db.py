@@ -10,6 +10,7 @@ __author__ = "Benny <benny.think@gmail.com>"
 import base64
 import contextlib
 import datetime
+import json
 import logging
 import os
 import re
@@ -142,7 +143,13 @@ class Redis:
 
     def add_send_cache(self, unique, uid, mid):
         # unique: video_url+resolution+send_type
-        self.r.hset(unique, uid, mid)
+        # value in redis [uid1,uid2]
+        values = []
+        v = self.r.hget(unique, uid)
+        if v:
+            values = json.loads(v)
+        values.append(mid)
+        self.r.hset(unique, uid, json.dumps(values))
 
     def get_send_cache(self, unique) -> "dict":
         return self.r.hgetall(unique)
