@@ -183,7 +183,7 @@ def direct_normal_download(bot_msg, client, url):
     if not filename:
         filename = quote_plus(url)
 
-    with tempfile.TemporaryDirectory() as f:
+    with tempfile.TemporaryDirectory(prefix="ytdl-") as f:
         filepath = f"{f}/{filename}"
         # consume the req.content
         downloaded = 0
@@ -208,7 +208,7 @@ def direct_normal_download(bot_msg, client, url):
 def normal_audio(bot_msg, client):
     chat_id = bot_msg.chat.id
     fn = getattr(bot_msg.video, "file_name", None) or getattr(bot_msg.document, "file_name", None)
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(prefix="ytdl-") as tmp:
         logging.info("downloading to %s", tmp)
         base_path = pathlib.Path(tmp)
         video_path = base_path.joinpath(fn)
@@ -249,7 +249,8 @@ def upload_transfer_sh(paths: list) -> "str":
 
 def ytdl_normal_download(bot_msg, client, url):
     chat_id = bot_msg.chat.id
-    temp_dir = tempfile.TemporaryDirectory()
+    temp_dir = tempfile.TemporaryDirectory(prefix="ytdl-")
+
     red = Redis()
     result = ytdl_download(url, temp_dir.name, bot_msg)
     logging.info("Download complete.")

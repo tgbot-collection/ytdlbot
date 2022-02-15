@@ -12,7 +12,9 @@ import inspect as pyinspect
 import logging
 import os
 import pathlib
+import shutil
 import subprocess
+import tempfile
 import time
 import uuid
 
@@ -129,7 +131,6 @@ def get_func_queue(func) -> int:
         return 0
 
 
-
 def tail(f, lines=1, _buffer=4098):
     """Tail a file and get X lines from the end"""
     # place holder for the lines found
@@ -209,6 +210,9 @@ def auto_restart():
     for method in method_list:
         if method():
             logging.critical("Bye bye world!☠️")
+            for item in pathlib.Path(tempfile.gettempdir()).glob("ytdl-*"):
+                shutil.rmtree(item, ignore_errors=True)
+
             psutil.Process().kill()
 
 
