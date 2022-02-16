@@ -64,7 +64,7 @@ def tqdm_progress(desc, total, finished, speed="", eta=""):
          )
     raw_output = f.getvalue()
     tqdm_output = raw_output.split("|")
-    progress = f"[{tqdm_output[1]}]"
+    progress = f"`[{tqdm_output[1]}]`"
     detail = tqdm_output[2]
     text = f"""
 {desc}
