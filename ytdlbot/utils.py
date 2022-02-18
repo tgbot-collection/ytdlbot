@@ -65,7 +65,7 @@ def set_user_settings(user_id: int, field: "str", value: "str"):
         if field == "method":
             method = value
             resolution = "high"
-        cur.execute("INSERT INTO settings VALUES (%s,%s,%s)", (user_id, resolution, method))
+        cur.execute("INSERT INTO settings VALUES (%s,%s,%s,%s)", (user_id, resolution, method, "Celery"))
     else:
         cur.execute(f"UPDATE settings SET {field} =%s WHERE user_id = %s", (value, user_id))
     db.con.commit()
