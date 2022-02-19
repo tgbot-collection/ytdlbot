@@ -141,21 +141,14 @@ class Redis:
         file.name = f"{date}.txt"
         return file
 
-    def add_send_cache(self, unique, uid, mid):
-        # unique: video_url+resolution+send_type
-        # value in redis [uid1,uid2]
-        values = []
-        v = self.r.hget(unique, uid)
-        if v:
-            values = json.loads(v)
-        values.append(mid)
-        self.r.hset(unique, uid, json.dumps(values))
+    def add_send_cache(self, unique, file_id):
+        self.r.hset("cache", unique, file_id)
 
-    def get_send_cache(self, unique) -> "dict":
-        return self.r.hgetall(unique)
+    def get_send_cache(self, unique) -> "str":
+        return self.r.hget("cache", unique)
 
-    def del_send_cache(self, unique, uid):
-        self.r.hdel(unique, uid)
+    def del_send_cache(self, unique):
+        self.r.hdel("cache", unique)
 
 
 class MySQL:
