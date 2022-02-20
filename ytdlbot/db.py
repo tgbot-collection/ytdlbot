@@ -10,14 +10,12 @@ __author__ = "Benny <benny.think@gmail.com>"
 import base64
 import contextlib
 import datetime
-import json
 import logging
 import os
 import re
 import subprocess
 import time
 from io import BytesIO
-from unittest.mock import MagicMock
 
 import fakeredis
 import pymysql
@@ -27,6 +25,7 @@ from beautifultable import BeautifulTable
 from influxdb import InfluxDBClient
 
 from config import MYSQL_HOST, MYSQL_PASS, MYSQL_USER, QUOTA, REDIS
+from fakemysql import FakeMySQL
 
 
 class Redis:
@@ -205,7 +204,7 @@ class MySQL:
             self.con = pymysql.connect(host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl",
                                        charset="utf8mb4")
         else:
-            self.con = MagicMock()
+            self.con = FakeMySQL()
 
         self.cur = self.con.cursor()
         self.init_db()
