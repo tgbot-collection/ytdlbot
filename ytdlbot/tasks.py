@@ -7,7 +7,6 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
-import json
 import logging
 import os
 import pathlib
@@ -18,6 +17,7 @@ import threading
 import time
 import traceback
 import typing
+from hashlib import md5
 from urllib.parse import quote_plus
 
 import psutil
@@ -27,7 +27,7 @@ from celery import Celery
 from celery.worker.control import Panel
 from pyrogram import Client, idle
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
-from requests_toolbelt.multipart.encoder import MultipartEncoder
+from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 from client_init import create_app
 from config import (ARCHIVE_ID, AUDIO_FORMAT, BROKER, ENABLE_CELERY,
@@ -239,12 +239,13 @@ def get_dl_source():
     return ""
 
 
-def upload_transfer_sh(paths: list) -> "str":
-    d = {p.name: (p.name, p.open("rb")) for p in paths}
-    m = MultipartEncoder(fields=d)
-    headers = {'Content-Type': m.content_type}
+def upload_transfer_sh(bm, paths: list) -> "str":
+    d = {p.name: (md5(p.name.encode("utf8")).hexdigest() + p.suffix, p.open("rb")) for p in paths}
+    monitor = MultipartEncoderMonitor(MultipartEncoder(fields=d), lambda x: upload_hook(x.bytes_read, x.len, bm))
+    headers = {'Content-Type': monitor.content_type}
     try:
-        req = requests.post("https://transfer.sh", data=m, headers=headers)
+        req = requests.post("https://transfer.sh", data=monitor, headers=headers)
+        bm.edit_text(f"Download success!✅")
         return re.sub(r"https://", "\nhttps://", req.text)
     except requests.exceptions.RequestException as e:
         return f"Upload failed!❌\n\n```{e}```"
@@ -267,7 +268,7 @@ def ytdl_normal_download(bot_msg, client, url):
                 t = f"Your video({sizeof_fmt(st_size)}) is too large for Telegram. I'll upload it to transfer.sh"
                 bot_msg.edit_text(t)
                 client.send_chat_action(chat_id, 'upload_document')
-                client.send_message(chat_id, upload_transfer_sh(video_paths))
+                client.send_message(chat_id, upload_transfer_sh(bot_msg, video_paths))
                 return
             upload_processor(client, bot_msg, url, video_path)
         bot_msg.edit_text('Download success!✅')
