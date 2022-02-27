@@ -85,7 +85,8 @@ def start_handler(client: "Client", message: "types.Message"):
     client.send_chat_action(from_id, "typing")
     greeting = bot_text.get_vip_greeting(from_id)
     quota = bot_text.remaining_quota_caption(from_id)
-    text = f"{greeting}{bot_text.start}\n\n{quota}"
+    custom_text = bot_text.custom_text
+    text = f"{greeting}{bot_text.start}\n\n{quota}\n{custom_text}"
 
     client.send_message(message.chat.id, text)
 

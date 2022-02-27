@@ -7,6 +7,7 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
+import os
 import time
 
 from config import (AFD_LINK, COFFEE_LINK, ENABLE_CELERY, ENABLE_VIP, EX,
@@ -91,6 +92,7 @@ Your current settings:
 Video quality: **{0}**
 Sending format: **{1}**
 """
+    custom_text = os.getenv("CUSTOM_TEXT", "")
 
     def remaining_quota_caption(self, chat_id):
         if not ENABLE_VIP:
