@@ -34,8 +34,8 @@ from config import (ARCHIVE_ID, AUDIO_FORMAT, BROKER, ENABLE_CELERY,
                     ENABLE_VIP, TG_MAX_SIZE, WORKERS)
 from constant import BotText
 from db import Redis
-from downloader import (edit_text, sizeof_fmt, tqdm_progress, upload_hook,
-                        ytdl_download)
+from downloader import (edit_text, run_ffmpeg, sizeof_fmt, tqdm_progress,
+                        upload_hook, ytdl_download)
 from limit import VIP
 from utils import (apply_log_formatter, auto_restart, customize_logger,
                    get_metadata, get_revision, get_user_settings)
@@ -211,24 +211,28 @@ def direct_normal_download(bot_msg, client, url):
 def normal_audio(bot_msg, client):
     chat_id = bot_msg.chat.id
     fn = getattr(bot_msg.video, "file_name", None) or getattr(bot_msg.document, "file_name", None)
+    status_msg = bot_msg.reply_text("Converting to audio...please wait patiently", quote=True)
     with tempfile.TemporaryDirectory(prefix="ytdl-") as tmp:
         logging.info("downloading to %s", tmp)
         base_path = pathlib.Path(tmp)
         video_path = base_path.joinpath(fn)
         audio = base_path.joinpath(fn).with_suffix(f".{AUDIO_FORMAT}")
         client.send_chat_action(chat_id, 'record_video_note')
+        status_msg.edit_text("Preparing your conversion....")
         client.download_media(bot_msg, video_path)
         logging.info("downloading complete %s", video_path)
         # execute ffmpeg
         client.send_chat_action(chat_id, 'record_audio')
         try:
-            subprocess.check_output(["ffmpeg", "-y", "-i", video_path, "-vn", "-acodec", "copy", audio])
+            run_ffmpeg(["ffmpeg", "-y", "-i", video_path, "-vn", "-acodec", "copy", audio], status_msg)
         except subprocess.CalledProcessError:
             # CPU consuming if re-encoding.
-            subprocess.check_output(["ffmpeg", "-y", "-i", video_path, audio])
+            run_ffmpeg(["ffmpeg", "-y", "-i", video_path, audio], status_msg)
 
+        status_msg.edit_text("Sending audio now...")
         client.send_chat_action(chat_id, 'upload_audio')
         client.send_audio(chat_id, audio)
+        status_msg.edit_text("✅ Conversion complete.")
         Redis().update_metrics("audio_success")
 
 

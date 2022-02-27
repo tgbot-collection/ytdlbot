@@ -266,7 +266,6 @@ def download_handler(client: "Client", message: "types.Message"):
 
     red.update_metrics("video_request")
     text = bot_text.get_receive_link_text()
-    time.sleep(random.random() / 2)
     try:
         # raise pyrogram.errors.exceptions.FloodWait(10)
         bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text(text, quote=True)
@@ -308,8 +307,8 @@ def audio_callback(client: "Client", callback_query: types.CallbackQuery):
     callback_query.answer(f"Converting to audio...please wait patiently")
     Redis().update_metrics("audio_request")
 
-    msg = callback_query.message
-    audio_entrance(msg, client)
+    vmsg = callback_query.message
+    audio_entrance(vmsg, client)
 
 
 @app.on_callback_query(filters.regex(r"Local|Celery"))

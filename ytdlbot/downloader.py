@@ -19,6 +19,7 @@ from unittest.mock import MagicMock
 
 import fakeredis
 import ffmpeg
+import ffpb
 import filetype
 import yt_dlp as ytdl
 from tqdm import tqdm
@@ -65,7 +66,7 @@ def tqdm_progress(desc, total, finished, speed="", eta=""):
     raw_output = f.getvalue()
     tqdm_output = raw_output.split("|")
     progress = f"`[{tqdm_output[1]}]`"
-    detail = tqdm_output[2]
+    detail = tqdm_output[2].replace("[A", "")
     text = f"""
 {desc}
 
@@ -142,11 +143,30 @@ def convert_to_mp4(resp: dict, bot_msg):
                 edit_text(bot_msg, f"{current_time()}: Converting {path.name} to mp4. Please wait.")
                 new_file_path = path.with_suffix(".mp4")
                 logging.info("Detected %s, converting to mp4...", mime)
-                subprocess.check_output(["ffmpeg", "-y", "-i", path, new_file_path])
+                run_ffmpeg(["ffmpeg", "-y", "-i", path, new_file_path], bot_msg)
                 index = resp["filepath"].index(path)
                 resp["filepath"][index] = new_file_path
 
         return resp
+
+
+class ProgressBar(tqdm):
+    b = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bot_msg = self.b
+
+    def update(self, n=1):
+        super().update(n)
+        t = tqdm_progress("Converting...", self.total, self.n)
+        edit_text(self.bot_msg, t)
+
+
+def run_ffmpeg(cmd_list, bm):
+    cmd_list = cmd_list.copy()[1:]
+    ProgressBar.b = bm
+    ffpb.main(cmd_list, tqdm=ProgressBar)
 
 
 def can_convert_mp4(video_path, uid):
@@ -225,20 +245,20 @@ def ytdl_download(url, tempdir, bm) -> dict:
         # only convert if send type is video
         convert_to_mp4(response, bm)
     if settings[2] == "audio":
-        check_audio_format(response)
+        convert_audio_format(response, bm)
     # disable it for now
     # split_large_video(response)
     return response
 
 
-def check_audio_format(resp: "dict"):
+def convert_audio_format(resp: "dict", bm):
     if resp["status"]:
         # all_converted = []
         path: pathlib.PosixPath
         for path in resp["filepath"]:
             if path.suffix != f".{AUDIO_FORMAT}":
                 new_path = path.with_suffix(f".{AUDIO_FORMAT}")
-                subprocess.check_output(["ffmpeg", "-y", "-i", path, new_path])
+                run_ffmpeg(["ffmpeg", "-y", "-i", path, new_path], bm)
                 path.unlink()
                 index = resp["filepath"].index(path)
                 resp["filepath"][index] = new_path
