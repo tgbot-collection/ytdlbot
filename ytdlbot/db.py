@@ -298,6 +298,9 @@ class InfluxDB:
         self.client.write_points(json_body)
 
     def collect_data(self):
+        if os.getenv("INFLUX_HOST") is None:
+            return
+
         with contextlib.suppress(Exception):
             self.data = self.get_worker_data()
             self.__fill_worker_data()
