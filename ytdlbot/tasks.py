@@ -116,7 +116,7 @@ def forward_video(url, client, bot_msg):
                         or getattr(obj, "file_size", 10)
             # TODO: forward file size may exceed the limit
             vip.use_quota(chat_id, file_size)
-        caption, _ = gen_cap(chat_id, url, obj)
+        caption, _ = gen_cap(bot_msg, url, obj)
         res_msg.edit_text(caption, reply_markup=gen_video_markup())
         red.update_metrics("cache_hit")
         return True
@@ -288,7 +288,7 @@ def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, pathlib.P
     chat_id = bot_msg.chat.id
     red = Redis()
     markup = gen_video_markup()
-    cap, meta = gen_cap(chat_id, url, vp_or_fid)
+    cap, meta = gen_cap(bot_msg, url, vp_or_fid)
     settings = get_user_settings(str(chat_id))
     if ARCHIVE_ID and isinstance(vp_or_fid, pathlib.Path):
         chat_id = ARCHIVE_ID
@@ -324,7 +324,18 @@ def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, pathlib.P
     return res_msg
 
 
-def gen_cap(chat_id, url, video_path):
+def gen_cap(bm, url, video_path):
+    chat_id = bm.chat.id
+    user = bm.chat
+    if user is None:
+        user_info = ""
+    else:
+        user_info = "@{}({})-{}".format(
+            user.username or "N/A",
+            user.first_name or "" + user.last_name or "",
+            user.id
+        )
+
     if isinstance(video_path, pathlib.Path):
         meta = get_metadata(video_path)
         file_name = video_path.name
@@ -340,7 +351,7 @@ def gen_cap(chat_id, url, video_path):
         )
     remain = bot_text.remaining_quota_caption(chat_id)
     worker = get_dl_source()
-    cap = f"`{file_name}`\n\n{url}\n\nInfo: {meta['width']}x{meta['height']} {file_size}\t" \
+    cap = f"{user_info}\n`{file_name}`\n\n{url}\n\nInfo: {meta['width']}x{meta['height']} {file_size}\t" \
           f"{meta['duration']}s\n{remain}\n{worker}\n{bot_text.custom_text}"
     return cap, meta
 

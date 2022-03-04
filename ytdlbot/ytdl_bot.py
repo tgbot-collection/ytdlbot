@@ -282,6 +282,7 @@ def download_handler(client: "Client", message: "types.Message"):
         time.sleep(e.x)
 
     client.send_chat_action(chat_id, 'upload_video')
+    bot_msg.chat = message.chat
     ytdl_download_entrance(bot_msg, client, url)
 
 
