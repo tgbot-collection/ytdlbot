@@ -118,6 +118,7 @@ def forward_video(url, client, bot_msg):
             vip.use_quota(chat_id, file_size)
         caption, _ = gen_cap(bot_msg, url, obj)
         res_msg.edit_text(caption, reply_markup=gen_video_markup())
+        bot_msg.edit_text(f"Download success!✅✅✅")
         red.update_metrics("cache_hit")
         return True
 
@@ -205,7 +206,7 @@ def direct_normal_download(bot_msg, client, url):
                              caption=f"filesize: {sizeof_fmt(st_size)}",
                              progress=upload_hook, progress_args=(bot_msg,),
                              )
-        bot_msg.edit_text(f"Download success!✅")
+        bot_msg.edit_text("Download success!✅")
 
 
 def normal_audio(bot_msg, client):
