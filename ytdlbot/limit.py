@@ -112,7 +112,7 @@ class VIP(Redis, MySQL):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"}
         # send head request first
         r = requests.head(url, headers=headers)
-        if r.status_code != http.HTTPStatus.METHOD_NOT_ALLOWED and r.headers.get("content-type") != "text/html":
+        if r.status_code != http.HTTPStatus.METHOD_NOT_ALLOWED and "text/html" not in r.headers.get("content-type"):
             # get content-type, if it's not text/html, there's no need to issue a GET request
             logging.warning("%s Content-type is not text/html, no need to GET for extract_canonical_link", url)
             return url
