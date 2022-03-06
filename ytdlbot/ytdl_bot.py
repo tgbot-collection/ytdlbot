@@ -177,7 +177,10 @@ def sub_count_handler(client: "Client", message: "types.Message"):
     username = message.from_user.username
     chat_id = message.chat.id
     if username == OWNER:
-        client.send_message(chat_id, VIP().sub_count())
+        with BytesIO() as f:
+            f.write(VIP().sub_count().encode("u8"))
+            f.name = "subscription count.txt"
+            client.send_document(chat_id, f)
 
 
 @app.on_message(filters.command(["direct"]))
