@@ -6,6 +6,12 @@ services:
     env_file:
       - env/ytdl.env
     restart: always
-    command: ["/usr/local/bin/supervisord", "-c" ,"/ytdlbot/conf/supervisor_worker.conf"]
+    command: [ "/usr/local/bin/supervisord", "-c" ,"/ytdlbot/conf/supervisor_worker.conf" ]
     volumes:
       - ./data/instagram.com_cookies.txt:/ytdlbot/ytdlbot/instagram.com_cookies.txt
+#    network_mode: "host"
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '0.3'
+#          memory: 1500M

@@ -197,27 +197,31 @@ def ytdl_download(url, tempdir, bm) -> dict:
     formats = [
         "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio",
         "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
-        ""
+        None
     ]
     adjust_formats(chat_id, url, formats)
     add_instagram_cookies(url, ydl_opts)
-    for f in formats:
-        if f:
-            ydl_opts["format"] = f
-        try:
-            logging.info("Downloading for %s with format %s", url, f)
-            with ytdl.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-            response["status"] = True
-            response["error"] = ""
-            break
 
-        except (ValueError, DownloadError) as e:
-            logging.error("Download failed for %s ", url)
-            response["status"] = False
-            response["error"] = str(e)
-        except Exception as e:
-            logging.error("UNKNOWN EXCEPTION: %s", e)
+    address = ["::", "0.0.0.0"] if os.getenv("ipv6") else [None]
+
+    for format_ in formats:
+        ydl_opts["format"] = format_
+        for addr in address:
+            # IPv6 goes first in each format
+            ydl_opts["source_address"] = addr
+            try:
+                logging.info("Downloading for %s with format %s", url, format_)
+                with ytdl.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([url])
+                response["status"] = True
+                response["error"] = ""
+                break
+            except (ValueError, DownloadError) as e:
+                logging.error("Download failed for %s ", url)
+                response["status"] = False
+                response["error"] = str(e)
+            except Exception as e:
+                logging.error("UNKNOWN EXCEPTION: %s", e)
 
     logging.info("%s - %s", url, response)
     if response["status"] is False:
