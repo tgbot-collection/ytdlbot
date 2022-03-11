@@ -337,7 +337,7 @@ def periodic_sub_check():
 
 if __name__ == '__main__':
     MySQL()
-    scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
+    scheduler = BackgroundScheduler(timezone="Asia/Shanghai", job_defaults={'max_instances': 5})
     scheduler.add_job(Redis().reset_today, 'cron', hour=0, minute=0)
     scheduler.add_job(auto_restart, 'interval', seconds=5)
     scheduler.add_job(InfluxDB().collect_data, 'interval', seconds=60)

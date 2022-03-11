@@ -177,7 +177,14 @@ class Detector:
     def updates_too_long_detector(self):
         # If you're seeing this, that means you have logged more than 10 device
         # and the earliest account was kicked out. Restart the program could get you back in.
-        indicators = ["types.UpdatesTooLong", "Got shutdown from remote", "Code is updated"]
+        indicators = [
+            "types.UpdatesTooLong",
+            "Got shutdown from remote",
+            "Code is updated",
+            'Retrying "messages.GetMessages"',
+            "OSError: Connection lost",
+            "[Errno -3] Try again"
+        ]
         for indicator in indicators:
             if indicator in self.logs:
                 logging.warning("Potential crash detected by %s, it's time to commit suicide...", self.func_name())
