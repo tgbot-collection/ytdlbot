@@ -202,7 +202,7 @@ def ytdl_download(url, tempdir, bm) -> dict:
     adjust_formats(chat_id, url, formats)
     add_instagram_cookies(url, ydl_opts)
 
-    address = ["::", "0.0.0.0"] if os.getenv("ipv6") else [None]
+    address = ["::", "0.0.0.0"] if os.getenv("IPv6") else [None]
 
     for format_ in formats:
         ydl_opts["format"] = format_
