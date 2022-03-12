@@ -25,7 +25,8 @@ import yt_dlp as ytdl
 from tqdm import tqdm
 from yt_dlp import DownloadError
 
-from config import AUDIO_FORMAT, ENABLE_VIP, MAX_DURATION, TG_MAX_SIZE
+from config import (AUDIO_FORMAT, ENABLE_FFMPEG, ENABLE_VIP, MAX_DURATION,
+                    TG_MAX_SIZE, IPv6)
 from db import Redis
 from limit import VIP
 from utils import (adjust_formats, apply_log_formatter, current_time,
@@ -135,10 +136,8 @@ def convert_to_mp4(resp: dict, bot_msg):
             mime = getattr(filetype.guess(path), "mime", "video/mp4")
             if mime in default_type:
                 if not can_convert_mp4(path, bot_msg.chat.id):
-                    logging.warning("Conversion abort for non VIP %s", bot_msg.chat.id)
-                    bot_msg._client.send_message(
-                        bot_msg.chat.id,
-                        f"You're not VIP, so you can't convert video {MAX_DURATION}s to streaming formats.")
+                    logging.warning("Conversion abort for %s", bot_msg.chat.id)
+                    bot_msg._client.send_message(bot_msg.chat.id, "Can't convert your video to streaming format.")
                     break
                 edit_text(bot_msg, f"{current_time()}: Converting {path.name} to mp4. Please wait.")
                 new_file_path = path.with_suffix(".mp4")
@@ -170,6 +169,8 @@ def run_ffmpeg(cmd_list, bm):
 
 
 def can_convert_mp4(video_path, uid):
+    if not ENABLE_FFMPEG:
+        return False
     if not ENABLE_VIP:
         return True
     video_streams = ffmpeg.probe(video_path, select_streams="v")
@@ -202,7 +203,7 @@ def ytdl_download(url, tempdir, bm) -> dict:
     adjust_formats(chat_id, url, formats)
     add_instagram_cookies(url, ydl_opts)
 
-    address = ["::", "0.0.0.0"] if os.getenv("IPv6") else [None]
+    address = ["::", "0.0.0.0"] if IPv6 else [None]
 
     for format_ in formats:
         ydl_opts["format"] = format_

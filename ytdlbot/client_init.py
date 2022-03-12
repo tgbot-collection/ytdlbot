@@ -11,13 +11,13 @@ import os
 
 from pyrogram import Client
 
-from config import APP_HASH, APP_ID, PYRO_WORKERS, TOKEN
+from config import APP_HASH, APP_ID, PYRO_WORKERS, TOKEN, IPv6
 
 
 def create_app(session="ytdl", workers=PYRO_WORKERS):
     _app = Client(session, APP_ID, APP_HASH,
                   bot_token=TOKEN, workers=workers,
-                  ipv6=os.getenv("IPv6", False),
+                  ipv6=IPv6,
                   # proxy={"hostname": "host.docker.internal", "port": 1080}
                   )
 
