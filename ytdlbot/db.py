@@ -195,7 +195,8 @@ class MySQL:
     create table if not exists subscribe
     (
         user_id    bigint       null,
-        channel_id varchar(256) null
+        channel_id varchar(256) null,
+        is_valid boolean default 1 null
     ) CHARSET=utf8mb4;
     """
 

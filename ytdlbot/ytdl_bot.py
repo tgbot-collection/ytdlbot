@@ -334,14 +334,22 @@ def owner_local_callback(client: "Client", callback_query: types.CallbackQuery):
 
 def periodic_sub_check():
     vip = VIP()
+    exceptions = pyrogram.errors.exceptions
     for cid, uids in vip.group_subscriber().items():
         video_url = vip.has_newer_update(cid)
         if video_url:
             logging.info(f"periodic update:{video_url} - {uids}")
             for uid in uids:
-                bot_msg = app.send_message(uid, f"{video_url} is downloading...", disable_web_page_preview=True)
-                ytdl_download_entrance(bot_msg, app, video_url)
-                time.sleep(random.random())
+                try:
+                    bot_msg = app.send_message(uid, f"{video_url} is downloading...", disable_web_page_preview=True)
+                    ytdl_download_entrance(bot_msg, app, video_url)
+                except(exceptions.bad_request_400.PeerIdInvalid, exceptions.bad_request_400.UserIsBlocked) as e:
+                    logging.warning("User is blocked or deleted. %s", e)
+                    vip.deactivate_user_subscription(uid)
+                except Exception as e:
+                    logging.error("Unknown error when sending message to user. %s", e)
+                finally:
+                    time.sleep(random.random() * 3)
 
 
 if __name__ == '__main__':

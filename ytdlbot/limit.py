@@ -187,13 +187,17 @@ class VIP(Redis, MySQL):
 
     def group_subscriber(self):
         # {"channel_id": [user_id, user_id, ...]}
-        self.cur.execute("select * from subscribe")
+        self.cur.execute("select * from subscribe where is_valid=1")
         data = self.cur.fetchall()
         group = {}
         for item in data:
             group.setdefault(item[1], []).append(item[0])
-        logging.info("Checking peroidic subscriber...")
+        logging.info("Checking periodic subscriber...")
         return group
+
+    def deactivate_user_subscription(self, user_id: "int"):
+        self.cur.execute("UPDATE subscribe set is_valid=0 WHERE user_id=%s", (user_id,))
+        self.con.commit()
 
     def sub_count(self):
         sql = """
