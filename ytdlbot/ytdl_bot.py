@@ -143,6 +143,15 @@ def patch_handler(client: "Client", message: "types.Message"):
         hot_patch()
 
 
+@app.on_message(filters.command(["uncache"]))
+def patch_handler(client: "Client", message: "types.Message"):
+    username = message.from_user.username
+    link = message.text.split()[1]
+    if username == OWNER:
+        count = VIP().del_cache(link)
+        message.reply_text(f"{count} cache(s) deleted.", quote=True)
+
+
 @app.on_message(filters.command(["ping"]))
 def ping_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id

@@ -238,6 +238,7 @@ direct - Download file directly
 sub - Subscribe to YouTube Channel
 unsub - Unsubscribe from YouTube Channel
 sub_count - Check subscription status, owner only.
+uncache - Delete cache for this link
 ```
 
 # Test data

@@ -147,7 +147,7 @@ class Redis:
         return self.r.hget("cache", unique)
 
     def del_send_cache(self, unique):
-        self.r.hdel("cache", unique)
+        return self.r.hdel("cache", unique)
 
 
 class MySQL:

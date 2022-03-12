@@ -207,6 +207,15 @@ class VIP(Redis, MySQL):
             text += "{} ==> [{}]({})\n".format(*item)
         return text
 
+    def del_cache(self, user_link: "str"):
+        unique = self.extract_canonical_link(user_link)
+        caches = self.r.hgetall("cache")
+        count = 0
+        for key in caches:
+            if key.startswith(unique):
+                count += self.del_send_cache(key)
+        return count
+
 
 class BuyMeACoffee:
     def __init__(self):
