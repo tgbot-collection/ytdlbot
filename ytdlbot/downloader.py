@@ -23,7 +23,6 @@ import ffpb
 import filetype
 import yt_dlp as ytdl
 from tqdm import tqdm
-from yt_dlp import DownloadError
 
 from config import (AUDIO_FORMAT, ENABLE_FFMPEG, ENABLE_VIP, MAX_DURATION,
                     TG_MAX_SIZE, IPv6)
@@ -193,7 +192,8 @@ def ytdl_download(url, tempdir, bm) -> dict:
         'progress_hooks': [lambda d: download_hook(d, bm)],
         'outtmpl': output,
         'restrictfilenames': False,
-        'quiet': True
+        'quiet': True,
+        # "proxy": "socks5://127.0.0.1:1080"
     }
     formats = [
         "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio",
@@ -204,7 +204,6 @@ def ytdl_download(url, tempdir, bm) -> dict:
     add_instagram_cookies(url, ydl_opts)
 
     address = ["::", "0.0.0.0"] if IPv6 else [None]
-
     for format_ in formats:
         ydl_opts["format"] = format_
         for addr in address:
@@ -217,12 +216,13 @@ def ytdl_download(url, tempdir, bm) -> dict:
                 response["status"] = True
                 response["error"] = ""
                 break
-            except (ValueError, DownloadError) as e:
+            except Exception as e:
                 logging.error("Download failed for %s ", url)
                 response["status"] = False
                 response["error"] = str(e)
-            except Exception as e:
-                logging.error("UNKNOWN EXCEPTION: %s", e)
+
+        if response["status"]:
+            break
 
     logging.info("%s - %s", url, response)
     if response["status"] is False:
