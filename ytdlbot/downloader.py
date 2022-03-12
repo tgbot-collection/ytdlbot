@@ -138,7 +138,7 @@ def convert_to_mp4(resp: dict, bot_msg):
                     logging.warning("Conversion abort for non VIP %s", bot_msg.chat.id)
                     bot_msg._client.send_message(
                         bot_msg.chat.id,
-                        "You're not VIP, so you can't convert longer video to streaming formats.")
+                        f"You're not VIP, so you can't convert video {MAX_DURATION}s to streaming formats.")
                     break
                 edit_text(bot_msg, f"{current_time()}: Converting {path.name} to mp4. Please wait.")
                 new_file_path = path.with_suffix(".mp4")
