@@ -257,11 +257,32 @@ def ytdl_download(url, tempdir, bm) -> dict:
 
 
 def convert_audio_format(resp: "dict", bm):
+    # 1. file is audio, default format
+    # 2. file is video, default format
+    # 3. non default format
     if resp["status"]:
-        # all_converted = []
-        path: pathlib.PosixPath
+        path: "pathlib.Path"
         for path in resp["filepath"]:
-            if path.suffix != f".{AUDIO_FORMAT}":
+            streams = ffmpeg.probe(path)["streams"]
+            if (AUDIO_FORMAT is None and
+                    len(streams) == 1 and
+                    streams[0]["codec_type"] == "audio"):
+                logging.info("%s is audio, default format, no need to convert", path)
+            elif AUDIO_FORMAT is None and len(streams) >= 2:
+                logging.info("%s is video, default format, need to extract audio", path)
+                audio_stream = {"codec_name": "m4a"}
+                for stream in streams:
+                    if stream["codec_type"] == "audio":
+                        audio_stream = stream
+                        break
+                ext = audio_stream["codec_name"]
+                new_path = path.with_suffix(f".{ext}")
+                run_ffmpeg(["ffmpeg", "-y", "-i", path, "-vn", "-acodec", "copy", new_path], bm)
+                path.unlink()
+                index = resp["filepath"].index(path)
+                resp["filepath"][index] = new_path
+            else:
+                logging.info("Not default format, converting %s to %s", path, AUDIO_FORMAT)
                 new_path = path.with_suffix(f".{AUDIO_FORMAT}")
                 run_ffmpeg(["ffmpeg", "-y", "-i", path, new_path], bm)
                 path.unlink()

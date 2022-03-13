@@ -51,7 +51,7 @@ MYSQL_HOST = os.getenv("MYSQL_HOST")
 MYSQL_USER = os.getenv("MYSQL_USER", "root")
 MYSQL_PASS = os.getenv("MYSQL_PASS", "root")
 
-AUDIO_FORMAT = os.getenv("AUDIO_FORMAT", "m4a")
+AUDIO_FORMAT = os.getenv("AUDIO_FORMAT")
 ARCHIVE_ID = os.getenv("ARCHIVE_ID")
 
 IPv6 = os.getenv("IPv6", False)

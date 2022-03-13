@@ -362,7 +362,7 @@ def gen_video_markup():
         [
             [  # First row
                 InlineKeyboardButton(  # Generates a callback query when pressed
-                    f"convert to audio({AUDIO_FORMAT})",
+                    "convert to audio",
                     callback_data="convert"
                 )
             ]
