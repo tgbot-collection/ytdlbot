@@ -184,8 +184,9 @@ def can_convert_mp4(video_path, uid):
         return True
 
 
-def ytdl_download(url, tempdir, bm) -> dict:
+def ytdl_download(url, tempdir, bm, **kwargs) -> dict:
     chat_id = bm.chat.id
+    hijack = kwargs.get("hijack")
     response = {"status": True, "error": "", "filepath": []}
     output = pathlib.Path(tempdir, "%(title).70s.%(ext)s").as_posix()
     ydl_opts = {
@@ -193,14 +194,14 @@ def ytdl_download(url, tempdir, bm) -> dict:
         'outtmpl': output,
         'restrictfilenames': False,
         'quiet': True,
-        # "proxy": "socks5://127.0.0.1:1080"
+        "proxy": os.getenv("YTDL_PROXY")
     }
     formats = [
         "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio",
         "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
         None
     ]
-    adjust_formats(chat_id, url, formats)
+    adjust_formats(chat_id, url, formats, hijack)
     add_instagram_cookies(url, ydl_opts)
 
     address = ["::", "0.0.0.0"] if IPv6 else [None]
@@ -249,7 +250,7 @@ def ytdl_download(url, tempdir, bm) -> dict:
     if settings[2] == "video" or isinstance(settings[2], MagicMock):
         # only convert if send type is video
         convert_to_mp4(response, bm)
-    if settings[2] == "audio":
+    if settings[2] == "audio" or hijack == "bestaudio[ext=m4a]":
         convert_audio_format(response, bm)
     # disable it for now
     # split_large_video(response)

@@ -76,10 +76,14 @@ def is_youtube(url: "str"):
         return True
 
 
-def adjust_formats(user_id: "str", url: "str", formats: "list"):
+def adjust_formats(user_id: "str", url: "str", formats: "list", hijack=None):
     # high: best quality, 720P, 1080P, 2K, 4K, 8K
     # medium: 480P
     # low: 360P+240P
+    if hijack:
+        formats.insert(0, hijack)
+        return
+
     mapping = {"high": [], "medium": [480], "low": [240, 360]}
     settings = get_user_settings(user_id)
     if settings and is_youtube(url):

@@ -107,17 +107,18 @@ class VIP(Redis, MySQL):
     @staticmethod
     def extract_canonical_link(url):
         # canonic link works for many websites. It will strip out unnecessary stuff
+        proxy = {"https": os.getenv("YTDL_PROXY")} if os.getenv("YTDL_PROXY") else None
         props = ["canonical", "alternate", "shortlinkUrl"]
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"}
         # send head request first
-        r = requests.head(url, headers=headers)
+        r = requests.head(url, headers=headers, proxies=proxy)
         if r.status_code != http.HTTPStatus.METHOD_NOT_ALLOWED and "text/html" not in r.headers.get("content-type"):
             # get content-type, if it's not text/html, there's no need to issue a GET request
             logging.warning("%s Content-type is not text/html, no need to GET for extract_canonical_link", url)
             return url
 
-        html_doc = requests.get(url, headers=headers, timeout=5).text
+        html_doc = requests.get(url, headers=headers, timeout=5, proxies=proxy).text
         soup = BeautifulSoup(html_doc, "html.parser")
         for prop in props:
             element = soup.find("link", rel=prop)
