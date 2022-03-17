@@ -347,7 +347,7 @@ def periodic_sub_check():
                     logging.warning("User is blocked or deleted. %s", e)
                     vip.deactivate_user_subscription(uid)
                 except Exception as e:
-                    logging.error("Unknown error when sending message to user. %s", e)
+                    logging.error("Unknown error when sending message to user. %s", traceback.format_exc())
                 finally:
                     time.sleep(random.random() * 3)
 

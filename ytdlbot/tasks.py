@@ -317,14 +317,14 @@ def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, pathlib.P
 def gen_cap(bm, url, video_path):
     chat_id = bm.chat.id
     user = bm.chat
-    if user is None:
-        user_info = ""
-    else:
+    try:
         user_info = "@{}({})-{}".format(
             user.username or "N/A",
             user.first_name or "" + user.last_name or "",
             user.id
         )
+    except Exception:
+        user_info = ""
 
     if isinstance(video_path, pathlib.Path):
         meta = get_metadata(video_path)
