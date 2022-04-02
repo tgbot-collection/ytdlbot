@@ -6,8 +6,6 @@ YouTube Download Bot🚀
 
 Download videos from YouTube and other platforms through a Telegram Bot
 
-**subscription was disaabled for now!**
-
 -----
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
