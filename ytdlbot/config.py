@@ -40,7 +40,7 @@ AFD_USER_ID = os.getenv("AFD_USER_ID")
 OWNER = os.getenv("OWNER", "BennyThink")
 
 # limitation settings
-AUTHORIZED_USER: "str" = os.getenv("AUTHORIZED", "")
+AUTHORIZED_USER: "str" = os.getenv("AUTHORIZED_USER", "")
 # membership requires: the format could be username/chat_id of channel or group
 REQUIRED_MEMBERSHIP: "str" = os.getenv("REQUIRED_MEMBERSHIP", "")
 
