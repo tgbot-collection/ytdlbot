@@ -235,7 +235,10 @@ class InfluxDB:
         username = os.getenv("FLOWER_USERNAME", "benny")
         token = base64.b64encode(f"{username}:{password}".encode()).decode()
         headers = {"Authorization": f"Basic {token}"}
-        return requests.get("https://celery.dmesg.app/dashboard?json=1", headers=headers).json()
+        r = requests.get("https://celery.dmesg.app/dashboard?json=1", headers=headers)
+        if r.status_code != 200:
+            return dict(data=[])
+        return r.json()
 
     def extract_dashboard_data(self):
         self.data = self.get_worker_data()

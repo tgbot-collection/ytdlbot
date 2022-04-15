@@ -187,7 +187,8 @@ class Detector:
             "Code is updated",
             'Retrying "messages.GetMessages"',
             "OSError: Connection lost",
-            "[Errno -3] Try again"
+            "[Errno -3] Try again",
+            "MISCONF",
         ]
         for indicator in indicators:
             if indicator in self.logs:
