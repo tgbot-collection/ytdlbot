@@ -15,7 +15,7 @@ import time
 import traceback
 import typing
 from io import BytesIO
-
+from youtubesearchpython import VideosSearch
 import pyrogram.errors
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
@@ -268,8 +268,24 @@ def download_handler(client: "Client", message: "types.Message"):
     logging.info("start %s", url)
 
     if not re.findall(r"^https?://", url.lower()):
-        red.update_metrics("bad_request")
-        message.reply_text("I think you should send me a link.", quote=True)
+        red.update_metrics("search_request")
+        # TODO
+        result = VideosSearch(url, limit=5).result().get("result", [])
+        text = ""
+        count = 1
+        buttons = []
+        for item in result:
+            text += f"{count}. {item['title']} - {item['link']}\n\n"
+            buttons.append(
+                InlineKeyboardButton(
+                    f"{count}",
+                    callback_data=f"search_{item['id']}"
+                )
+            )
+            count += 1
+
+        markup = InlineKeyboardMarkup([buttons])
+        client.send_message(chat_id, text, disable_web_page_preview=True, reply_markup=markup)
         return
 
     if re.findall(r"^https://www\.youtube\.com/channel/", VIP.extract_canonical_link(url)):
@@ -359,7 +375,7 @@ if __name__ == '__main__':
     scheduler.add_job(auto_restart, 'interval', seconds=5)
     scheduler.add_job(InfluxDB().collect_data, 'interval', seconds=60)
     #  default quota allocation of 10,000 units per day,
-    scheduler.add_job(periodic_sub_check, 'interval', seconds=60 * 30)
+    scheduler.add_job(periodic_sub_check, 'interval', seconds=60 * 60)
     scheduler.start()
     banner = f"""
 ▌ ▌         ▀▛▘     ▌       ▛▀▖              ▜            ▌

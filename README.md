@@ -43,7 +43,7 @@ You can choose to become 'VIP' if you really need large traffic. And also, you c
 8. support sending as file or streaming as video
 9. supports celery worker distribution - faster than before.
 10. subscriptions to YouTube Channels
-11. cache mechanism -  download once for the same video.
+11. cache mechanism - download once for the same video.
 
 ![](assets/2.jpeg)
 
@@ -128,8 +128,8 @@ you can configure all the following environment variables:
 * GOOGLE_API_KEY: YouTube API key, required for YouTube video subscription.
 * AUDIO_FORMAT: audio format, default is m4a. You can set to any known and supported format for ffmpeg. For
   example,`mp3`, `flac`, etc. ⚠️ m4a is the fastest. Other formats may affect performance.
-* ARCHIVE_ID: group or channel id/username. All downloads will send to this group first and then forward to end user. 
-**Inline button will be lost during the forwarding.**
+* ARCHIVE_ID: group or channel id/username. All downloads will send to this group first and then forward to end user.
+  **Inline button will be lost during the forwarding.**
 
 ## 3.2 Set up init data
 
@@ -254,6 +254,10 @@ https://www.youtube.com/playlist?list=PL1Hdq7xjQCJxQnGc05gS4wzHWccvEJy0w
 ## Test m3u8
 
 https://dmesg.app/m3u8/prog_index.m3u8
+
+## test twitter
+https://twitter.com/nitori_sayaka/status/1526199729864200192
+https://twitter.com/BennyThinks/status/1475836588542341124
 
 # Donation
 
