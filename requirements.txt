@@ -6,7 +6,7 @@ beautifultable==1.0.1
 ffmpeg-python==0.2.0
 PyMySQL==1.0.2
 celery==5.2.6
-filetype==1.0.10
+filetype==1.0.12
 flower==1.0.0
 psutil==5.9.0
 influxdb==5.3.1
