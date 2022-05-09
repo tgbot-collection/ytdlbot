@@ -2,7 +2,7 @@ pyrogram==1.4.15
 tgcrypto==1.2.3
 yt-dlp==2022.4.8
 APScheduler==3.9.1
-beautifultable==1.0.1
+beautifultable==1.1.0
 ffmpeg-python==0.2.0
 PyMySQL==1.0.2
 celery==5.2.6
