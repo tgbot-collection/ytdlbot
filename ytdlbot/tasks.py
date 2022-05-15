@@ -25,16 +25,16 @@ import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from celery import Celery
 from celery.worker.control import Panel
-from pyrogram import Client, idle
+from pyrogram import idle
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 from client_init import create_app
-from config import (ARCHIVE_ID, AUDIO_FORMAT, BROKER, ENABLE_CELERY,
+from config import (ARCHIVE_ID, BROKER, ENABLE_CELERY,
                     ENABLE_VIP, TG_MAX_SIZE, WORKERS)
 from constant import BotText
 from db import Redis
-from downloader import (edit_text, run_ffmpeg, sizeof_fmt, tqdm_progress,
+from downloader import (edit_text, sizeof_fmt, tqdm_progress,
                         upload_hook, ytdl_download)
 from limit import VIP
 from utils import (apply_log_formatter, auto_restart, customize_logger,
@@ -135,7 +135,7 @@ def ytdl_download_entrance(bot_msg, client, url):
         return
     mode = get_user_settings(str(chat_id))[-1]
     if ENABLE_CELERY and mode in [None, "Celery"]:
-        ytdl_download_task.delay(chat_id, bot_msg.message_id, url)
+        ytdl_download_task.delay(chat_id, bot_msg.id, url)
     else:
         ytdl_normal_download(bot_msg, client, url)
 
@@ -144,14 +144,14 @@ def direct_download_entrance(bot_msg, client, url):
     if ENABLE_CELERY:
         # TODO disable it for now
         direct_normal_download(bot_msg, client, url)
-        # direct_download_task.delay(bot_msg.chat.id, bot_msg.message_id, url)
+        # direct_download_task.delay(bot_msg.chat.id, bot_msg.id, url)
     else:
         direct_normal_download(bot_msg, client, url)
 
 
 def audio_entrance(bot_msg, client):
     if ENABLE_CELERY:
-        audio_task.delay(bot_msg.chat.id, bot_msg.message_id)
+        audio_task.delay(bot_msg.chat.id, bot_msg.id)
     else:
         normal_audio(bot_msg, client)
 
@@ -310,7 +310,7 @@ def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, pathlib.P
     red.add_send_cache(unique, getattr(obj, "file_id", None))
     red.update_metrics("video_success")
     if ARCHIVE_ID and isinstance(vp_or_fid, pathlib.Path):
-        client.forward_messages(bot_msg.chat.id, ARCHIVE_ID, res_msg.message_id)
+        client.forward_messages(bot_msg.chat.id, ARCHIVE_ID, res_msg.id)
     return res_msg
 
 

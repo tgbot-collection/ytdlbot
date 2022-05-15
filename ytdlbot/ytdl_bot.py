@@ -18,7 +18,7 @@ from io import BytesIO
 
 import pyrogram.errors
 from apscheduler.schedulers.background import BackgroundScheduler
-from pyrogram import Client, filters, types
+from pyrogram import Client, filters, types, enums
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from tgbot_ping import get_runtime
@@ -82,7 +82,7 @@ def private_use(func):
 def start_handler(client: "Client", message: "types.Message"):
     from_id = message.from_user.id
     logging.info("Welcome to youtube-dl bot!")
-    client.send_chat_action(from_id, "typing")
+    client.send_chat_action(from_id, enums.ChatAction.TYPING)
     greeting = bot_text.get_vip_greeting(from_id)
     quota = bot_text.remaining_quota_caption(from_id)
     custom_text = bot_text.custom_text
@@ -94,7 +94,7 @@ def start_handler(client: "Client", message: "types.Message"):
 @app.on_message(filters.command(["help"]))
 def help_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
-    client.send_chat_action(chat_id, "typing")
+    client.send_chat_action(chat_id,  enums.ChatAction.TYPING)
     client.send_message(chat_id, bot_text.help, disable_web_page_preview=True)
 
 
@@ -102,7 +102,7 @@ def help_handler(client: "Client", message: "types.Message"):
 def subscribe_handler(client: "Client", message: "types.Message"):
     vip = VIP()
     chat_id = message.chat.id
-    client.send_chat_action(chat_id, "typing")
+    client.send_chat_action(chat_id,  enums.ChatAction.TYPING)
     if message.text == "/sub":
         result = vip.get_user_subscription(chat_id)
     else:
@@ -118,7 +118,7 @@ def subscribe_handler(client: "Client", message: "types.Message"):
 def unsubscribe_handler(client: "Client", message: "types.Message"):
     vip = VIP()
     chat_id = message.chat.id
-    client.send_chat_action(chat_id, "typing")
+    client.send_chat_action(chat_id,  enums.ChatAction.TYPING)
     text = message.text.split(" ")
     if len(text) == 1:
         client.send_message(chat_id, "/unsubscribe channel_id", disable_web_page_preview=True)
@@ -138,7 +138,7 @@ def patch_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     if username == OWNER:
         celery_app.control.broadcast("hot_patch")
-        client.send_chat_action(chat_id, "typing")
+        client.send_chat_action(chat_id,  enums.ChatAction.TYPING)
         client.send_message(chat_id, "Oorah!")
         hot_patch()
 
@@ -155,7 +155,7 @@ def patch_handler(client: "Client", message: "types.Message"):
 @app.on_message(filters.command(["ping"]))
 def ping_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
-    client.send_chat_action(chat_id, "typing")
+    client.send_chat_action(chat_id,  enums.ChatAction.TYPING)
     if os.uname().sysname == "Darwin" or ".heroku" in os.getenv("PYTHONHOME", ""):
         bot_info = "ping unavailable."
     else:
@@ -170,14 +170,14 @@ def ping_handler(client: "Client", message: "types.Message"):
 @app.on_message(filters.command(["about"]))
 def help_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
-    client.send_chat_action(chat_id, "typing")
+    client.send_chat_action(chat_id,  enums.ChatAction.TYPING)
     client.send_message(chat_id, bot_text.about)
 
 
 @app.on_message(filters.command(["terms"]))
 def terms_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
-    client.send_chat_action(chat_id, "typing")
+    client.send_chat_action(chat_id,  enums.ChatAction.TYPING)
     client.send_message(chat_id, bot_text.terms)
 
 
@@ -195,7 +195,7 @@ def sub_count_handler(client: "Client", message: "types.Message"):
 @app.on_message(filters.command(["direct"]))
 def direct_handler(client: "Client", message: "types.Message"):
     chat_id = message.from_user.id
-    client.send_chat_action(chat_id, "typing")
+    client.send_chat_action(chat_id,  enums.ChatAction.TYPING)
     url = re.sub(r'/direct\s*', '', message.text)
     logging.info("direct start %s", url)
     if not re.findall(r"^https?://", url.lower()):
@@ -211,7 +211,7 @@ def direct_handler(client: "Client", message: "types.Message"):
 @app.on_message(filters.command(["settings"]))
 def settings_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
-    client.send_chat_action(chat_id, "typing")
+    client.send_chat_action(chat_id,  enums.ChatAction.TYPING)
     data = get_user_settings(str(chat_id))
     set_mode = (data[-1])
     text = {"Local": "Celery", "Celery": "Local"}.get(set_mode, "Local")
@@ -245,7 +245,7 @@ def vip_handler(client: "Client", message: "types.Message"):
     # process as chat.id, not from_user.id
     chat_id = message.chat.id
     text = message.text.strip()
-    client.send_chat_action(chat_id, "typing")
+    client.send_chat_action(chat_id,  enums.ChatAction.TYPING)
     if text == "/vip":
         client.send_message(chat_id, bot_text.vip, disable_web_page_preview=True)
     else:
@@ -261,7 +261,7 @@ def download_handler(client: "Client", message: "types.Message"):
     # check remaining quota
     red = Redis()
     chat_id = message.from_user.id
-    client.send_chat_action(chat_id, 'typing')
+    client.send_chat_action(chat_id,  enums.ChatAction.TYPING)
     red.user_count(chat_id)
 
     url = re.sub(r'/ytdl\s*', '', message.text)
@@ -287,13 +287,13 @@ def download_handler(client: "Client", message: "types.Message"):
         f.write(str(e).encode())
         f.write(b"Your job will be done soon. Just wait! Don't rush.")
         f.name = "Please don't flood me.txt"
-        bot_msg = message.reply_document(f, caption=f"Flood wait! Please wait {e.x} seconds...."
+        bot_msg = message.reply_document(f, caption=f"Flood wait! Please wait {e.value} seconds...."
                                                     f"Your job will start automatically", quote=True)
         f.close()
-        client.send_message(OWNER, f"Flood wait! 🙁 {e.x} seconds....")
-        time.sleep(e.x)
+        client.send_message(OWNER, f"Flood wait! 🙁 {e.value} seconds....")
+        time.sleep(e.value)
 
-    client.send_chat_action(chat_id, 'upload_video')
+    client.send_chat_action(chat_id,  enums.ChatAction.UPLOAD_VIDEO)
     bot_msg.chat = message.chat
     ytdl_download_entrance(bot_msg, client, url)
 

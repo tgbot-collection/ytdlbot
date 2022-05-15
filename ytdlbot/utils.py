@@ -21,7 +21,6 @@ import uuid
 import ffmpeg
 import psutil
 
-from config import ENABLE_CELERY
 from db import MySQL
 from flower_tasks import app
 
