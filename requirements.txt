@@ -1,4 +1,4 @@
-pyrogram==2.0.23
+pyrogram==2.0.24
 tgcrypto==1.2.3
 yt-dlp==2022.4.8
 APScheduler==3.9.1
@@ -19,3 +19,4 @@ requests==2.27.1
 tqdm==4.64.0
 requests-toolbelt==0.9.1
 ffpb==0.4.1
+youtube-search-python==1.6.5
