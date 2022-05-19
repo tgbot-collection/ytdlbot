@@ -1,4 +1,4 @@
-pyrogram==1.4.16
+pyrogram==2.0.24
 tgcrypto==1.2.3
 yt-dlp==2022.5.18
 APScheduler==3.9.1
