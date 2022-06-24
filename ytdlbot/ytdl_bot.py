@@ -15,18 +15,19 @@ import time
 import traceback
 import typing
 from io import BytesIO
-from youtubesearchpython import VideosSearch
+
 import pyrogram.errors
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from tgbot_ping import get_runtime
+from youtubesearchpython import VideosSearch
 
 from client_init import create_app
 from config import (AUTHORIZED_USER, ENABLE_CELERY, ENABLE_VIP, OWNER,
                     REQUIRED_MEMBERSHIP)
-from constant import BotText
+from constant import COMMANDS, BotText
 from db import InfluxDB, MySQL, Redis
 from limit import VIP, verify_payment
 from tasks import app as celery_app
@@ -387,4 +388,13 @@ By @BennyThink, VIP mode: {ENABLE_VIP}, Distribution: {ENABLE_CELERY}
 Version: {get_revision()}
     """
     print(banner)
+
+    with app:
+        commands = [i for i in COMMANDS.split("\n") if i]
+        command_list = []
+        for cmd in commands:
+            split = cmd.split("-")
+            command_list.append(pyrogram.types.BotCommand(split[0].strip(), split[1].strip()))
+        app.set_bot_commands(command_list)
+
     app.run()

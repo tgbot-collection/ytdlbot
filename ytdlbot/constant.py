@@ -8,6 +8,8 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import os
+import pathlib
+import re
 import time
 
 from config import (AFD_LINK, COFFEE_LINK, ENABLE_CELERY, ENABLE_VIP, EX,
@@ -149,3 +151,7 @@ Sending format: **{1}**
             text += f"{status}{hostname} **{active}** {load} {rev}\n"
 
         return text
+
+
+with open(pathlib.Path(__file__).parent.parent.joinpath("README.md"), encoding="u8") as f:
+    COMMANDS = re.findall(r"```cmd([\s|\S]*)```", f.read())[0].strip()
