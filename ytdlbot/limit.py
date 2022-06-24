@@ -92,7 +92,7 @@ class VIP(Redis, MySQL):
 
         self.cur.execute("INSERT IGNORE INTO channel values"
                          "(%(link)s,%(title)s,%(description)s,%(channel_id)s,%(playlist)s,%(last_video)s)", data)
-        self.cur.execute("INSERT INTO subscribe values(%s,%s)", (user_id, channel_id))
+        self.cur.execute("INSERT INTO subscribe values(%s,%s, NULL)", (user_id, channel_id))
         self.con.commit()
         logging.info("User %s subscribed channel %s", user_id, data["title"])
         return "Subscribed to {}".format(data["title"])
