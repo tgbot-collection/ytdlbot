@@ -213,7 +213,7 @@ def normal_audio(bot_msg, client):
     chat_id = bot_msg.chat.id
     # fn = getattr(bot_msg.video, "file_name", None) or getattr(bot_msg.document, "file_name", None)
     status_msg = bot_msg.reply_text("Converting to audio...please wait patiently", quote=True)
-    orig_url: "str" = re.findall(r"http[s]://.*", bot_msg.caption)[0]
+    orig_url: "str" = re.findall(r"https?://.*", bot_msg.caption)[0]
     with tempfile.TemporaryDirectory(prefix="ytdl-") as tmp:
         client.send_chat_action(chat_id, 'record_audio')
         # just try to download the audio using yt-dlp
