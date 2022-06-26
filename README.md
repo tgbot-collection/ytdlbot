@@ -225,7 +225,7 @@ docker-compose -f worker.yml up -d
 
 # Command
 
-```cmd
+```
 start - Let's start
 about - What's this bot?
 ping - Bot running status
