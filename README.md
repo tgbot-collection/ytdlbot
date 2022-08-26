@@ -11,6 +11,8 @@ Download videos from YouTube and other platforms through a Telegram Bot
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
 Can't deploy? Fork to your personal account and deploy it there!
+**Starting November 28, 2022, free Heroku Dynos, free Heroku Postgres, and free Heroku Data for Redis® plans will no longer be available.**
+[Heroku Announcement](https://devcenter.heroku.com/articles/free-dyno-hours)
 
 # Usage
 
