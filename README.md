@@ -7,11 +7,15 @@ YouTube Download Bot🚀
 Download videos from YouTube and other platforms through a Telegram Bot
 
 -----
+**READ [FAQ](FAQ.md) FIRST IF YOU ENCOUNTER ANY ISSUES.**
 
+-----
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
 Can't deploy? Fork to your personal account and deploy it there!
-**Starting November 28, 2022, free Heroku Dynos, free Heroku Postgres, and free Heroku Data for Redis® plans will no longer be available.**
+
+**Starting November 28, 2022, free Heroku Dynos, free Heroku Postgres, and free Heroku Data for Redis® plans will no
+longer be available.**
 [Heroku Announcement](https://devcenter.heroku.com/articles/free-dyno-hours)
 
 # Usage
@@ -258,6 +262,7 @@ https://www.youtube.com/playlist?list=PL1Hdq7xjQCJxQnGc05gS4wzHWccvEJy0w
 https://dmesg.app/m3u8/prog_index.m3u8
 
 ## test twitter
+
 https://twitter.com/nitori_sayaka/status/1526199729864200192
 https://twitter.com/BennyThinks/status/1475836588542341124
 
