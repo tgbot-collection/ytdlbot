@@ -9,13 +9,13 @@ services:
     entrypoint: [ "socat", "tcp-listen:2375,fork,reuseaddr","unix-connect:/var/run/docker.sock" ]
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     restart: always
     logging:
       driver: none
 
   mysql:
-    image: ubuntu/mysql:8.0-20.04_beta
+    image: ubuntu/mysql:8.0-22.04_beta
     restart: always
     volumes:
       - ./db_data:/var/lib/mysql
