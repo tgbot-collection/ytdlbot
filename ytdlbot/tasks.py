@@ -28,7 +28,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from celery import Celery
 from celery.worker.control import Panel
 from pyrogram import Client, idle
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, InputMediaPhoto
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 from client_init import create_app
@@ -259,23 +259,47 @@ def ytdl_normal_download(bot_msg, client, url):
         client.send_chat_action(chat_id, 'upload_document')
         video_paths = result["filepath"]
         bot_msg.edit_text('Download complete. Sending now...')
+        logging.info(result)
+        lstimg = []
+        #get image thumbnails list
+        for url_path in video_paths:
+            extPathURL = pathlib.Path(url_path).suffix
+            st_size = os.stat(url_path).st_size
+            if (extPathURL == '.jpg' or extPathURL == '.png') and st_size > 5000:
+                lstimg.append(
+                    InputMediaPhoto(
+                        media = url_path
+                    )
+                )
+        #Split and send 10 photo per time. Media group telegram only support 10 photos
+        newlst = split_list(lstimg, 10)
+        for array in newlst:
+            client.send_media_group(
+                chat_id,
+                disable_notification=True,
+                media=list(array)
+            )
         for video_path in video_paths:
             # normally there's only one video in that path...
+            extPath = pathlib.Path(video_path).suffix
             st_size = os.stat(video_path).st_size
-            if st_size > TG_MAX_SIZE:
-                t = f"Your video({sizeof_fmt(st_size)}) is too large for Telegram. I'll upload it to transfer.sh"
-                bot_msg.edit_text(t)
-                client.send_chat_action(chat_id, 'upload_document')
-                client.send_message(chat_id, upload_transfer_sh(bot_msg, video_paths))
-                return
-            upload_processor(client, bot_msg, url, video_path)
-        bot_msg.edit_text('Download success!✅')
+            #Get video path
+            if (extPath == '.mp4' or extPath =='.mkv'):
+                if st_size > TG_MAX_SIZE:
+                    t = f"Your video({sizeof_fmt(st_size)}) is too large for Telegram. I'll upload it to transfer.sh"
+                    bot_msg.edit_text(t)
+                    client.send_chat_action(chat_id, 'upload_document')
+                    client.send_message(chat_id, upload_transfer_sh(bot_msg, video_paths))
+                    return
+                upload_processor(client, bot_msg, url, video_path)
+                bot_msg.edit_text('Download success!✅')
+             
     else:
         client.send_chat_action(chat_id, 'typing')
         tb = result["error"][0:4000]
         bot_msg.edit_text(f"Download failed!❌\n\n```{tb}```", disable_web_page_preview=True)
 
-    temp_dir.cleanup()
+    #temp_dir.cleanup()
 
 
 def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, pathlib.Path]"):
@@ -434,7 +458,13 @@ def run_celery():
         argv.extend(["-Q", worker_name])
     app.worker_main(argv)
 
-
+def split_list(the_list, chunk_size):
+    result_list = []
+    while the_list:
+        result_list.append(the_list[:chunk_size])
+        the_list = the_list[chunk_size:]
+    return result_list
+  
 if __name__ == '__main__':
     celery_client.start()
     print("Bootstrapping Celery worker now.....")
