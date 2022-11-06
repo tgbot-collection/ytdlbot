@@ -20,3 +20,4 @@ tqdm==4.64.1
 requests-toolbelt==0.10.1
 ffpb==0.4.1
 youtube-search-python==1.6.6
+cryptography
