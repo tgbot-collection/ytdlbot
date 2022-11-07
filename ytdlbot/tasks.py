@@ -278,7 +278,7 @@ def ytdl_normal_download(bot_msg, client, url):
         for url_path in video_paths:
             extPathURL = pathlib.Path(url_path).suffix
             st_size = os.stat(url_path).st_size
-            if (extPathURL == '.jpg' or extPathURL == '.png') and st_size > 5000:
+            if (extPathURL == '.jpg' or extPathURL == '.png') and st_size > 30000:
                 lstimg.append(
                     InputMediaPhoto(
                         media = url_path
@@ -298,7 +298,7 @@ def ytdl_normal_download(bot_msg, client, url):
         tb = result["error"][0:4000]
         bot_msg.edit_text(f"Download failed!❌\n\n```{tb}```", disable_web_page_preview=True)
 
-    #temp_dir.cleanup()
+    temp_dir.cleanup()
 
 
 def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, pathlib.Path]"):
