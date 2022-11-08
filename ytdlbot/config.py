@@ -46,7 +46,7 @@ REQUIRED_MEMBERSHIP: "str" = os.getenv("REQUIRED_MEMBERSHIP", "")
 
 # celery related
 ENABLE_CELERY = os.getenv("ENABLE_CELERY", False)
-ENABLE_QUEUE = os.getenv("ENABLE_QUEUE", True)
+ENABLE_QUEUE = os.getenv("ENABLE_QUEUE", False)
 BROKER = os.getenv("BROKER", f"redis://{REDIS}:6379/4")
 
 MYSQL_HOST = os.getenv("MYSQL_HOST")
