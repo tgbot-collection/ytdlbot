@@ -29,9 +29,10 @@ Websites [supported by youtube-dl](https://ytdl-org.github.io/youtube-dl/support
 
 I don't have unlimited servers and bandwidth, so I have to make some restrictions.
 
-* 10 GiB one-way traffic per 24 hours for each user
+* 5 GiB one-way traffic per 24 hours for each user
 * maximum 5 minutes streaming conversion support
 * maximum 3 subscriptions
+* limited request in certain time range
 
 You can choose to become 'VIP' if you really need large traffic. And also, you could always deploy your own bot.
 
@@ -128,6 +129,7 @@ you can configure all the following environment variables:
   above `AUTHORIZED_USER`
 
 * ENABLE_CELERY: Distribution mode, default: disable. You'll can setup workers in different locations.
+* ENABLE_FFMPEG: enable ffmpeg so Telegram can stream
 * MYSQL_HOST: you'll have to setup MySQL if you enable VIP mode
 * MYSQL_USER
 * MYSQL_PASS

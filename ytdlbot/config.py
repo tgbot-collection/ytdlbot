@@ -19,7 +19,7 @@ TOKEN = os.getenv("TOKEN", "3703WLI")
 REDIS = os.getenv("REDIS")
 
 # quota settings
-QUOTA = int(os.getenv("QUOTA", 10 * 1024 * 1024 * 1024))  # 10G
+QUOTA = int(os.getenv("QUOTA", 5 * 1024 * 1024 * 1024))  # 5G
 if os.uname().sysname == "Darwin":
     QUOTA = 10 * 1024 * 1024  # 10M
 
@@ -58,3 +58,5 @@ ARCHIVE_ID = os.getenv("ARCHIVE_ID")
 
 IPv6 = os.getenv("IPv6", False)
 ENABLE_FFMPEG = os.getenv("ENABLE_FFMPEG", False)
+RATE = float(os.getenv("RATE", 60 * 5))
+BURST = int(os.getenv("BURST", 3))

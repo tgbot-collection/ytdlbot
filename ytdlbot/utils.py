@@ -205,7 +205,7 @@ class Detector:
     def idle_detector(self):
         mtime = os.stat("/var/log/ytdl.log").st_mtime
         cur_ts = time.time()
-        if cur_ts - mtime > 300:
+        if cur_ts - mtime > 1800:
             logging.warning("Potential crash detected by %s, it's time to commit suicide...", self.func_name())
             return True
 

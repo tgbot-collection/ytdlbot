@@ -22,11 +22,12 @@ from pyrogram import Client, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from tgbot_ping import get_runtime
+from token_bucket import Limiter, MemoryStorage
 from youtubesearchpython import VideosSearch
 
 from client_init import create_app
-from config import (AUTHORIZED_USER, ENABLE_CELERY, ENABLE_VIP, OWNER,
-                    REQUIRED_MEMBERSHIP)
+from config import (AUTHORIZED_USER, BURST, ENABLE_CELERY, ENABLE_FFMPEG,
+                    ENABLE_VIP, OWNER, RATE, REQUIRED_MEMBERSHIP)
 from constant import BotText
 from db import InfluxDB, MySQL, Redis
 from limit import VIP, verify_payment
@@ -43,6 +44,11 @@ app = create_app()
 bot_text = BotText()
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
+
+# rate, capacity
+mem = MemoryStorage()
+# 5 minutes, 2 bursts
+lim = Limiter(1 / RATE, BURST, mem)
 
 
 def private_use(func):
@@ -145,7 +151,7 @@ def patch_handler(client: "Client", message: "types.Message"):
 
 
 @app.on_message(filters.command(["uncache"]))
-def patch_handler(client: "Client", message: "types.Message"):
+def uncache_handler(client: "Client", message: "types.Message"):
     username = message.from_user.username
     link = message.text.split()[1]
     if username == OWNER:
@@ -169,7 +175,7 @@ def ping_handler(client: "Client", message: "types.Message"):
 
 
 @app.on_message(filters.command(["about"]))
-def help_handler(client: "Client", message: "types.Message"):
+def about_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
     client.send_message(chat_id, bot_text.about)
@@ -296,6 +302,11 @@ def download_handler(client: "Client", message: "types.Message"):
         message.reply_text("Channel download is disabled now. Please send me individual video link.", quote=True)
         red.update_metrics("reject_channel")
         return
+    # non vip user, consume too many token
+    if (not VIP().check_vip(chat_id)) and (not lim.consume(str(chat_id).encode(), 1)):
+        red.update_metrics("rate_limit")
+        message.reply_text(bot_text.too_fast, quote=True)
+        return
 
     red.update_metrics("video_request")
     text = bot_text.get_receive_link_text()
@@ -338,9 +349,13 @@ def download_resolution_callback(client: "Client", callback_query: types.Callbac
 
 @app.on_callback_query(filters.regex(r"convert"))
 def audio_callback(client: "Client", callback_query: types.CallbackQuery):
+    if not ENABLE_FFMPEG:
+        callback_query.answer("Audio conversion is disabled now.")
+        callback_query.message.reply_text("Audio conversion is disabled now.")
+        return
+
     callback_query.answer(f"Converting to audio...please wait patiently")
     Redis().update_metrics("audio_request")
-
     vmsg = callback_query.message
     audio_entrance(vmsg, client)
 
