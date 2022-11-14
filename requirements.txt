@@ -1,5 +1,5 @@
 pyrogram==1.4.16
-tgcrypto==1.2.4
+tgcrypto==1.2.5
 yt-dlp==2022.10.4
 APScheduler==3.9.1
 beautifultable==1.1.0
