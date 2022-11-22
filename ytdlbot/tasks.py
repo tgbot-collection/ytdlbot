@@ -263,11 +263,10 @@ def ytdl_normal_download(bot_msg, client, url):
             # normally there's only one video in that path...
             st_size = os.stat(video_path).st_size
             if st_size > TG_MAX_SIZE:
-                t = f"Your video({sizeof_fmt(st_size)}) is too large for Telegram. I'll upload it to transfer.sh"
-                bot_msg.edit_text(t)
-                client.send_chat_action(chat_id, 'upload_document')
-                client.send_message(chat_id, upload_transfer_sh(bot_msg, video_paths))
-                return
+                bot_msg.edit_text(f"Your video({sizeof_fmt(st_size)}) is too large for Telegram.")
+                # client.send_chat_action(chat_id, 'upload_document')
+                # client.send_message(chat_id, upload_transfer_sh(bot_msg, video_paths))
+                continue
             upload_processor(client, bot_msg, url, video_path)
         bot_msg.edit_text('Download success!✅')
     else:
