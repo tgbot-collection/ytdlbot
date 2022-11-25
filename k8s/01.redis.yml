@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ytdl
+  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    ytdl: redis
+  name: redis
+  namespace: ytdl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      ytdl: redis
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        ytdl: redis
+    spec:
+      containers:
+        - image: redis:7-alpine
+          name: redis
+          ports:
+            - containerPort: 6379
+          resources: {}
+      restartPolicy: Always
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    ytdl: redis
+  name: redis
+  namespace: ytdl
+spec:
+  ports:
+    - name: "6379"
+      port: 6379
+      targetPort: 6379
+  selector:
+    ytdl: redis
+status:
+  loadBalancer: {}

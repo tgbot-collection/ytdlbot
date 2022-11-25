@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    ytdl: ytdl-worker
+  name: ytdl-worker
+  namespace: ytdl
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      ytdl: ytdl-worker
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        ytdl: ytdl-worker
+    spec:
+      volumes:
+        - name: ytdl-pvc
+          persistentVolumeClaim:
+            claimName: ytdl-pvc
+      containers:
+        - name: ytdl-worker
+          image: bennythink/ytdlbot
+          args:
+            - /usr/local/bin/supervisord
+            - '-c'
+            - /ytdlbot/conf/supervisor_worker.conf
+          envFrom:
+            - configMapRef:
+                name: ytdlenv
+          resources: {}
+          volumeMounts:
+            - name: ytdl-pvc
+              mountPath: /ytdlbot/ytdlbot/data/
+              subPath: data/
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+status: {}

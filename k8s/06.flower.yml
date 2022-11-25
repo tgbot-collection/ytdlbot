@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    ytdl: flower
+  name: flower
+  namespace: ytdl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      ytdl: flower
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        ytdl: flower
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: ytdlenv
+          args:
+           - /usr/local/bin/celery
+           - -A
+           - flower_tasks
+           - flower
+           - --basic_auth=bennythink:123456
+           - --address=0.0.0.0
+           - --persistent
+           - --purge_offline_workers=3600
+          image: bennythink/ytdlbot
+          name: flower
+          ports:
+            - containerPort: 5555
+          resources: {}
+          volumeMounts:
+            - name: ytdl-pvc
+              mountPath: /ytdlbot/ytdlbot/flower
+              subPath: vnstat/flower
+      restartPolicy: Always
+      volumes:
+        - name: ytdl-pvc
+          persistentVolumeClaim:
+            claimName: ytdl-pvc
+status: {}
+
+# THIS IS OPTION IF YOU WANT PUBLIC FLOWER PAGE TO INTERNET.
+# should be adjusted depending on your load balancing system machine
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    ytdl: flower
+  name: flower-svc
+  namespace: ytdl
+spec:
+  type: NodePort
+  ports:
+    - name: "5555"
+      protocol: TCP
+      port: 5555
+      targetPort: 5555
+  selector:
+    ytdl: flower
+status:
+  loadBalancer: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-flower-ingress
+  namespace: ytdl
+  annotations:
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    # nginx.ingress.kubernetes.io/whitelist-source-range: 14.161.27.151 limit by ipaddresss
+ 
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - your-domain
+      secretName: flower-tls
+  rules:
+    - host: your-domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: flower-svc
+                port:
+                  number: 5555
