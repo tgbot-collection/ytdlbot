@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ytdlenv
+  namespace: ytdl
+  annotations:
+data:
+  APP_HASH: 
+  APP_ID: 
+  TOKEN:
+  ARCHIVE_ID: 
+  ENABLE_CELERY: 'True'
+  ENABLE_FFMPEG: 'True'
+  MYSQL_HOST: mariadb-svc
+  MYSQL_PASS: ro0tP4sSworD
+  MYSQL_USER: root
+  REDIS: redis

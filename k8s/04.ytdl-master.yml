@@ -1,0 +1,65 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ytdl-pvc
+  namespace: ytdl
+  creationTimestamp: null
+  labels:
+    ytdl: ytdl-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
+status: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ytdl
+  namespace: ytdl
+  creationTimestamp: null
+  labels:
+    ytdl: ytdl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      ytdl: ytdl
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        ytdl: ytdl
+    spec:
+      volumes:
+        - name: ytdl-pvc
+          persistentVolumeClaim:
+            claimName: ytdl-pvc
+      containers:
+        - name: ytdl
+          image: bennythink/ytdlbot
+          envFrom:
+            - configMapRef:
+                name: ytdlenv
+          resources: {}
+          volumeMounts:
+            - name: ytdl-pvc
+              mountPath: /var/lib/vnstat/
+              subPath: vnstat/
+            - name: ytdl-pvc
+              mountPath: /ytdlbot/ytdlbot/data/
+              subPath: data/
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+status: {}
