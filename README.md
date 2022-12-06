@@ -380,9 +380,29 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> import dbm;dbm.open("flower","n");exit()
 ```
 ### 6.2 Config Flower Ingress
-This step need config ingress from line 51 with your ingress service for access from internet
+This step need config ingress from line 51 of file 06.flower.yml with your ingress service. Need for access from internet.
 YML file should be adjusted depending on your load balancing, ingress and network system
-### 6.2 Apply Flower deloyment
+
+For active SSL
+```yml
+cert-manager.io/cluster-issuer: letsencrypt-prod
+```
+
+Replace nginx by your ingress service
+```yml
+ingressClassName: nginx
+```
+
+Add your domain, example
+```yml
+tls:
+    - hosts:
+        - flower.benny.com
+      secretName: flower-tls
+  rules:
+    - host: flower.benny.com
+```
+### 6.3 Apply Flower deloyment
 
 ```shell
 kubectl apply -f 06.flower.yml
