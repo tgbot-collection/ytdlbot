@@ -298,8 +298,8 @@ def download_handler(client: "Client", message: "types.Message"):
         # client.send_message(chat_id, text, disable_web_page_preview=True, reply_markup=markup)
         # return
 
-    if re.findall(r"^https://www\.youtube\.com/channel/", VIP.extract_canonical_link(url)):
-        message.reply_text("Channel download is disabled now. Please send me individual video link.", quote=True)
+    if re.findall(r"^https://www\.youtube\.com/channel/", VIP.extract_canonical_link(url)) or "list" in url:
+        message.reply_text("Channel/list download is disabled now. Please send me individual video link.", quote=True)
         red.update_metrics("reject_channel")
         return
     # non vip user, consume too many token
