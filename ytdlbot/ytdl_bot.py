@@ -23,7 +23,6 @@ from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from tgbot_ping import get_runtime
 from token_bucket import Limiter, MemoryStorage
-from youtubesearchpython import VideosSearch
 
 from client_init import create_app
 from config import (AUTHORIZED_USER, BURST, ENABLE_CELERY, ENABLE_FFMPEG,
@@ -32,7 +31,7 @@ from constant import BotText
 from db import InfluxDB, MySQL, Redis
 from limit import VIP, verify_payment
 from tasks import app as celery_app
-from tasks import (audio_entrance, direct_download_entrance, hot_patch,
+from tasks import (audio_entrance, direct_download_entrance, hot_patch, purge_tasks,
                    ytdl_download_entrance)
 from utils import (auto_restart, customize_logger, get_revision,
                    get_user_settings, set_user_settings)
@@ -157,6 +156,13 @@ def uncache_handler(client: "Client", message: "types.Message"):
     if username == OWNER:
         count = VIP().del_cache(link)
         message.reply_text(f"{count} cache(s) deleted.", quote=True)
+
+
+@app.on_message(filters.command(["purge"]))
+def purge_handler(client: "Client", message: "types.Message"):
+    username = message.from_user.username
+    if username == OWNER:
+        message.reply_text(purge_tasks(), quote=True)
 
 
 @app.on_message(filters.command(["ping"]))
