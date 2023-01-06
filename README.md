@@ -197,7 +197,6 @@ You can also limit CPU and RAM usage by adding an `deploy' key:
 
 Be sure to use `--compatibility` when deploying.
 
-
 ## 4. run
 
 ### 4.1. standalone mode
@@ -234,7 +233,8 @@ docker-compose -f worker.yml up -d
 
 ## Kubernetes
 
-Kubernetes, also known as K8s, is an open-source system for automating deployment, scaling, and management of containerized applications 
+Kubernetes, also known as K8s, is an open-source system for automating deployment, scaling, and management of
+containerized applications
 
 # Complete deployment guide for k8s deloyment
 
@@ -258,11 +258,14 @@ This command will create ytdl namespace, redis pod and redis service
 ```shell
 kubectl apply -f 02.mariadb.yml
 ```
-This deloyment will claim 10GB storage from storageClassName: longhorn. Please replace longhorn with your storageClassName before apply.
+
+This deloyment will claim 10GB storage from storageClassName: longhorn. Please replace longhorn with your
+storageClassName before apply.
 
 ## 3. Set environment variables
 
 Create configMap for env
+
 ### 3.1 Edit configmap.yml
 
 ```shell
@@ -316,9 +319,12 @@ kubectl apply -f 03.configmap.yml
 ```shell
 kubectl apply -f 04.ytdl-master.yml
 ```
-This deloyment will create ytdl-pvc PersistentVolumeClaim on storageClassName: longhorn. This clain will contain vnstat, cookies folder and flower database. Please replace longhorn with your storageClassName before apply
+
+This deloyment will create ytdl-pvc PersistentVolumeClaim on storageClassName: longhorn. This clain will contain vnstat,
+cookies folder and flower database. Please replace longhorn with your storageClassName before apply
 
 ### 4.1 Setup instagram cookies
+
 Required if you want to support instagram.
 
 You can use this extension
@@ -326,23 +332,29 @@ You can use this extension
 to get instagram cookies
 
 Get pod running ytdl master:
+
 ```shell
 kubectl get pods --namespace ytdl
 ```
+
 Name should be ytdl-xxxxxxxx
 
 Access to pod
+
 ```shell
 kubectl --namespace=ytdl exec --stdin --tty ytdl-xxx -- sh
 ```
+
 (replace ytdl-xxx by your pod name)
 
 Go to ytdl-pvc mounted folder
+
 ```shell
 cd /ytdlbot/ytdlbot/data/
 vim  instagram.com_cookies.txt
 # paste your cookies
 ```
+
 ## 5. Run Worker Celery
 
 ```shell
@@ -351,27 +363,32 @@ kubectl apply -f 05.ytdl-worker.yml
 
 ## 6. Run Flower image (OPTIONAL)
 
-
 ### 6.1 Setup flower db
 
 Get pod running ytdl master:
+
 ```shell
 kubectl get pods --namespace ytdl
 ```
+
 Name should be ytdl-xxxxxxxx
 
 Access to pod
+
 ```shell
 kubectl --namespace=ytdl exec --stdin --tty ytdl-xxx -- sh
 ```
+
 (replace ytdl-xxx by your pod name)
 
 Go to ytdl-pvc mounted folder
+
 ```shel
 cd /var/lib/vnstat/
 ```
 
 Create flower database file
+
 ```shell
 {} ~ python3
 Python 3.9.9 (main, Nov 21 2021, 03:22:47)
@@ -379,29 +396,36 @@ Python 3.9.9 (main, Nov 21 2021, 03:22:47)
 Type "help", "copyright", "credits" or "license" for more information.
 >>> import dbm;dbm.open("flower","n");exit()
 ```
+
 ### 6.2 Config Flower Ingress
-This step need config ingress from line 51 of file 06.flower.yml with your ingress service. Need for access from internet.
+
+This step need config ingress from line 51 of file 06.flower.yml with your ingress service. Need for access from
+internet.
 YML file should be adjusted depending on your load balancing, ingress and network system
 
 For active SSL
+
 ```yml
 cert-manager.io/cluster-issuer: letsencrypt-prod
 ```
 
 Replace nginx by your ingress service
+
 ```yml
 ingressClassName: nginx
 ```
 
 Add your domain, example
+
 ```yml
 tls:
-    - hosts:
-        - flower.benny.com
-      secretName: flower-tls
+  - hosts:
+      - flower.benny.com
+    secretName: flower-tls
   rules:
     - host: flower.benny.com
 ```
+
 ### 6.3 Apply Flower deloyment
 
 ```shell
@@ -449,6 +473,17 @@ https://twitter.com/BennyThinks/status/1475836588542341124
 
 * [Buy me a coffee](https://www.buymeacoffee.com/bennythink)
 * [Afdian](https://afdian.net/@BennyThink)
+* [GitHub Sponsor](https://github.com/sponsors/BennyThink)
+
+## Stripe
+
+You can choose to donate via Stripe. Please click the button below to donate via Stripe.
+Choose the currency and payment method that suits you.
+
+| USD(Card, Apple Pay and Google Pay)              | SEK(Card, Apple Pay and Google Pay)              | CNY(Card, Apple Pay, Google Pay and Alipay)      |
+|--------------------------------------------------|--------------------------------------------------|--------------------------------------------------|
+| [USD](https://buy.stripe.com/cN203sdZB98RevC3cd) | [SEK](https://buy.stripe.com/bIYbMa9JletbevCaEE) | [CNY](https://buy.stripe.com/dR67vU4p13Ox73a6oq) |
+| ![](assets/USD.png)                              | ![](assets/SEK.png)                              | ![](assets/CNY.png)                              |
 
 # License
 
