@@ -264,7 +264,7 @@ def vip_handler(client: "Client", message: "types.Message"):
         bm.edit_text(msg)
 
 
-def generate_invoice(amount: "int", title: "str", description: "str", payload: "bytes"):
+def generate_invoice(amount: "int", title: "str", description: "str", payload: "str"):
     invoice = raw_types.input_media_invoice.InputMediaInvoice(
         invoice=(
             raw_types.invoice.Invoice(currency="USD", prices=[raw_types.LabeledPrice(label="price", amount=amount)])),
@@ -272,7 +272,8 @@ def generate_invoice(amount: "int", title: "str", description: "str", payload: "
         description=description,
         provider=PROVIDER_TOKEN,
         provider_data=raw_types.DataJSON(data="{}"),
-        payload=payload,
+        payload=payload.encode(),
+        start_param=payload
     )
     return invoice
 
@@ -283,7 +284,7 @@ def topup_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
     invoice = generate_invoice(100, bot_text.topup_title, bot_text.topup_description,
-                               f"{message.chat.id}-topup".encode())
+                               f"{message.chat.id}-topup")
 
     app.send(
         functions.messages.SendMedia(
