@@ -441,13 +441,15 @@ ping - Bot running status
 help - Help
 ytdl - Download video in group
 vip - Join VIP
-terms - View Terms of Service
 settings - Set your preference
 direct - Download file directly
 sub - Subscribe to YouTube Channel
 unsub - Unsubscribe from YouTube Channel
 sub_count - Check subscription status, owner only.
-uncache - Delete cache for this link
+uncache - Delete cache for this link, owner only.
+purge - Delete all tasks , owner only.
+topup - Top up quota
+tgvip - Using Telegram payment to pay for VIP
 ```
 
 # Test data

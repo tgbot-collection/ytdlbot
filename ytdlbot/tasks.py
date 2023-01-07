@@ -32,12 +32,12 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 from client_init import create_app
-from config import (ARCHIVE_ID, BROKER, ENABLE_CELERY,
-                    ENABLE_QUEUE, ENABLE_VIP, TG_MAX_SIZE, WORKERS)
+from config import (ARCHIVE_ID, BROKER, ENABLE_CELERY, ENABLE_QUEUE,
+                    ENABLE_VIP, TG_MAX_SIZE, WORKERS)
 from constant import BotText
 from db import Redis
-from downloader import (edit_text, sizeof_fmt, tqdm_progress,
-                        upload_hook, ytdl_download)
+from downloader import (edit_text, sizeof_fmt, tqdm_progress, upload_hook,
+                        ytdl_download)
 from limit import VIP
 from utils import (apply_log_formatter, auto_restart, customize_logger,
                    get_metadata, get_revision, get_user_settings)
@@ -433,9 +433,11 @@ def run_celery():
         argv.extend(["-Q", worker_name])
     app.worker_main(argv)
 
+
 def purge_tasks():
     count = app.control.purge()
     return f"purged {count} tasks."
+
 
 if __name__ == '__main__':
     celery_client.start()

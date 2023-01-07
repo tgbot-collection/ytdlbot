@@ -22,62 +22,53 @@ class BotText:
     start = "Welcome to YouTube Download bot. Type /help for more information."
 
     help = f"""
-1. This bot should works at all times. If it doesn't, try to send the link again or DM @BennyThink
+1. This bot should works at all times. If it doesn't, wait for a few minutes, try to send the link again.
 
-2. At this time of writing, this bot consumes hundreds of GigaBytes of network traffic per day. 
+2. At this time of writing, this bot consumes more than 100GB of network traffic per day. 
 In order to avoid being abused, 
 every one can use this bot within **{sizeof_fmt(QUOTA)} of quota for every {int(EX / 3600)} hours.**
 
-3. Free users can't receive streaming formats of one video whose duration is longer than 300 seconds.
+3. You can optionally choose to become 'VIP' user if you need more traffic. Type /vip for more information.
 
-4. You can optionally choose to become 'VIP' user if you need more traffic. Type /vip for more information.
+4. Source code for this bot will always stay open, here-> https://github.com/tgbot-collection/ytdlbot
 
-5. Source code for this bot will always stay open, here-> https://github.com/tgbot-collection/ytdlbot
-
-6. Request limit is applied for everyone, excluding VIP users.
+5. Request limit is applied for everyone, excluding VIP users.
     """ if ENABLE_VIP else "Help text"
 
     about = "YouTube-DL by @BennyThink. Open source on GitHub: https://github.com/tgbot-collection/ytdlbot"
 
-    terms = f"""
-1. You can use this service, free of charge, {sizeof_fmt(QUOTA)} per {int(EX / 3600)} hours.
-
-2. The above traffic, is counted for one-way. 
-For example, if you download a video of 1GB, your current quota will be 9GB instead of 8GB.
-
-3. Streaming support is limited due to high costs of conversion.
-
-4. I won't gather any personal information, which means I don't know how many and what videos did you download.
-
-5. Please try not to abuse this service.
-
-6. It's a open source project, you can always deploy your own bot.
-
-7. For VIPs, please refer to /vip command
-    """ if ENABLE_VIP else "Please contact the actual owner of this bot"
-
     vip = f"""
 **Terms:**
-1. No refund, I'll keep it running as long as I can.
-2. I'll record your unique ID after a successful payment, usually it's payment ID or email address.
-3. VIPs identity won't expire.
+1. You can use this service, free of charge, {sizeof_fmt(QUOTA)} per {int(EX / 3600)} hours.
+2. The above traffic, is counted one-way. For example, if you download a video of 1GB, your will use 1GB instead of 2GB.
+3. Streaming support is limited due to high costs of conversion.
+4. I won't gather any personal information, which means I don't know how many and what videos did you download.
+5. No rate limit for VIP users.
+6. Possible to refund, but you'll have to bear with process fee. 
+7. I'll record your unique ID after a successful payment, usually it's payment ID or email address.
+8. VIP identity won't expire.
+9. Please try not to abuse this service. It's a open source project, you can always deploy your own bot.
 
 **Pay Tier:**
 1. Everyone: {sizeof_fmt(QUOTA)} per {int(EX / 3600)} hours
-2. VIP1: ${MULTIPLY} or ¥{MULTIPLY * USD2CNY}, {sizeof_fmt(QUOTA * 5)} per {int(EX / 3600)} hours
-3. VIP2: ${MULTIPLY * 2} or ¥{MULTIPLY * USD2CNY * 2}, {sizeof_fmt(QUOTA * 5 * 2)} per {int(EX / 3600)} hours
+2. VIP1: ${MULTIPLY} or ¥{MULTIPLY * USD2CNY}, {sizeof_fmt(QUOTA * 2)} per {int(EX / 3600)} hours
+3. VIP2: ${MULTIPLY * 2} or ¥{MULTIPLY * USD2CNY * 2}, {sizeof_fmt(QUOTA * 2 * 2)} per {int(EX / 3600)} hours
 4. VIP4....VIPn.
-5. Unlimited streaming conversion support.
-Note: If you pay $9, you'll become VIP1 instead of VIP2.
+
+**Temporary top up**
+Just want more traffic for a short period of time? Don't worry, you can use /topup command to top up your quota. 
+It's valid permanently, until you use it up.
 
 **Payment method:**
 1. (afdian) Mainland China: {AFD_LINK}
 2. (buy me a coffee) Other countries or regions: {COFFEE_LINK}
-__I live in a place where I don't have access to Telegram Payments. So...__
+3. Telegram Payment(stripe), please directly using /tgvip command.
 
 **After payment:**
+
 1. afdian: with your order number `/vip 123456`
 2. buy me a coffee: with your email `/vip someone@else.com`
+3. Telegram Payment: automatically activated
     """ if ENABLE_VIP else "VIP is not enabled."
     vip_pay = "Processing your payments...If it's not responding after one minute, please contact @BennyThink."
 
@@ -95,6 +86,8 @@ Video quality: **{0}**
 Sending format: **{1}**
 """
     custom_text = os.getenv("CUSTOM_TEXT", "")
+    topup_description = f"US$1 will give you {sizeof_fmt(QUOTA)} traffic permanently"
+    topup_title = "Pay US$1 for more traffic!"
 
     def remaining_quota_caption(self, chat_id):
         if not ENABLE_VIP:

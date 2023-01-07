@@ -34,18 +34,25 @@ class VIP(Redis, MySQL):
         data = self.cur.fetchone()
         return data
 
-    def add_vip(self, user_data: "dict") -> ("bool", "str"):
+    def __add_vip(self, user_data: "dict"):
         sql = "INSERT INTO vip VALUES (%s,%s,%s,%s,%s,%s);"
+        self.cur.execute(sql, list(user_data.values()))
+        self.con.commit()
+        # also remove redis cache
+        self.r.delete(user_data["user_id"])
+
+    def add_vip(self, user_data: "dict") -> "str":
         # first select
         self.cur.execute("SELECT * FROM vip WHERE payment_id=%s", (user_data["payment_id"],))
         is_exist = self.cur.fetchone()
         if is_exist:
             return "Failed. {} is being used by user {}".format(user_data["payment_id"], is_exist[0])
-        self.cur.execute(sql, list(user_data.values()))
-        self.con.commit()
-        # also remove redis cache
-        self.r.delete(user_data["user_id"])
+        self.__add_vip(user_data)
         return "Success! You are VIP{} now!".format(user_data["level"])
+
+    def direct_add_vip(self, user_data: "dict") -> ("bool", "str"):
+        self.__add_vip(user_data)
+        return "Success payment from Telegram! You are VIP{} now!".format(user_data["level"])
 
     def remove_vip(self, user_id: "int"):
         raise NotImplementedError()
@@ -53,7 +60,16 @@ class VIP(Redis, MySQL):
     def get_user_quota(self, user_id: "int") -> int:
         # even VIP have certain quota
         q = self.check_vip(user_id)
-        return q[-1] if q else QUOTA
+        topup = self.r.hget("topup", user_id)
+        if q:
+            return q[-1]
+        elif topup:
+            return int(topup) + QUOTA
+        else:
+            return QUOTA
+
+    def set_topup(self, user_id: "int"):
+        self.r.hset("topup", user_id, QUOTA)
 
     def check_remaining_quota(self, user_id: "int"):
         user_quota = self.get_user_quota(user_id)
