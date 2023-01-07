@@ -441,7 +441,7 @@ def raw_update(client: "Client", update, users, chats):
                 "level": 1,
                 "quota": QUOTA * 2
             }
-            vip.add_vip(ud)
+            vip.direct_add_vip(ud)
             client.send_message(uid, f"Thank you {uid}. VIP payment received: {amount}")
 
         else:
