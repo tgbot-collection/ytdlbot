@@ -1,6 +1,6 @@
 pyrogram==1.4.16
 tgcrypto==1.2.5
-yt-dlp==2023.1.2
+yt-dlp==2023.1.6
 APScheduler==3.9.1.post1
 beautifultable==1.1.0
 ffmpeg-python==0.2.0
@@ -15,7 +15,7 @@ fakeredis==2.4.0
 supervisor==4.2.5
 tgbot-ping==1.0.4
 redis==4.3.3
-requests==2.28.1
+requests==2.28.2
 tqdm==4.64.1
 requests-toolbelt==0.10.1
 ffpb==0.4.1
