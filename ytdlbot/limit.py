@@ -150,7 +150,10 @@ class VIP(Redis, MySQL):
     def get_channel_info(self, url: "str"):
         api_key = os.getenv("GOOGLE_API_KEY")
         canonical_link = self.extract_canonical_link(url)
-        channel_id = canonical_link.split("https://www.youtube.com/channel/")[1]
+        try:
+            channel_id = canonical_link.split("https://www.youtube.com/channel/")[1]
+        except IndexError:
+            channel_id = canonical_link.split("https://youtube.com/channel/")[1]
         channel_api = f"https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&" \
                       f"id={channel_id}&key={api_key}"
         data = requests.get(channel_api).json()
