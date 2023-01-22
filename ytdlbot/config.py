@@ -26,7 +26,7 @@ if os.uname().sysname == "Darwin":
 TG_MAX_SIZE = 2 * 1024 * 1024 * 1024 * 0.99
 # TG_MAX_SIZE = 10 * 1024 * 1024
 
-EX = os.getenv("EX", 24 * 3600)
+EX = int(os.getenv("EX", 24 * 3600))
 MULTIPLY = os.getenv("MULTIPLY", 10)  # VIP1 is 5*5-25G, VIP2 is 50G
 USD2CNY = os.getenv("USD2CNY", 6)  # $5 --> ¥30
 
