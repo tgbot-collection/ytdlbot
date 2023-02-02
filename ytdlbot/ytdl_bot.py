@@ -336,8 +336,6 @@ def download_handler(client: "Client", message: "types.Message"):
             message.reply_text("Channel/list download is disabled now. Please send me individual video link.", quote=True)
             red.update_metrics("reject_channel")
             return
-    else:
-        pass
     # non vip user, consume too many token
     if (not VIP().check_vip(chat_id)) and (not lim.consume(str(chat_id).encode(), 1)):
         red.update_metrics("rate_limit")
