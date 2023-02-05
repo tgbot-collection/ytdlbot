@@ -137,6 +137,7 @@ you can configure all the following environment variables:
 * AUDIO_FORMAT: audio format, default is m4a. You can set to any known and supported format for ffmpeg. For
   example,`mp3`, `flac`, etc. ⚠️ m4a is the fastest. Other formats may affect performance.
 * ARCHIVE_ID: group or channel id/username. All downloads will send to this group first and then forward to end user.
+* PLAYLIST_SUPPORT: `True` or `False`, Ability to enable or disable downloads of playlist / channels by bot. Default: `False`.
   **Inline button will be lost during the forwarding.**
 
 ## 3.2 Set up init data

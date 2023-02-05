@@ -29,7 +29,7 @@ from token_bucket import Limiter, MemoryStorage
 from client_init import create_app
 from config import (AUTHORIZED_USER, BURST, ENABLE_CELERY, ENABLE_FFMPEG,
                     ENABLE_VIP, MULTIPLY, OWNER, PROVIDER_TOKEN, QUOTA, RATE,
-                    REQUIRED_MEMBERSHIP)
+                    REQUIRED_MEMBERSHIP, PLAYLIST_SUPPORT)
 from constant import BotText
 from db import InfluxDB, MySQL, Redis
 from limit import VIP, verify_payment
@@ -331,10 +331,11 @@ def download_handler(client: "Client", message: "types.Message"):
         message.reply_text("I think you should send me a link.", quote=True)
         return
 
-    if re.findall(r"^https://www\.youtube\.com/channel/", VIP.extract_canonical_link(url)) or "list" in url:
-        message.reply_text("Channel/list download is disabled now. Please send me individual video link.", quote=True)
-        red.update_metrics("reject_channel")
-        return
+    if not PLAYLIST_SUPPORT:
+        if re.findall(r"^https://www\.youtube\.com/channel/", VIP.extract_canonical_link(url)) or "list" in url:
+            message.reply_text("Channel/list download is disabled now. Please send me individual video link.", quote=True)
+            red.update_metrics("reject_channel")
+            return
     # non vip user, consume too many token
     if (not VIP().check_vip(chat_id)) and (not lim.consume(str(chat_id).encode(), 1)):
         red.update_metrics("rate_limit")
