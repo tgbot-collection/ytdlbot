@@ -77,7 +77,7 @@ It's valid permanently, until you use it up.
 
     settings = """
 Select sending format and video quality. **Only applies to YouTube**
-High quality is recommended; Medium quality is aimed as 480P while low quality is aimed as 360P and 240P.
+High quality is recommended; Medium quality is aimed as 720P while low quality is aimed as 480P.
     
 Remember if you choose to send as document, there will be no streaming. 
 
