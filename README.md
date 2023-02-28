@@ -67,9 +67,10 @@ Use the button above! It should work like a magic but with limited functionaliti
 1. clone code
 2. install ffmpeg
 3. install Python 3.6+
-4. pip3 install -r requirements.txt
-5. set environment variables `TOKEN`, `APP_ID` and `APP_HASH`, and more if you like.
-6. `python3 ytdl_bot.py`
+4. install aria2 and add to PATH
+5. pip3 install -r requirements.txt
+6. set environment variables `TOKEN`, `APP_ID` and `APP_HASH`, and more if you like.
+7. `python3 ytdl_bot.py`
 
 ## Docker
 

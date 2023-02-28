@@ -1,1 +1,1 @@
-ffmpeg vnstat git
+ffmpeg vnstat git aria2

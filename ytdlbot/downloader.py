@@ -190,6 +190,8 @@ def ytdl_download(url, tempdir, bm, **kwargs) -> dict:
     response = {"status": True, "error": "", "filepath": []}
     output = pathlib.Path(tempdir, "%(title).70s.%(ext)s").as_posix()
     ydl_opts = {
+        'external_downloader': 'aria2c',
+        'external_downloader_args': ['--min-split-size=1M', '--max-connection-per-server=16', '--max-concurrent-downloads=16', '--split=16'],
         'progress_hooks': [lambda d: download_hook(d, bm)],
         'outtmpl': output,
         'restrictfilenames': False,
