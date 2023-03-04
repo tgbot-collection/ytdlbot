@@ -24,7 +24,7 @@ import filetype
 import yt_dlp as ytdl
 from tqdm import tqdm
 
-from config import (AUDIO_FORMAT, ENABLE_FFMPEG, ENABLE_VIP, MAX_DURATION,
+from config import (AUDIO_FORMAT, ENABLE_FFMPEG, ENABLE_VIP, MAX_DURATION, ENABLE_ARIA2,
                     TG_MAX_SIZE, IPv6)
 from db import Redis
 from limit import VIP
@@ -190,14 +190,19 @@ def ytdl_download(url, tempdir, bm, **kwargs) -> dict:
     response = {"status": True, "error": "", "filepath": []}
     output = pathlib.Path(tempdir, "%(title).70s.%(ext)s").as_posix()
     ydl_opts = {
-        'external_downloader': 'aria2c',
-        'external_downloader_args': ['--min-split-size=1M', '--max-connection-per-server=16', '--max-concurrent-downloads=16', '--split=16'],
         'progress_hooks': [lambda d: download_hook(d, bm)],
         'outtmpl': output,
         'restrictfilenames': False,
         'quiet': True,
         "proxy": os.getenv("YTDL_PROXY")
     }
+    if ENABLE_ARIA2:
+        ydl_opts["external_downloader"] = "aria2c"
+        ydl_opts["external_downloader_args"] = ['--min-split-size=1M',
+                                                '--max-connection-per-server=16',
+                                                '--max-concurrent-downloads=16',
+                                                '--split=16'
+                                                ]
     formats = [
         "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio",
         "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",

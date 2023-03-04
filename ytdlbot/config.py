@@ -63,3 +63,4 @@ RATE = float(os.getenv("RATE", 0.01))
 BURST = int(os.getenv("BURST", 3))
 PROVIDER_TOKEN = os.getenv("PROVIDER_TOKEN") or "1234"
 PLAYLIST_SUPPORT = os.getenv("PLAYLIST_SUPPORT", False)
+ENABLE_ARIA2 = os.getenv("ENABLE_ARIA2", False)
