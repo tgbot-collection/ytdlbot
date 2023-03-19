@@ -155,8 +155,7 @@ db_data/*
 env/*
 .ash_history
 .DS_Store
-ytdlbot/session/ytdl.session
-ytdlbot/session/celery.session
+ytdlbot/ytdl.session
 data/*
 upgrade_worker.sh
 ytdl.session
