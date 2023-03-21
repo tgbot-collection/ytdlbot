@@ -10,7 +10,7 @@ filetype==1.2.0
 flower==1.2.0
 psutil==5.9.4
 influxdb==5.3.1
-beautifulsoup4==4.11.2
+beautifulsoup4==4.12.0
 fakeredis==2.9.2
 supervisor==4.2.5
 tgbot-ping==1.0.7
