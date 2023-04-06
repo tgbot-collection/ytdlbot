@@ -4,7 +4,7 @@
 
 YouTube Download Bot🚀
 
-Download videos from YouTube and other platforms through a Telegram Bot
+This Telegram bot allows you to download videos from YouTube and other supported platforms.
 
 -----
 **READ [FAQ](FAQ.md) FIRST IF YOU ENCOUNTER ANY ISSUES.**
@@ -12,7 +12,7 @@ Download videos from YouTube and other platforms through a Telegram Bot
 -----
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
-Can't deploy? Fork to your personal account and deploy it there!
+If you are having trouble deploying, you can fork the project to your personal account and deploy it from there.
 
 **Starting November 28, 2022, free Heroku Dynos, free Heroku Postgres, and free Heroku Data for Redis® plans will no
 longer be available.**
@@ -27,14 +27,13 @@ Websites [supported by youtube-dl](https://ytdl-org.github.io/youtube-dl/support
 
 # Limitations of my bot
 
-I don't have unlimited servers and bandwidth, so I have to make some restrictions.
+Due to limitations on servers and bandwidth, there are some restrictions on this service.
 
-* 5 GiB one-way traffic per 24 hours for each user
-* maximum 5 minutes streaming conversion support
-* maximum 3 subscriptions
-* limited request in certain time range
+* Each user is limited to 5 free downloads per 24-hour period
+* there is a maximum of three subscriptions allowed for YouTube channels.
 
-You can choose to become 'VIP' if you really need large traffic. And also, you could always deploy your own bot.
+If you require more downloads, you can purchase additional tokens. Additionally, you have the option of deploying your
+own bot.
 
 # Features
 
@@ -45,7 +44,7 @@ You can choose to become 'VIP' if you really need large traffic. And also, you c
 3. support progress bar
 4. audio conversion
 5. playlist support
-6. VIP support
+6. payment support
 7. support different video resolutions
 8. support sending as file or streaming as video
 9. supports celery worker distribution - faster than before.
@@ -56,25 +55,23 @@ You can choose to become 'VIP' if you really need large traffic. And also, you c
 
 # How to deploy?
 
-You can deploy this bot on any platform that supports Python.
-
-## Heroku
-
-Use the button above! It should work like a magic but with limited functionalities.
+This bot can be deployed on any platform that supports Python.
 
 ## Run natively on your machine
 
-1. clone code
-2. install ffmpeg
-3. install Python 3.6+
-4. install aria2 and add to PATH
-5. pip3 install -r requirements.txt
-6. set environment variables `TOKEN`, `APP_ID` and `APP_HASH`, and more if you like.
-7. `python3 ytdl_bot.py`
+To deploy this bot, follow these steps:
+
+1. Clone the code from the repository.
+2. Install FFmpeg.
+3. Install Python 3.6 or a later version.
+4. Install Aria2 and add it to the PATH.
+5. Install the required packages by running `pip3 install -r requirements.txt`.
+6. Set the environment variables `TOKEN`, `APP_ID`, `APP_HASH`, and any others that you may need.
+7. Run `python3 ytdl_bot.py`.
 
 ## Docker
 
-Some functions, such as VIP, ping will be disabled.
+This bot has a simple one-line code and some functions, such as VIP and ping, are disabled.
 
 ```shell
 docker run -e APP_ID=111 -e APP_HASH=111 -e TOKEN=370FXI bennythink/ytdlbot
@@ -104,42 +101,35 @@ mkdir env
 vim env/ytdl.env
 ```
 
-you can configure all the following environment variables:
+You can configure all the following environment variables:
 
-* PYRO_WORKERS: number of workers for pyrogram, default is 100
 * WORKERS: workers count for celery
+* PYRO_WORKERS: number of workers for pyrogram, default is 100
 * APP_ID: **REQUIRED**, get it from https://core.telegram.org/
 * APP_HASH: **REQUIRED**
 * TOKEN: **REQUIRED**
 * REDIS: **REQUIRED if you need VIP mode and cache** ⚠️ Don't publish your redis server on the internet. ⚠️
-
+* EXPIRE: token expire time, default: 1 day
+* ENABLE_VIP: enable VIP mode
 * OWNER: owner username
-* QUOTA: quota in bytes
-* EX: quota expire time
-* MULTIPLY: vip quota comparing to normal quota
-* USD2CNY: exchange rate
-* VIP: VIP mode, default: disable
-* AFD_LINK
-* COFFEE_LINK
-* COFFEE_TOKEN
-* AFD_TOKEN
-* AFD_USER_ID
-
-* AUTHORIZED_USER: users that could use this bot, user_id, separated with `,`
-* REQUIRED_MEMBERSHIP: group or channel username, user must join this group to use the bot. Could be use with
-  above `AUTHORIZED_USER`
-
-* ENABLE_CELERY: Distribution mode, default: disable. You'll can setup workers in different locations.
-* ENABLE_FFMPEG: enable ffmpeg so Telegram can stream
-* MYSQL_HOST: you'll have to setup MySQL if you enable VIP mode
-* MYSQL_USER
-* MYSQL_PASS
+* AUTHORIZED_USER: only authorized users can use the bot
+* REQUIRED_MEMBERSHIP: group or channel username, user must join this group to use the bot
+* ENABLE_CELERY: celery mode, default: disable
+* ENABLE_QUEUE: celery queue
+* BROKER: celery broker, should be redis://redis:6379/0
+* MYSQL_HOST:MySQL host
+* MYSQL_USER: MySQL username
+* MYSQL_PASS: MySQL password
+* AUDIO_FORMAT: default audio format
+* ARCHIVE_ID: forward all downloads to this group/channel
+* IPv6 = os.getenv("IPv6", False)
+* ENABLE_FFMPEG = os.getenv("ENABLE_FFMPEG", False)
+* PROVIDER_TOKEN: stripe token on Telegram payment
+* PLAYLIST_SUPPORT: download playlist support
+* ENABLE_ARIA2: enable aria2c download
+* FREE_DOWNLOAD: free download count per day
+* TOKEN_PRICE: token price per 1 USD
 * GOOGLE_API_KEY: YouTube API key, required for YouTube video subscription.
-* AUDIO_FORMAT: audio format, default is m4a. You can set to any known and supported format for ffmpeg. For
-  example,`mp3`, `flac`, etc. ⚠️ m4a is the fastest. Other formats may affect performance.
-* ARCHIVE_ID: group or channel id/username. All downloads will send to this group first and then forward to end user.
-* PLAYLIST_SUPPORT: `True` or `False`, Ability to enable or disable downloads of playlist / channels by bot. Default: `False`.
-  **Inline button will be lost during the forwarding.**
 
 ## 3.2 Set up init data
 
@@ -187,7 +177,7 @@ vim  data/instagram.com_cookies.txt
 
 In `flower` service section, you may want to change your basic authentication username password and publish port.
 
-You can also limit CPU and RAM usage by adding an `deploy' key:
+You can also limit CPU and RAM usage by adding a `deploy' key:
 
 ```docker
     deploy:
@@ -231,208 +221,12 @@ On the other machine:
 docker-compose -f worker.yml up -d
 ```
 
-**⚠️ Bear in mind don't publish redis directly on the internet! You can use WireGuard to wrap it up.**
+**⚠️ Please bear in mind that you should not publish Redis directly on the internet.
+Instead, you can use WireGuard to wrap it up for added security.**
 
-## Kubernetes
+## kubernetes
 
-Kubernetes, also known as K8s, is an open-source system for automating deployment, scaling, and management of
-containerized applications
-
-# Complete deployment guide for k8s deloyment
-
-* contains every functionality
-* compatible with amd64, arm64 and armv7l
-
-## First. Get all file in k8s folder
-
-Download `k8s` file to a directory on your k8s server and go to this folder
-
-## 1. Create Redis deloyment
-
-```shell
-kubectl apply -f 01.redis.yml
-```
-
-This command will create ytdl namespace, redis pod and redis service
-
-## 2. Creat MariaDB deloyment
-
-```shell
-kubectl apply -f 02.mariadb.yml
-```
-
-This deloyment will claim 10GB storage from storageClassName: longhorn. Please replace longhorn with your
-storageClassName before apply.
-
-## 3. Set environment variables
-
-Create configMap for env
-
-### 3.1 Edit configmap.yml
-
-```shell
-vim 03.configmap.yml
-```
-
-you can configure all the following environment variables:
-
-* PYRO_WORKERS: number of workers for pyrogram, default is 100
-* WORKERS: workers count for celery
-* APP_ID: **REQUIRED**, get it from https://core.telegram.org/
-* APP_HASH: **REQUIRED**
-* TOKEN: **REQUIRED**
-* REDIS: **REQUIRED if you need VIP mode and cache** ⚠️ Don't publish your redis server on the internet. ⚠️
-
-* OWNER: owner username
-* QUOTA: quota in bytes
-* EX: quota expire time
-* MULTIPLY: vip quota comparing to normal quota
-* USD2CNY: exchange rate
-* VIP: VIP mode, default: disable
-* AFD_LINK
-* COFFEE_LINK
-* COFFEE_TOKEN
-* AFD_TOKEN
-* AFD_USER_ID
-
-* AUTHORIZED_USER: users that could use this bot, user_id, separated with `,`
-* REQUIRED_MEMBERSHIP: group or channel username, user must join this group to use the bot. Could be use with
-  above `AUTHORIZED_USER`
-
-* ENABLE_CELERY: Distribution mode, default: disable. You'll can setup workers in different locations.
-* ENABLE_FFMPEG: enable ffmpeg so Telegram can stream
-* MYSQL_HOST: you'll have to setup MySQL if you enable VIP mode
-* MYSQL_USER
-* MYSQL_PASS
-* GOOGLE_API_KEY: YouTube API key, required for YouTube video subscription.
-* AUDIO_FORMAT: audio format, default is m4a. You can set to any known and supported format for ffmpeg. For
-  example,`mp3`, `flac`, etc. ⚠️ m4a is the fastest. Other formats may affect performance.
-* ARCHIVE_ID: group or channel id/username. All downloads will send to this group first and then forward to end user.
-  **Inline button will be lost during the forwarding.**
-
-### 3.2 Apply configMap for environment variables
-
-```shell
-kubectl apply -f 03.configmap.yml
-```
-
-## 4. Run Master Celery
-
-```shell
-kubectl apply -f 04.ytdl-master.yml
-```
-
-This deloyment will create ytdl-pvc PersistentVolumeClaim on storageClassName: longhorn. This clain will contain vnstat,
-cookies folder and flower database. Please replace longhorn with your storageClassName before apply
-
-### 4.1 Setup instagram cookies
-
-Required if you want to support instagram.
-
-You can use this extension
-[Get cookies.txt](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid)
-to get instagram cookies
-
-Get pod running ytdl master:
-
-```shell
-kubectl get pods --namespace ytdl
-```
-
-Name should be ytdl-xxxxxxxx
-
-Access to pod
-
-```shell
-kubectl --namespace=ytdl exec --stdin --tty ytdl-xxx -- sh
-```
-
-(replace ytdl-xxx by your pod name)
-
-Go to ytdl-pvc mounted folder
-
-```shell
-cd /ytdlbot/ytdlbot/data/
-vim  instagram.com_cookies.txt
-# paste your cookies
-```
-
-## 5. Run Worker Celery
-
-```shell
-kubectl apply -f 05.ytdl-worker.yml
-```
-
-## 6. Run Flower image (OPTIONAL)
-
-### 6.1 Setup flower db
-
-Get pod running ytdl master:
-
-```shell
-kubectl get pods --namespace ytdl
-```
-
-Name should be ytdl-xxxxxxxx
-
-Access to pod
-
-```shell
-kubectl --namespace=ytdl exec --stdin --tty ytdl-xxx -- sh
-```
-
-(replace ytdl-xxx by your pod name)
-
-Go to ytdl-pvc mounted folder
-
-```shel
-cd /var/lib/vnstat/
-```
-
-Create flower database file
-
-```shell
-{} ~ python3
-Python 3.9.9 (main, Nov 21 2021, 03:22:47)
-[Clang 12.0.0 (clang-1200.0.32.29)] on darwin
-Type "help", "copyright", "credits" or "license" for more information.
->>> import dbm;dbm.open("flower","n");exit()
-```
-
-### 6.2 Config Flower Ingress
-
-This step need config ingress from line 51 of file 06.flower.yml with your ingress service. Need for access from
-internet.
-YML file should be adjusted depending on your load balancing, ingress and network system
-
-For active SSL
-
-```yml
-cert-manager.io/cluster-issuer: letsencrypt-prod
-```
-
-Replace nginx by your ingress service
-
-```yml
-ingressClassName: nginx
-```
-
-Add your domain, example
-
-```yml
-tls:
-  - hosts:
-      - flower.benny.com
-    secretName: flower-tls
-  rules:
-    - host: flower.benny.com
-```
-
-### 6.3 Apply Flower deloyment
-
-```shell
-kubectl apply -f 06.flower.yml
-```
+refer guide here [kubernetes](k8s.md)
 
 # Command
 
@@ -450,8 +244,6 @@ unsub - Unsubscribe from YouTube Channel
 sub_count - Check subscription status, owner only.
 uncache - Delete cache for this link, owner only.
 purge - Delete all tasks , owner only.
-topup - Top up quota
-tgvip - Using Telegram payment to pay for VIP
 ```
 
 # Test data
@@ -481,8 +273,9 @@ https://twitter.com/BennyThinks/status/1475836588542341124
 
 ## Stripe
 
-You can choose to donate via Stripe. Please click the button below to donate via Stripe.
-Choose the currency and payment method that suits you.
+You can choose to donate via Stripe by clicking the button below.
+
+Select the currency and payment method that suits you.
 
 | USD(Card, Apple Pay and Google Pay)              | SEK(Card, Apple Pay and Google Pay)              | CNY(Card, Apple Pay, Google Pay and Alipay)      |
 |--------------------------------------------------|--------------------------------------------------|--------------------------------------------------|

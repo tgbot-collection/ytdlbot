@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 # coding: utf-8
 
-# ytdlbot - db.py
+# ytdlbot - database.py
 # 12/7/21 16:57
 #
 
@@ -13,6 +13,7 @@ import datetime
 import logging
 import os
 import re
+import sqlite3
 import subprocess
 import time
 from io import BytesIO
@@ -24,13 +25,49 @@ import requests
 from beautifultable import BeautifulTable
 from influxdb import InfluxDBClient
 
-from config import MYSQL_HOST, MYSQL_PASS, MYSQL_USER, QUOTA, REDIS
-from fakemysql import FakeMySQL
+from config import MYSQL_HOST, MYSQL_PASS, MYSQL_USER, REDIS
+from utils import sizeof_fmt
+
+init_con = sqlite3.connect(":memory:", check_same_thread=False)
+
+
+class FakeMySQL:
+    @staticmethod
+    def cursor() -> "Cursor":
+        return Cursor()
+
+    def commit(self):
+        pass
+
+    def close(self):
+        pass
+
+
+class Cursor:
+    def __init__(self):
+        self.con = init_con
+        self.cur = self.con.cursor()
+
+    def execute(self, *args, **kwargs):
+        sql = self.sub(args[0])
+        new_args = (sql,) + args[1:]
+        return self.cur.execute(*new_args, **kwargs)
+
+    def fetchall(self):
+        return self.cur.fetchall()
+
+    def fetchone(self):
+        return self.cur.fetchone()
+
+    @staticmethod
+    def sub(sql):
+        sql = re.sub(r"CHARSET.*|charset.*", "", sql, re.IGNORECASE)
+        sql = sql.replace("%s", "?")
+        return sql
 
 
 class Redis:
     def __init__(self):
-        super(Redis, self).__init__()
         if REDIS:
             self.r = redis.StrictRedis(host=REDIS, db=0, decode_responses=True)
         else:
@@ -61,6 +98,7 @@ class Redis:
 {usage_banner}
 %s
         """
+        super().__init__()
 
     def __del__(self):
         self.r.close()
@@ -82,14 +120,13 @@ class Redis:
         return table
 
     def show_usage(self):
-        from downloader import sizeof_fmt
         db = MySQL()
-        db.cur.execute("select * from vip")
+        db.cur.execute("select user_id,payment_amount,old_user,token from payment")
         data = db.cur.fetchall()
         fd = []
         for item in data:
-            fd.append([item[0], item[1], sizeof_fmt(item[-1])])
-        db_text = self.generate_table(["ID", "username", "quota"], fd)
+            fd.append([item[0], item[1], item[2], item[3]])
+        db_text = self.generate_table(["ID", "pay amount", "old user", "token"], fd)
 
         fd = []
         hash_keys = self.r.hgetall("metrics")
@@ -117,10 +154,10 @@ class Redis:
 
         # vnstat
         if os.uname().sysname == "Darwin":
-            cmd = "/usr/local/bin/vnstat -i en0".split()
+            cmd = "/opt/homebrew/bin/vnstat -i en0".split()
         else:
             cmd = "/usr/bin/vnstat -i eth0".split()
-        vnstat_text = subprocess.check_output(cmd).decode('u8')
+        vnstat_text = subprocess.check_output(cmd).decode("u8")
         return self.final_text % (db_text, vnstat_text, quota_text, metrics_text, usage_text)
 
     def reset_today(self):
@@ -152,18 +189,16 @@ class Redis:
 
 class MySQL:
     vip_sql = """
-    create table if not exists vip
+    CREATE TABLE if not exists `payment`
     (
-        user_id        bigint             not null,
-        username       varchar(256)    null,
-        payment_amount int             null,
-        payment_id     varchar(256)    null,
-        level          int default 1   null,
-        quota          bigint default %s null,
-        constraint VIP_pk
-            primary key (user_id)
-    );
-            """ % QUOTA
+        `user_id`        bigint NOT NULL,
+        `payment_amount` float        DEFAULT NULL,
+        `payment_id`     varchar(256) DEFAULT NULL,
+        `old_user`       tinyint(1)   DEFAULT NULL,
+        `token`          int          DEFAULT NULL,
+        UNIQUE KEY `payment_id` (`payment_id`)
+    ) CHARSET = utf8mb4
+                """
 
     settings_sql = """
     create table if not exists  settings
@@ -202,13 +237,15 @@ class MySQL:
 
     def __init__(self):
         if MYSQL_HOST:
-            self.con = pymysql.connect(host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl",
-                                       charset="utf8mb4")
+            self.con = pymysql.connect(
+                host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl", charset="utf8mb4"
+            )
         else:
             self.con = FakeMySQL()
 
         self.cur = self.con.cursor()
         self.init_db()
+        super().__init__()
 
     def init_db(self):
         self.cur.execute(self.vip_sql)
@@ -219,6 +256,31 @@ class MySQL:
 
     def __del__(self):
         self.con.close()
+
+    def get_user_settings(self, user_id: "str") -> "tuple":
+        cur = self.con.cursor()
+        cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
+        data = cur.fetchone()
+        if data is None:
+            return 100, "high", "video", "Celery"
+        return data
+
+    def set_user_settings(self, user_id: int, field: "str", value: "str"):
+        cur = self.con.cursor()
+        cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
+        data = cur.fetchone()
+        if data is None:
+            resolution = method = ""
+            if field == "resolution":
+                method = "video"
+                resolution = value
+            if field == "method":
+                method = value
+                resolution = "high"
+            cur.execute("INSERT INTO settings VALUES (%s,%s,%s,%s)", (user_id, resolution, method, "Celery"))
+        else:
+            cur.execute(f"UPDATE settings SET {field} =%s WHERE user_id = %s", (value, user_id))
+        self.con.commit()
 
 
 class InfluxDB:
@@ -231,8 +293,8 @@ class InfluxDB:
 
     @staticmethod
     def get_worker_data():
-        password = os.getenv("FLOWER_PASSWORD", "123456abc")
         username = os.getenv("FLOWER_USERNAME", "benny")
+        password = os.getenv("FLOWER_PASSWORD", "123456abc")
         token = base64.b64encode(f"{username}:{password}".encode()).decode()
         headers = {"Authorization": f"Basic {token}"}
         r = requests.get("https://celery.dmesg.app/dashboard?json=1", headers=headers)
@@ -250,7 +312,6 @@ class InfluxDB:
                 "tags": {
                     "hostname": worker["hostname"],
                 },
-
                 "time": datetime.datetime.utcnow(),
                 "fields": {
                     "task-received": worker.get("task-received", 0),
@@ -262,7 +323,7 @@ class InfluxDB:
                     "load1": load1,
                     "load5": load5,
                     "load15": load15,
-                }
+                },
             }
             json_body.append(t)
         return json_body
@@ -273,26 +334,11 @@ class InfluxDB:
 
     def __fill_overall_data(self):
         active = sum([i["active"] for i in self.data["data"]])
-        json_body = [
-            {
-                "measurement": "active",
-                "time": datetime.datetime.utcnow(),
-                "fields": {
-                    "active": active
-                }
-            }
-        ]
+        json_body = [{"measurement": "active", "time": datetime.datetime.utcnow(), "fields": {"active": active}}]
         self.client.write_points(json_body)
 
     def __fill_redis_metrics(self):
-        json_body = [
-            {
-                "measurement": "metrics",
-                "time": datetime.datetime.utcnow(),
-                "fields": {
-                }
-            }
-        ]
+        json_body = [{"measurement": "metrics", "time": datetime.datetime.utcnow(), "fields": {}}]
         r = Redis().r
         hash_keys = r.hgetall("metrics")
         for key, value in hash_keys.items():
