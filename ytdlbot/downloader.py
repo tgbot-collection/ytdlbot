@@ -30,7 +30,6 @@ from utils import adjust_formats, apply_log_formatter, current_time
 
 r = fakeredis.FakeStrictRedis()
 apply_log_formatter()
-payment = Payment()
 
 
 def edit_text(bot_msg, text):
@@ -153,6 +152,7 @@ def can_convert_mp4(video_path, uid):
 
 
 def ytdl_download(url, tempdir, bm, **kwargs) -> dict:
+    payment = Payment()
     chat_id = bm.chat.id
     hijack = kwargs.get("hijack")
     response = {"status": True, "error": "", "filepath": []}

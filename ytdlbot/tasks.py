@@ -64,7 +64,6 @@ logging.getLogger("apscheduler.executors.default").propagate = False
 # app = Celery('celery', broker=BROKER, accept_content=['pickle'], task_serializer='pickle')
 app = Celery("tasks", broker=BROKER)
 redis = Redis()
-payment = Payment()
 channel = Channel()
 celery_client = create_app(":memory:")
 
@@ -95,6 +94,7 @@ def audio_task(chat_id, message_id):
 
 
 def get_unique_clink(original_url, user_id):
+    payment = Payment()
     settings = payment.get_user_settings(str(user_id))
     clink = channel.extract_canonical_link(original_url)
     try:
@@ -137,6 +137,7 @@ def forward_video(client, bot_msg, url):
 
 
 def ytdl_download_entrance(client, bot_msg, url):
+    payment = Payment()
     chat_id = bot_msg.chat.id
     if forward_video(client, bot_msg, url):
         return
@@ -276,6 +277,7 @@ def ytdl_normal_download(bot_msg, client, url):
 
 
 def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, pathlib.Path]"):
+    payment = Payment()
     chat_id = bot_msg.chat.id
     markup = gen_video_markup()
     cap, meta = gen_cap(bot_msg, url, vp_or_fid)
@@ -352,6 +354,7 @@ def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, pathlib.P
 
 
 def gen_cap(bm, url, video_path):
+    payment = Payment()
     chat_id = bm.chat.id
     user = bm.chat
     try:

@@ -55,10 +55,9 @@ customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.conne
 logging.getLogger("apscheduler.executors.default").propagate = False
 
 app = create_app()
-db = MySQL()
+
 logging.info("Authorized users are %s", AUTHORIZED_USER)
 redis = Redis()
-payment = Payment()
 channel = Channel()
 
 
@@ -81,7 +80,6 @@ def private_use(func):
             message.reply_text(BotText.private, quote=True)
             return
 
-        # TODO bug fix # 198 membership check
         if REQUIRED_MEMBERSHIP:
             try:
                 if app.get_chat_member(REQUIRED_MEMBERSHIP, chat_id).status not in [
@@ -105,6 +103,7 @@ def private_use(func):
 
 @app.on_message(filters.command(["start"]))
 def start_handler(client: "Client", message: "types.Message"):
+    payment = Payment()
     from_id = message.from_user.id
     logging.info("Welcome to youtube-dl bot!")
     client.send_chat_action(from_id, "typing")
@@ -118,8 +117,6 @@ def start_handler(client: "Client", message: "types.Message"):
         info = ""
     text = f"{BotText.start}\n\n{info}\n{BotText.custom_text}"
     client.send_message(message.chat.id, text)
-    # add to settings table
-    db.set_user_settings(from_id, "resolution", "high")
 
 
 @app.on_message(filters.command(["help"]))
@@ -241,7 +238,7 @@ def direct_handler(client: "Client", message: "types.Message"):
 def settings_handler(client: "Client", message: "types.Message"):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
-    data = db.get_user_settings(str(chat_id))
+    data = MySQL().get_user_settings(str(chat_id))
     set_mode = data[-1]
     text = {"Local": "Celery", "Celery": "Local"}.get(set_mode, "Local")
     mode_text = f"Download mode: **{set_mode}**"
@@ -300,6 +297,7 @@ def buy_handler(client: "Client", message: "types.Message"):
 
 @app.on_message(filters.command(["redeem"]))
 def redeem_handler(client: "Client", message: "types.Message"):
+    payment = Payment()
     chat_id = message.chat.id
     text = message.text.strip()
     unique = text.replace("/redeem", "").strip()
@@ -325,6 +323,7 @@ def generate_invoice(amount: "int", title: "str", description: "str", payload: "
 @app.on_message(filters.incoming & filters.text)
 @private_use
 def download_handler(client: "Client", message: "types.Message"):
+    payment = Payment()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, "typing")
     redis.user_count(chat_id)
@@ -389,7 +388,7 @@ def send_method_callback(client: "Client", callback_query: types.CallbackQuery):
     chat_id = callback_query.message.chat.id
     data = callback_query.data
     logging.info("Setting %s file type to %s", chat_id, data)
-    db.set_user_settings(chat_id, "method", data)
+    MySQL().set_user_settings(chat_id, "method", data)
     callback_query.answer(f"Your send type was set to {callback_query.data}")
 
 
@@ -398,7 +397,7 @@ def download_resolution_callback(client: "Client", callback_query: types.Callbac
     chat_id = callback_query.message.chat.id
     data = callback_query.data
     logging.info("Setting %s file type to %s", chat_id, data)
-    db.set_user_settings(chat_id, "resolution", data)
+    MySQL().set_user_settings(chat_id, "resolution", data)
     callback_query.answer(f"Your default download quality was set to {callback_query.data}")
 
 
@@ -418,7 +417,7 @@ def audio_callback(client: "Client", callback_query: types.CallbackQuery):
 @app.on_callback_query(filters.regex(r"Local|Celery"))
 def owner_local_callback(client: "Client", callback_query: types.CallbackQuery):
     chat_id = callback_query.message.chat.id
-    db.set_user_settings(chat_id, "mode", callback_query.data)
+    MySQL().set_user_settings(chat_id, "mode", callback_query.data)
     callback_query.answer(f"Download mode was changed to {callback_query.data}")
 
 
@@ -443,6 +442,7 @@ def periodic_sub_check():
 
 @app.on_raw_update()
 def raw_update(client: "Client", update, users, chats):
+    payment = Payment()
     action = getattr(getattr(update, "message", None), "action", None)
     if update.QUALNAME == "types.UpdateBotPrecheckoutQuery":
         client.send(
@@ -460,6 +460,7 @@ def raw_update(client: "Client", update, users, chats):
 
 
 if __name__ == "__main__":
+    MySQL()
     scheduler = BackgroundScheduler(timezone="Asia/Shanghai", job_defaults={"max_instances": 5})
     scheduler.add_job(redis.reset_today, "cron", hour=0, minute=0)
     scheduler.add_job(auto_restart, "interval", seconds=60)

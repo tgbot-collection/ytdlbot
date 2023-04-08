@@ -96,7 +96,6 @@ class Afdian:
 
 
 class Payment(Redis, MySQL):
-    # TODO transaction issues
     def check_old_user(self, user_id: "int") -> "tuple":
         self.cur.execute("SELECT * FROM payment WHERE user_id=%s AND old_user=1", (user_id,))
         data = self.cur.fetchone()
