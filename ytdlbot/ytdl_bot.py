@@ -54,7 +54,7 @@ from utils import auto_restart, clean_tempfile, customize_logger, get_revision
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
 logging.getLogger("apscheduler.executors.default").propagate = False
 
-app = create_app()
+app = create_app(":memory:")
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
 redis = Redis()
