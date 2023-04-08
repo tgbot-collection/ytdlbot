@@ -24,10 +24,9 @@ import filetype
 import yt_dlp as ytdl
 from tqdm import tqdm
 
-from config import AUDIO_FORMAT, ENABLE_ARIA2, ENABLE_FFMPEG, IPv6
+from config import AUDIO_FORMAT, ENABLE_ARIA2, ENABLE_FFMPEG, TG_MAX_SIZE, IPv6
 from limit import Payment
 from utils import adjust_formats, apply_log_formatter, current_time
-from ytdlbot.config import TG_MAX_SIZE
 
 r = fakeredis.FakeStrictRedis()
 apply_log_formatter()

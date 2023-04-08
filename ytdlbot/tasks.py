@@ -33,7 +33,15 @@ from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 from channel import Channel
 from client_init import create_app
-from config import ARCHIVE_ID, BROKER, ENABLE_CELERY, ENABLE_QUEUE, TG_MAX_SIZE, WORKERS, ENABLE_VIP
+from config import (
+    ARCHIVE_ID,
+    BROKER,
+    ENABLE_CELERY,
+    ENABLE_QUEUE,
+    ENABLE_VIP,
+    TG_MAX_SIZE,
+    WORKERS,
+)
 from constant import BotText
 from database import Redis
 from downloader import edit_text, tqdm_progress, upload_hook, ytdl_download
