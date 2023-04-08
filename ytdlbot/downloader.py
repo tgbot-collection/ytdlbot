@@ -26,7 +26,7 @@ from tqdm import tqdm
 
 from config import AUDIO_FORMAT, ENABLE_ARIA2, ENABLE_FFMPEG, TG_MAX_SIZE, IPv6
 from limit import Payment
-from utils import adjust_formats, apply_log_formatter, current_time
+from utils import adjust_formats, apply_log_formatter, current_time, sizeof_fmt
 
 r = fakeredis.FakeStrictRedis()
 apply_log_formatter()
@@ -88,6 +88,8 @@ def download_hook(d: dict, bot_msg):
     if d["status"] == "downloading":
         downloaded = d.get("downloaded_bytes", 0)
         total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
+        if total > TG_MAX_SIZE:
+            raise Exception(f"Your download file size {sizeof_fmt(total)} is too large for Telegram.")
 
         # percent = remove_bash_color(d.get("_percent_str", "N/A"))
         speed = remove_bash_color(d.get("_speed_str", "N/A"))
