@@ -236,14 +236,14 @@ about - What's this bot?
 ping - Bot running status
 help - Help
 ytdl - Download video in group
-vip - Join VIP
 settings - Set your preference
+buy - Buy token
 direct - Download file directly
 sub - Subscribe to YouTube Channel
 unsub - Unsubscribe from YouTube Channel
 sub_count - Check subscription status, owner only.
 uncache - Delete cache for this link, owner only.
-purge - Delete all tasks , owner only.
+purge - Delete all tasks, owner only.
 ```
 
 # Test data
