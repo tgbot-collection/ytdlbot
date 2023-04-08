@@ -463,7 +463,7 @@ if __name__ == "__main__":
     MySQL()
     scheduler = BackgroundScheduler(timezone="Asia/Shanghai", job_defaults={"max_instances": 5})
     scheduler.add_job(redis.reset_today, "cron", hour=0, minute=0)
-    scheduler.add_job(auto_restart, "interval", seconds=60)
+    scheduler.add_job(auto_restart, "interval", seconds=600)
     scheduler.add_job(clean_tempfile, "interval", seconds=60)
     scheduler.add_job(InfluxDB().collect_data, "interval", seconds=60)
     #  default quota allocation of 10,000 units per day
