@@ -163,7 +163,6 @@ def ytdl_download(url, tempdir, bm, **kwargs) -> dict:
         "outtmpl": output,
         "restrictfilenames": False,
         "quiet": True,
-        "proxy": os.getenv("YTDL_PROXY"),
     }
     if ENABLE_ARIA2:
         ydl_opts["external_downloader"] = "aria2c"
@@ -174,7 +173,8 @@ def ytdl_download(url, tempdir, bm, **kwargs) -> dict:
             "--split=16",
         ]
     formats = [
-        "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio",
+        # webm and av01 are not streamable on telegram, so we'll extract mp4 and not av01 codec
+        "bestvideo[ext=mp4][vcodec!*=av01]+bestaudio[ext=m4a]/bestvideo+bestaudio",
         "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
         None,
     ]
