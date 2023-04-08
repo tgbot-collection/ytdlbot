@@ -24,23 +24,14 @@ import filetype
 import yt_dlp as ytdl
 from tqdm import tqdm
 
-from config import (AUDIO_FORMAT, ENABLE_FFMPEG, ENABLE_VIP, MAX_DURATION, ENABLE_ARIA2,
-                    TG_MAX_SIZE, IPv6)
-from db import Redis
-from limit import VIP
-from utils import (adjust_formats, apply_log_formatter, current_time,
-                   get_user_settings)
+from config import AUDIO_FORMAT, ENABLE_ARIA2, ENABLE_FFMPEG, IPv6
+from limit import Payment
+from utils import adjust_formats, apply_log_formatter, current_time
+from ytdlbot.config import TG_MAX_SIZE
 
 r = fakeredis.FakeStrictRedis()
 apply_log_formatter()
-
-
-def sizeof_fmt(num: int, suffix='B'):
-    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
-        if abs(num) < 1024.0:
-            return "%3.1f%s%s" % (num, unit, suffix)
-        num /= 1024.0
-    return "%.1f%s%s" % (num, 'Yi', suffix)
+payment = Payment()
 
 
 def edit_text(bot_msg, text):
@@ -60,9 +51,15 @@ def tqdm_progress(desc, total, finished, speed="", eta=""):
             return ""
 
     f = StringIO()
-    tqdm(total=total, initial=finished, file=f, ascii=False, unit_scale=True, ncols=30,
-         bar_format="{l_bar}{bar} |{n_fmt}/{total_fmt} "
-         )
+    tqdm(
+        total=total,
+        initial=finished,
+        file=f,
+        ascii=False,
+        unit_scale=True,
+        ncols=30,
+        bar_format="{l_bar}{bar} |{n_fmt}/{total_fmt} ",
+    )
     raw_output = f.getvalue()
     tqdm_output = raw_output.split("|")
     progress = f"`[{tqdm_output[1]}]`"
@@ -80,7 +77,7 @@ def tqdm_progress(desc, total, finished, speed="", eta=""):
 
 
 def remove_bash_color(text):
-    return re.sub(r'\u001b|\[0;94m|\u001b\[0m|\[0;32m|\[0m|\[0;33m', "", text)
+    return re.sub(r"\u001b|\[0;94m|\u001b\[0m|\[0;32m|\[0m|\[0;33m", "", text)
 
 
 def download_hook(d: dict, bot_msg):
@@ -90,16 +87,12 @@ def download_hook(d: dict, bot_msg):
     original_url = d["info_dict"]["original_url"]
     key = f"{bot_msg.chat.id}-{original_url}"
 
-    if d['status'] == 'downloading':
+    if d["status"] == "downloading":
         downloaded = d.get("downloaded_bytes", 0)
         total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
 
         # percent = remove_bash_color(d.get("_percent_str", "N/A"))
         speed = remove_bash_color(d.get("_speed_str", "N/A"))
-        if ENABLE_VIP and not r.exists(key):
-            result, err_msg = check_quota(total, bot_msg.chat.id)
-            if result is False:
-                raise ValueError(err_msg)
         eta = remove_bash_color(d.get("_eta_str", d.get("eta")))
         text = tqdm_progress("Downloading...", total, downloaded, speed, eta)
         edit_text(bot_msg, text)
@@ -107,23 +100,8 @@ def download_hook(d: dict, bot_msg):
 
 
 def upload_hook(current, total, bot_msg):
-    # filesize = sizeof_fmt(total)
     text = tqdm_progress("Uploading...", total, current)
     edit_text(bot_msg, text)
-
-
-def check_quota(file_size, chat_id) -> ("bool", "str"):
-    remain, _, ttl = VIP().check_remaining_quota(chat_id)
-    if file_size > remain:
-        refresh_time = current_time(ttl + time.time())
-        err = f"Quota exceed, you have {sizeof_fmt(remain)} remaining, " \
-              f"but you want to download a video with {sizeof_fmt(file_size)} in size. \n" \
-              f"Try again in {ttl} seconds({refresh_time})"
-        logging.warning(err)
-        Redis().update_metrics("quota_exceed")
-        return False, err
-    else:
-        return True, ""
 
 
 def convert_to_mp4(resp: dict, bot_msg):
@@ -136,7 +114,9 @@ def convert_to_mp4(resp: dict, bot_msg):
             if mime in default_type:
                 if not can_convert_mp4(path, bot_msg.chat.id):
                     logging.warning("Conversion abort for %s", bot_msg.chat.id)
-                    bot_msg._client.send_message(bot_msg.chat.id, "Can't convert your video to streaming format.")
+                    bot_msg._client.send_message(
+                        bot_msg.chat.id, "Can't convert your video to streaming format. ffmpeg has been disabled."
+                    )
                     break
                 edit_text(bot_msg, f"{current_time()}: Converting {path.name} to mp4. Please wait.")
                 new_file_path = path.with_suffix(".mp4")
@@ -170,18 +150,7 @@ def run_ffmpeg(cmd_list, bm):
 def can_convert_mp4(video_path, uid):
     if not ENABLE_FFMPEG:
         return False
-    if not ENABLE_VIP:
-        return True
-    video_streams = ffmpeg.probe(video_path, select_streams="v")
-    try:
-        duration = int(float(video_streams["format"]["duration"]))
-    except Exception:
-        duration = 0
-    if duration > MAX_DURATION and not VIP().check_vip(uid):
-        logging.info("Video duration: %s, not vip, can't convert", duration)
-        return False
-    else:
-        return True
+    return True
 
 
 def ytdl_download(url, tempdir, bm, **kwargs) -> dict:
@@ -190,33 +159,27 @@ def ytdl_download(url, tempdir, bm, **kwargs) -> dict:
     response = {"status": True, "error": "", "filepath": []}
     output = pathlib.Path(tempdir, "%(title).70s.%(ext)s").as_posix()
     ydl_opts = {
-        'progress_hooks': [lambda d: download_hook(d, bm)],
-        'outtmpl': output,
-        'restrictfilenames': False,
-        'quiet': True,
-        "proxy": os.getenv("YTDL_PROXY")
+        "progress_hooks": [lambda d: download_hook(d, bm)],
+        "outtmpl": output,
+        "restrictfilenames": False,
+        "quiet": True,
     }
     if ENABLE_ARIA2:
         ydl_opts["external_downloader"] = "aria2c"
-        ydl_opts["external_downloader_args"] = ['--min-split-size=1M',
-                                                '--max-connection-per-server=16',
-                                                '--max-concurrent-downloads=16',
-                                                '--split=16'
-                                                ]
+        ydl_opts["external_downloader_args"] = [
+            "--min-split-size=1M",
+            "--max-connection-per-server=16",
+            "--max-concurrent-downloads=16",
+            "--split=16",
+        ]
     formats = [
-        "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio",
+        # webm and av01 are not streamable on telegram, so we'll extract mp4 and not av01 codec
+        "bestvideo[ext=mp4][vcodec!*=av01]+bestaudio[ext=m4a]/bestvideo+bestaudio",
         "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
-        None
+        None,
     ]
     adjust_formats(chat_id, url, formats, hijack)
     add_instagram_cookies(url, ydl_opts)
-    # check quota before download
-    if ENABLE_VIP:
-        # check quota after download
-        remain, _, ttl = VIP().check_remaining_quota(chat_id)
-        result, err_msg = check_quota(detect_filesize(url), chat_id)
-        if not result:
-            return {"status": False, "error": err_msg, "filepath": []}
 
     address = ["::", "0.0.0.0"] if IPv6 else [None]
     for format_ in formats:
@@ -230,6 +193,7 @@ def ytdl_download(url, tempdir, bm, **kwargs) -> dict:
                     ydl.download([url])
                 response["status"] = True
                 response["error"] = ""
+                response["filepath"] = list(pathlib.Path(tempdir).glob("*"))
                 break
             except Exception as e:
                 logging.error("Download failed for %s ", url)
@@ -243,32 +207,15 @@ def ytdl_download(url, tempdir, bm, **kwargs) -> dict:
     if response["status"] is False:
         return response
 
-    for i in os.listdir(tempdir):
-        p = pathlib.Path(tempdir, i)
-        file_size = os.stat(p).st_size
-        if ENABLE_VIP:
-            # check quota after download
-            remain, _, ttl = VIP().check_remaining_quota(chat_id)
-            result, err_msg = check_quota(file_size, chat_id)
-        else:
-            result, err_msg = True, ""
-        if result is False:
-            response["status"] = False
-            response["error"] = err_msg
-        else:
-            VIP().use_quota(bm.chat.id, file_size)
-            response["status"] = True
-            response["filepath"].append(p)
-
     # convert format if necessary
-    settings = get_user_settings(str(chat_id))
+    settings = payment.get_user_settings(str(chat_id))
     if settings[2] == "video" or isinstance(settings[2], MagicMock):
         # only convert if send type is video
         convert_to_mp4(response, bm)
     if settings[2] == "audio" or hijack == "bestaudio[ext=m4a]":
         convert_audio_format(response, bm)
-    # enable it for now
-    split_large_video(response)
+    # disable it for now
+    # split_large_video(response)
     return response
 
 
@@ -280,9 +227,7 @@ def convert_audio_format(resp: "dict", bm):
         path: "pathlib.Path"
         for path in resp["filepath"]:
             streams = ffmpeg.probe(path)["streams"]
-            if (AUDIO_FORMAT is None and
-                    len(streams) == 1 and
-                    streams[0]["codec_type"] == "audio"):
+            if AUDIO_FORMAT is None and len(streams) == 1 and streams[0]["codec_type"] == "audio":
                 logging.info("%s is audio, default format, no need to convert", path)
             elif AUDIO_FORMAT is None and len(streams) >= 2:
                 logging.info("%s is video, default format, need to extract audio", path)
@@ -311,11 +256,6 @@ def add_instagram_cookies(url: "str", opt: "dict"):
         opt["cookiefile"] = pathlib.Path(__file__).parent.joinpath("instagram.com_cookies.txt").as_posix()
 
 
-def run_splitter(video_path: "str"):
-    subprocess.check_output(f"sh split-video.sh {video_path} {TG_MAX_SIZE * 0.95} ".split())
-    os.remove(video_path)
-
-
 def split_large_video(response: "dict"):
     original_video = None
     split = False
@@ -324,19 +264,8 @@ def split_large_video(response: "dict"):
         if size > TG_MAX_SIZE:
             split = True
             logging.warning("file is too large %s, splitting...", size)
-            run_splitter(original_video)
+            subprocess.check_output(f"sh split-video.sh {original_video} {TG_MAX_SIZE * 0.95} ".split())
+            os.remove(original_video)
 
     if split and original_video:
         response["filepath"] = [i.as_posix() for i in pathlib.Path(original_video).parent.glob("*")]
-
-
-def detect_filesize(url: "str") -> "int":
-    # find the largest file size
-    with ytdl.YoutubeDL() as ydl:
-        info_dict = ydl.extract_info(url, download=False)
-        max_size = 0
-        max_size_list = [i.get("filesize", 0) for i in info_dict["formats"] if i.get("filesize")]
-        if max_size_list:
-            max_size = max(max_size_list)
-        logging.info("%s max size is %s", url, max_size)
-        return max_size

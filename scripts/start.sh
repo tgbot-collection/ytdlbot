@@ -9,9 +9,5 @@ docker run -d --restart unless-stopped --name ytdl \
      -e WORKERS=4 \
      -e VIP=True \
      -e CUSTOM_TEXT=#StandWithUkraine \
-     -e WORKER_NAME=Pi \
-     -v "$(pwd)"/session:/ytdlbot/ytdlbot/session \
-     -v "$(pwd)"/ramdisk:/tmp/ \
-     --log-driver none \
      bennythink/ytdlbot \
      /usr/local/bin/supervisord -c "/ytdlbot/conf/supervisor_worker.conf"

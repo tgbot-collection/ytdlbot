@@ -160,3 +160,9 @@ data/*
 upgrade_worker.sh
 ytdl.session
 reinforcement/*
+/ytdlbot/session/celery.session
+/.idea/prettier.xml
+/.idea/watcherTasks.xml
+/ytdlbot/session/ytdl.session-journal
+/ytdlbot/unknown_errors.txt
+/ytdlbot/ytdl.session-journal

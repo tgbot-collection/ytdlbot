@@ -18,20 +18,20 @@ import tempfile
 import time
 import uuid
 
+import coloredlogs
 import ffmpeg
 import psutil
 
-from db import MySQL
 from flower_tasks import app
 
 inspect = app.control.inspect()
 
 
 def apply_log_formatter():
-    logging.basicConfig(
+    coloredlogs.install(
         level=logging.INFO,
-        format='[%(asctime)s %(filename)s:%(lineno)d %(levelname).1s] %(message)s',
-        datefmt="%Y-%m-%d %H:%M:%S"
+        fmt="[%(asctime)s %(filename)s:%(lineno)d %(levelname).1s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
 
@@ -41,33 +41,12 @@ def customize_logger(logger: "list"):
         logging.getLogger(log).setLevel(level=logging.INFO)
 
 
-def get_user_settings(user_id: "str") -> "tuple":
-    db = MySQL()
-    cur = db.cur
-    cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
-    data = cur.fetchone()
-    if data is None:
-        return 100, "high", "video", "Celery"
-    return data
-
-
-def set_user_settings(user_id: int, field: "str", value: "str"):
-    db = MySQL()
-    cur = db.cur
-    cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
-    data = cur.fetchone()
-    if data is None:
-        resolution = method = ""
-        if field == "resolution":
-            method = "video"
-            resolution = value
-        if field == "method":
-            method = value
-            resolution = "high"
-        cur.execute("INSERT INTO settings VALUES (%s,%s,%s,%s)", (user_id, resolution, method, "Celery"))
-    else:
-        cur.execute(f"UPDATE settings SET {field} =%s WHERE user_id = %s", (value, user_id))
-    db.con.commit()
+def sizeof_fmt(num: int, suffix="B"):
+    for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, "Yi", suffix)
 
 
 def is_youtube(url: "str"):
@@ -76,6 +55,8 @@ def is_youtube(url: "str"):
 
 
 def adjust_formats(user_id: "str", url: "str", formats: "list", hijack=None):
+    from database import MySQL
+
     # high: best quality 1080P, 2K, 4K, 8K
     # medium: 720P
     # low: 480P
@@ -84,7 +65,7 @@ def adjust_formats(user_id: "str", url: "str", formats: "list", hijack=None):
         return
 
     mapping = {"high": [], "medium": [720], "low": [480]}
-    settings = get_user_settings(user_id)
+    settings = MySQL().get_user_settings(user_id)
     if settings and is_youtube(url):
         for m in mapping.get(settings[1], []):
             formats.insert(0, f"bestvideo[ext=mp4][height={m}]+bestaudio[ext=m4a]")
@@ -106,7 +87,7 @@ def get_metadata(video_path):
         logging.error(e)
     try:
         thumb = pathlib.Path(video_path).parent.joinpath(f"{uuid.uuid4().hex}-thunmnail.png").as_posix()
-        ffmpeg.input(video_path, ss=duration / 2).filter('scale', width, -1).output(thumb, vframes=1).run()
+        ffmpeg.input(video_path, ss=duration / 2).filter("scale", width, -1).output(thumb, vframes=1).run()
     except ffmpeg._run.Error:
         thumb = None
 
@@ -134,9 +115,9 @@ def get_func_queue(func) -> int:
         return 0
 
 
-def tail(f, lines=1, _buffer=4098):
+def tail_log(f, lines=1, _buffer=4098):
     """Tail a file and get X lines from the end"""
-    # place holder for the lines found
+    # placeholder for the lines found
     lines_found = []
 
     # block counter will be multiplied by buffer
@@ -214,7 +195,7 @@ def auto_restart():
     if not os.path.exists(log_path):
         return
     with open(log_path) as f:
-        logs = "".join(tail(f, lines=10))
+        logs = "".join(tail_log(f, lines=10))
 
     det = Detector(logs)
     method_list = [getattr(det, func) for func in dir(det) if func.endswith("_detector")]
@@ -233,5 +214,5 @@ def clean_tempfile():
             shutil.rmtree(item, ignore_errors=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     auto_restart()
