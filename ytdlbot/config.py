@@ -11,7 +11,7 @@ import os
 
 # general settings
 WORKERS: "int" = int(os.getenv("WORKERS", 100))
-PYRO_WORKERS: "int" = int(os.getenv("PYRO_WORKERS", 100))
+PYRO_WORKERS: "int" = int(os.getenv("PYRO_WORKERS", min(32, os.cpu_count() + 4)))
 APP_ID: "int" = int(os.getenv("APP_ID", 198214))
 APP_HASH = os.getenv("APP_HASH", "1234b90")
 TOKEN = os.getenv("TOKEN", "1234")

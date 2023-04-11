@@ -23,6 +23,7 @@ from hashlib import md5
 from urllib.parse import quote_plus
 
 import psutil
+import pyrogram.errors
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from celery import Celery
@@ -39,6 +40,7 @@ from config import (
     ENABLE_CELERY,
     ENABLE_QUEUE,
     ENABLE_VIP,
+    OWNER,
     TG_MAX_SIZE,
     WORKERS,
 )
@@ -248,6 +250,10 @@ def upload_transfer_sh(bm, paths: list) -> "str":
         return f"Upload failed!❌\n\n```{e}```"
 
 
+def flood_owner_message(client, ex):
+    client.send_message(OWNER, f"CRITICAL INFO: {ex}")
+
+
 def ytdl_normal_download(bot_msg, client, url):
     chat_id = bot_msg.chat.id
     temp_dir = tempfile.TemporaryDirectory(prefix="ytdl-")
@@ -266,7 +272,18 @@ def ytdl_normal_download(bot_msg, client, url):
                 # client.send_chat_action(chat_id, 'upload_document')
                 # client.send_message(chat_id, upload_transfer_sh(bot_msg, video_paths))
                 continue
-            upload_processor(client, bot_msg, url, video_path)
+            try:
+                upload_processor(client, bot_msg, url, video_path)
+            except pyrogram.errors.Flood as e:
+                logging.critical("FloodWait from Telegram: %s", e)
+                client.send_message(
+                    chat_id,
+                    f"I'm being rate limited by Telegram. Your video will come after {e.x} seconds. Please wait patiently.",
+                )
+                flood_owner_message(client, e)
+                time.sleep(e.x)
+                upload_processor(client, bot_msg, url, video_path)
+
         bot_msg.edit_text("Download success!✅")
     else:
         client.send_chat_action(chat_id, "typing")
@@ -277,6 +294,8 @@ def ytdl_normal_download(bot_msg, client, url):
 
 
 def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, pathlib.Path]"):
+    time.sleep(random.random() * 10)
+    # raise pyrogram.errors.exceptions.FloodWait(13)
     payment = Payment()
     chat_id = bot_msg.chat.id
     markup = gen_video_markup()

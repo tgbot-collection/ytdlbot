@@ -115,7 +115,7 @@ def start_handler(client: "Client", message: "types.Message"):
         info = f"Free token: {free_token}, Pay token: {pay_token}, Reset: {reset}"
     else:
         info = ""
-    text = f"{BotText.start}\n\n{info}\n{BotText.custom_text}"
+    text = f"{BotText.start}\n\n{info}\n{BotText.custom_text}\n{BotText.rate_limit}"
     client.send_message(message.chat.id, text)
 
 
