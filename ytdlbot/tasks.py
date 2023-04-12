@@ -39,6 +39,7 @@ from config import (
     BROKER,
     ENABLE_CELERY,
     ENABLE_QUEUE,
+    RATE_LIMIT,
     ENABLE_VIP,
     OWNER,
     TG_MAX_SIZE,
@@ -79,7 +80,7 @@ def get_messages(chat_id, message_id):
         return celery_client.get_messages(chat_id, message_id)
 
 
-@app.task()
+@app.task(rate_limit=f"{RATE_LIMIT}/m")
 def ytdl_download_task(chat_id, message_id, url):
     logging.info("YouTube celery tasks started for %s", url)
     bot_msg = get_messages(chat_id, message_id)
@@ -294,7 +295,6 @@ def ytdl_normal_download(bot_msg, client, url):
 
 
 def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, pathlib.Path]"):
-    time.sleep(random.random() * 10)
     # raise pyrogram.errors.exceptions.FloodWait(13)
     payment = Payment()
     chat_id = bot_msg.chat.id
