@@ -26,7 +26,6 @@ from beautifultable import BeautifulTable
 from influxdb import InfluxDBClient
 
 from config import MYSQL_HOST, MYSQL_PASS, MYSQL_USER, REDIS
-from utils import sizeof_fmt
 
 init_con = sqlite3.connect(":memory:", check_same_thread=False)
 
@@ -74,7 +73,7 @@ class Redis:
             self.r = fakeredis.FakeStrictRedis(host=REDIS, db=0, decode_responses=True)
 
         db_banner = "=" * 20 + "DB data" + "=" * 20
-        quota_banner = "=" * 20 + "Quota" + "=" * 20
+        quota_banner = "=" * 20 + "Celery" + "=" * 20
         metrics_banner = "=" * 20 + "Metrics" + "=" * 20
         usage_banner = "=" * 20 + "Usage" + "=" * 20
         vnstat_banner = "=" * 20 + "vnstat" + "=" * 20
@@ -143,14 +142,24 @@ class Redis:
         fd.sort(key=lambda x: int(x[-1]), reverse=True)
         usage_text = self.generate_table(["UserID", "count"], fd)
 
+        worker_data = InfluxDB.get_worker_data()
         fd = []
-        for key in self.r.keys("*"):
-            if re.findall(r"^\d+$", key):
-                value = self.r.get(key)
-                date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self.r.ttl(key) + time.time()))
-                fd.append([key, value, sizeof_fmt(int(value)), date])
-        fd.sort(key=lambda x: int(x[1]))
-        quota_text = self.generate_table(["UserID", "bytes", "human readable", "refresh time"], fd)
+        for item in worker_data["data"]:
+            fd.append(
+                [
+                    item.get("hostname", 0),
+                    item.get("status", 0),
+                    item.get("active", 0),
+                    item.get("processed", 0),
+                    item.get("task-failed", 0),
+                    item.get("task-succeeded", 0),
+                    ",".join(str(i) for i in item.get("loadavg", [])),
+                ]
+            )
+
+        worker_text = self.generate_table(
+            ["worker name", "status", "active", "processed", "failed", "succeeded", "Load Average"], fd
+        )
 
         # vnstat
         if os.uname().sysname == "Darwin":
@@ -158,7 +167,7 @@ class Redis:
         else:
             cmd = "/usr/bin/vnstat -i eth0".split()
         vnstat_text = subprocess.check_output(cmd).decode("u8")
-        return self.final_text % (db_text, vnstat_text, quota_text, metrics_text, usage_text)
+        return self.final_text % (db_text, vnstat_text, worker_text, metrics_text, usage_text)
 
     def reset_today(self):
         pairs = self.r.hgetall("metrics")
