@@ -204,7 +204,7 @@ def ping_handler(client: "Client", message: "types.Message"):
         stats = BotText.ping_worker()[:1000]
         client.send_document(chat_id, redis.generate_file(), caption=f"{bot_info}\n\n{stats}")
     else:
-        client.send_message(chat_id, f"{bot_info}")
+        client.send_message(chat_id, f"{bot_info.split('CPU')[0]}")
 
 
 @app.on_message(filters.command(["sub_count"]))
