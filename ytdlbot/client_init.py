@@ -12,7 +12,7 @@ from pyrogram import Client
 from config import APP_HASH, APP_ID, PYRO_WORKERS, TOKEN, IPv6
 
 
-def create_app(session="ytdl", workers=PYRO_WORKERS):
+def create_app(session, workers=PYRO_WORKERS):
     _app = Client(
         session,
         APP_ID,

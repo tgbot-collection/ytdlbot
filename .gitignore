@@ -166,3 +166,7 @@ reinforcement/*
 /ytdlbot/session/ytdl.session-journal
 /ytdlbot/unknown_errors.txt
 /ytdlbot/ytdl.session-journal
+/ytdlbot/ytdl-main.session-journal
+/ytdlbot/ytdl-main.session
+/ytdlbot/ytdl-celery.session-journal
+/ytdlbot/ytdl-celery.session

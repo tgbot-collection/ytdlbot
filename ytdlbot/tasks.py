@@ -39,9 +39,9 @@ from config import (
     BROKER,
     ENABLE_CELERY,
     ENABLE_QUEUE,
-    RATE_LIMIT,
     ENABLE_VIP,
     OWNER,
+    RATE_LIMIT,
     TG_MAX_SIZE,
     WORKERS,
 )
@@ -68,7 +68,9 @@ logging.getLogger("apscheduler.executors.default").propagate = False
 app = Celery("tasks", broker=BROKER)
 redis = Redis()
 channel = Channel()
-celery_client = create_app(":memory:")
+
+session = "ytdl-celery"
+celery_client = create_app(session)
 
 
 def get_messages(chat_id, message_id):
@@ -481,7 +483,7 @@ def purge_tasks():
 
 
 if __name__ == "__main__":
-    celery_client.start()
+    # celery_client.start()
     print("Bootstrapping Celery worker now.....")
     time.sleep(5)
     threading.Thread(target=run_celery, daemon=True).start()
