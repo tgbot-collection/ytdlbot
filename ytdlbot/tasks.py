@@ -22,6 +22,7 @@ import typing
 from hashlib import md5
 from urllib.parse import quote_plus
 
+import filetype
 import psutil
 import pyrogram.errors
 import requests
@@ -42,7 +43,6 @@ from config import (
     ENABLE_VIP,
     OWNER,
     RATE_LIMIT,
-    TG_MAX_SIZE,
     WORKERS,
 )
 from constant import BotText
@@ -127,7 +127,7 @@ def forward_video(client, bot_msg, url):
 
     try:
         res_msg: "Message" = upload_processor(client, bot_msg, url, cached_fid)
-        obj = res_msg.document or res_msg.video or res_msg.audio or res_msg.animation
+        obj = res_msg.document or res_msg.video or res_msg.audio or res_msg.animation or res_msg.photo
 
         caption, _ = gen_cap(bot_msg, url, obj)
         res_msg.edit_text(caption, reply_markup=gen_video_markup())
@@ -265,27 +265,19 @@ def ytdl_normal_download(bot_msg, client, url):
     logging.info("Download complete.")
     if result["status"]:
         client.send_chat_action(chat_id, "upload_document")
-        video_paths = result["filepath"]
+        video_paths: "list" = result["filepath"]
         bot_msg.edit_text("Download complete. Sending now...")
-        for video_path in video_paths:
-            # normally there's only one video in that path...
-            st_size = os.stat(video_path).st_size
-            if st_size > TG_MAX_SIZE:
-                bot_msg.edit_text(f"Your video({sizeof_fmt(st_size)}) is too large for Telegram.")
-                # client.send_chat_action(chat_id, 'upload_document')
-                # client.send_message(chat_id, upload_transfer_sh(bot_msg, video_paths))
-                continue
-            try:
-                upload_processor(client, bot_msg, url, video_path)
-            except pyrogram.errors.Flood as e:
-                logging.critical("FloodWait from Telegram: %s", e)
-                client.send_message(
-                    chat_id,
-                    f"I'm being rate limited by Telegram. Your video will come after {e.x} seconds. Please wait patiently.",
-                )
-                flood_owner_message(client, e)
-                time.sleep(e.x)
-                upload_processor(client, bot_msg, url, video_path)
+        try:
+            upload_processor(client, bot_msg, url, video_paths)
+        except pyrogram.errors.Flood as e:
+            logging.critical("FloodWait from Telegram: %s", e)
+            client.send_message(
+                chat_id,
+                f"I'm being rate limited by Telegram. Your video will come after {e.x} seconds. Please wait patiently.",
+            )
+            flood_owner_message(client, e)
+            time.sleep(e.x)
+            upload_processor(client, bot_msg, url, video_paths)
 
         bot_msg.edit_text("Download success!✅")
     else:
@@ -296,12 +288,43 @@ def ytdl_normal_download(bot_msg, client, url):
     temp_dir.cleanup()
 
 
-def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, pathlib.Path]"):
+def generate_input_media(file_paths: "list", cap: "str") -> list:
+    input_media = []
+    for path in file_paths:
+        mime = filetype.guess_mime(path)
+        if "video" in mime:
+            input_media.append(pyrogram.types.InputMediaVideo(media=path))
+        elif "image" in mime:
+            input_media.append(pyrogram.types.InputMediaPhoto(media=path))
+        elif "audio" in mime:
+            input_media.append(pyrogram.types.InputMediaAudio(media=path))
+        else:
+            input_media.append(pyrogram.types.InputMediaDocument(media=path))
+
+    input_media[0].caption = cap
+    return input_media
+
+
+def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, list]"):
     # raise pyrogram.errors.exceptions.FloodWait(13)
+    # if is str, it's a file id; else it's a list of paths
     payment = Payment()
     chat_id = bot_msg.chat.id
     markup = gen_video_markup()
-    cap, meta = gen_cap(bot_msg, url, vp_or_fid)
+    if isinstance(vp_or_fid, list) and len(vp_or_fid) > 1:
+        # just generate the first for simplicity, send as media group(2-20)
+        cap, meta = gen_cap(bot_msg, url, vp_or_fid[0])
+        res_msg = client.send_media_group(chat_id, generate_input_media(vp_or_fid, cap))
+        # TODO no cache for now
+        return res_msg[0]
+    elif isinstance(vp_or_fid, list) and len(vp_or_fid) == 1:
+        # normal download, just contains one file in video_paths
+        vp_or_fid = vp_or_fid[0]
+        cap, meta = gen_cap(bot_msg, url, vp_or_fid)
+    else:
+        # just a file id as string
+        cap, meta = gen_cap(bot_msg, url, vp_or_fid)
+
     settings = payment.get_user_settings(str(chat_id))
     if ARCHIVE_ID and isinstance(vp_or_fid, pathlib.Path):
         chat_id = ARCHIVE_ID
@@ -364,9 +387,19 @@ def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, pathlib.P
                 reply_markup=markup,
                 **meta,
             )
+        except FileNotFoundError:
+            # this is likely a photo
+            logging.info("Retry to send as photo")
+            res_msg = client.send_photo(
+                chat_id,
+                vp_or_fid,
+                caption=cap,
+                progress=upload_hook,
+                progress_args=(bot_msg,),
+            )
 
     unique = get_unique_clink(url, bot_msg.chat.id)
-    obj = res_msg.document or res_msg.video or res_msg.audio or res_msg.animation
+    obj = res_msg.document or res_msg.video or res_msg.audio or res_msg.animation or res_msg.photo
     redis.add_send_cache(unique, getattr(obj, "file_id", None))
     redis.update_metrics("video_success")
     if ARCHIVE_ID and isinstance(vp_or_fid, pathlib.Path):

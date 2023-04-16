@@ -4,40 +4,41 @@
 
 YouTube Download Bot🚀
 
-This Telegram bot allows you to download videos from YouTube and other supported platforms.
+This Telegram bot allows you to download videos from YouTube and other supported platforms, including Instagram!
 
 -----
 **READ [FAQ](FAQ.md) FIRST IF YOU ENCOUNTER ANY ISSUES.**
 
 -----
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+<details> <summary>Deploy to heroku</summary>
+
+<a href="https://heroku.com/deploy"><img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku"></a>
 
 If you are having trouble deploying, you can fork the project to your personal account and deploy it from there.
 
 **Starting November 28, 2022, free Heroku Dynos, free Heroku Postgres, and free Heroku Data for Redis® plans will no
 longer be available.**
 [Heroku Announcement](https://devcenter.heroku.com/articles/free-dyno-hours)
+</details>
 
 # Usage
 
 [https://t.me/benny_ytdlbot](https://t.me/benny_ytdlbot)
 
 Send link directly to the bot. Any
-Websites [supported by youtube-dl](https://ytdl-org.github.io/youtube-dl/supportedsites.html) will also work.
+Websites [supported by youtube-dl](https://ytdl-org.github.io/youtube-dl/supportedsites.html) will work to.
 
 # Limitations of my bot
 
-Due to limitations on servers and bandwidth, there are some restrictions on this service.
+Due to limitations on servers and bandwidth, there are some restrictions on this free service.
 
 * Each user is limited to 5 free downloads per 24-hour period
 * there is a maximum of three subscriptions allowed for YouTube channels.
 
-If you require more downloads, you can purchase additional tokens. Additionally, you have the option of deploying your
-own bot.
+If you need more downloads, you can purchase additional tokens. Additionally, you have the option of deploying your
+own bot. See below instructions.
 
 # Features
-
-![](assets/1.jpeg)
 
 1. fast download and upload.
 2. ads free
@@ -50,12 +51,27 @@ own bot.
 9. supports celery worker distribution - faster than before.
 10. subscriptions to YouTube Channels
 11. cache mechanism - download once for the same video.
+12. support instagram posts
+
+# Screenshots
+
+## Normal download
+
+![](assets/1.jpeg)
+
+## Instagram download
+
+![](assets/instagram.png)
+
+## celery
 
 ![](assets/2.jpeg)
 
 # How to deploy?
 
 This bot can be deployed on any platform that supports Python.
+
+Need help with deployment or exclusive features? I offer paid service - contact me at @BennyThink
 
 ## Run natively on your machine
 
@@ -162,16 +178,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 ### 3.2.3 Setup instagram cookies
 
-Required if you want to support instagram.
-
-You can use this extension
-[Get cookies.txt](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid)
-to get instagram cookies
-
-```shell
-vim  data/instagram.com_cookies.txt
-# paste your cookies
-```
+You don't need to do this anymore! This bot support instagram posts out of the box, including photos, videos and reels.
 
 ## 3.3 Tidy docker-compose.yml
 
@@ -264,6 +271,8 @@ https://dmesg.app/m3u8/prog_index.m3u8
 
 https://twitter.com/nitori_sayaka/status/1526199729864200192
 https://twitter.com/BennyThinks/status/1475836588542341124
+
+## test instagram
 
 # Donation
 

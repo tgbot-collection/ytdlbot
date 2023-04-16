@@ -21,6 +21,7 @@ import fakeredis
 import ffmpeg
 import ffpb
 import filetype
+import requests
 import yt_dlp as ytdl
 from tqdm import tqdm
 
@@ -153,7 +154,7 @@ def can_convert_mp4(video_path, uid):
     return True
 
 
-def ytdl_download(url, tempdir, bm, **kwargs) -> dict:
+def ytdl_download(url, tempdir: "str", bm, **kwargs) -> dict:
     payment = Payment()
     chat_id = bm.chat.id
     hijack = kwargs.get("hijack")
@@ -180,7 +181,8 @@ def ytdl_download(url, tempdir, bm, **kwargs) -> dict:
         None,
     ]
     adjust_formats(chat_id, url, formats, hijack)
-    add_instagram_cookies(url, ydl_opts)
+    if download_instagram(url, tempdir):
+        return {"status": True, "error": "", "filepath": list(pathlib.Path(tempdir).glob("*"))}
 
     address = ["::", "0.0.0.0"] if IPv6 else [None]
     for format_ in formats:
@@ -252,9 +254,20 @@ def convert_audio_format(resp: "dict", bm):
                 resp["filepath"][index] = new_path
 
 
-def add_instagram_cookies(url: "str", opt: "dict"):
+def download_instagram(url: "str", tempdir: "str"):
     if url.startswith("https://www.instagram.com"):
-        opt["cookiefile"] = pathlib.Path(__file__).parent.joinpath("instagram.com_cookies.txt").as_posix()
+        api = f"https://ssmstore.store/rami/index.php?url={url}"
+        res = requests.get(api).json()
+        if isinstance(res, dict):
+            downloadable = {i["url"]: i["ext"] for i in res["url"]}
+        else:
+            downloadable = {i["url"]: i["ext"] for item in res for i in item["url"]}
+
+        for link, ext in downloadable.items():
+            save_path = pathlib.Path(tempdir, f"{id(link)}.{ext}")
+            with open(save_path, "wb") as f:
+                f.write(requests.get(link, stream=True).content)
+        return True
 
 
 def split_large_video(response: "dict"):
@@ -270,3 +283,8 @@ def split_large_video(response: "dict"):
 
     if split and original_video:
         response["filepath"] = [i.as_posix() for i in pathlib.Path(original_video).parent.glob("*")]
+
+
+if __name__ == "__main__":
+    a = download_instagram("https://www.instagram.com/p/CrEAz-AI99Y/", "tmp")
+    print(a)
