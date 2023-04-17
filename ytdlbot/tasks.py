@@ -29,7 +29,9 @@ import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from celery import Celery
 from celery.worker.control import Panel
+from pyrogram import Client
 from pyrogram import idle
+from pyrogram import types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
@@ -83,10 +85,10 @@ def get_messages(chat_id, message_id):
 
 
 @app.task(rate_limit=f"{RATE_LIMIT}/m")
-def ytdl_download_task(chat_id, message_id, url):
+def ytdl_download_task(chat_id, message_id, url: str):
     logging.info("YouTube celery tasks started for %s", url)
     bot_msg = get_messages(chat_id, message_id)
-    ytdl_normal_download(bot_msg, celery_client, url)
+    ytdl_normal_download(celery_client, bot_msg, url)
     logging.info("YouTube celery tasks ended.")
 
 
@@ -94,13 +96,13 @@ def ytdl_download_task(chat_id, message_id, url):
 def audio_task(chat_id, message_id):
     logging.info("Audio celery tasks started for %s-%s", chat_id, message_id)
     bot_msg = get_messages(chat_id, message_id)
-    normal_audio(bot_msg, celery_client)
+    normal_audio(celery_client, bot_msg)
     logging.info("Audio celery tasks ended.")
 
 
-def get_unique_clink(original_url, user_id):
+def get_unique_clink(original_url: str, user_id: int):
     payment = Payment()
-    settings = payment.get_user_settings(str(user_id))
+    settings = payment.get_user_settings(user_id)
     clink = channel.extract_canonical_link(original_url)
     try:
         # different user may have different resolution settings
@@ -114,11 +116,11 @@ def get_unique_clink(original_url, user_id):
 def direct_download_task(chat_id, message_id, url):
     logging.info("Direct download celery tasks started for %s", url)
     bot_msg = get_messages(chat_id, message_id)
-    direct_normal_download(bot_msg, celery_client, url)
+    direct_normal_download(celery_client, bot_msg, url)
     logging.info("Direct download celery tasks ended.")
 
 
-def forward_video(client, bot_msg, url):
+def forward_video(client, bot_msg, url: str):
     chat_id = bot_msg.chat.id
     unique = get_unique_clink(url, chat_id)
     cached_fid = redis.get_send_cache(unique)
@@ -141,26 +143,26 @@ def forward_video(client, bot_msg, url):
         redis.update_metrics("cache_miss")
 
 
-def ytdl_download_entrance(client, bot_msg, url):
+def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str):
     payment = Payment()
     chat_id = bot_msg.chat.id
     if forward_video(client, bot_msg, url):
         return
-    mode = payment.get_user_settings(str(chat_id))[-1]
+    mode = payment.get_user_settings(chat_id)[-1]
     if ENABLE_CELERY and mode in [None, "Celery"]:
         async_task(ytdl_download_task, chat_id, bot_msg.message_id, url)
         # ytdl_download_task.delay(chat_id, bot_msg.message_id, url)
     else:
-        ytdl_normal_download(bot_msg, client, url)
+        ytdl_normal_download(client, bot_msg, url)
 
 
-def direct_download_entrance(bot_msg, client, url):
+def direct_download_entrance(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
     if ENABLE_CELERY:
         # TODO disable it for now
-        direct_normal_download(bot_msg, client, url)
+        direct_normal_download(client, bot_msg, url)
         # direct_download_task.delay(bot_msg.chat.id, bot_msg.message_id, url)
     else:
-        direct_normal_download(bot_msg, client, url)
+        direct_normal_download(client, bot_msg, url)
 
 
 def audio_entrance(bot_msg, client):
@@ -171,12 +173,11 @@ def audio_entrance(bot_msg, client):
         normal_audio(bot_msg, client)
 
 
-def direct_normal_download(bot_msg, client, url):
+def direct_normal_download(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
     chat_id = bot_msg.chat.id
     headers = {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36"
     }
-    vip = Payment()
     length = 0
 
     req = None
@@ -217,11 +218,13 @@ def direct_normal_download(bot_msg, client, url):
         bot_msg.edit_text("Download success!✅")
 
 
-def normal_audio(bot_msg, client):
+def normal_audio(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine]):
     chat_id = bot_msg.chat.id
     # fn = getattr(bot_msg.video, "file_name", None) or getattr(bot_msg.document, "file_name", None)
-    status_msg = bot_msg.reply_text("Converting to audio...please wait patiently", quote=True)
-    orig_url: "str" = re.findall(r"https?://.*", bot_msg.caption)[0]
+    status_msg: typing.Union[types.Message, typing.Coroutine] = bot_msg.reply_text(
+        "Converting to audio...please wait patiently", quote=True
+    )
+    orig_url: str = re.findall(r"https?://.*", bot_msg.caption)[0]
     with tempfile.TemporaryDirectory(prefix="ytdl-") as tmp:
         client.send_chat_action(chat_id, "record_audio")
         # just try to download the audio using yt-dlp
@@ -241,7 +244,7 @@ def get_dl_source():
     return ""
 
 
-def upload_transfer_sh(bm, paths: list) -> "str":
+def upload_transfer_sh(bm, paths: list) -> str:
     d = {p.name: (md5(p.name.encode("utf8")).hexdigest() + p.suffix, p.open("rb")) for p in paths}
     monitor = MultipartEncoderMonitor(MultipartEncoder(fields=d), lambda x: upload_hook(x.bytes_read, x.len, bm))
     headers = {"Content-Type": monitor.content_type}
@@ -257,7 +260,7 @@ def flood_owner_message(client, ex):
     client.send_message(OWNER, f"CRITICAL INFO: {ex}")
 
 
-def ytdl_normal_download(bot_msg, client, url):
+def ytdl_normal_download(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
     chat_id = bot_msg.chat.id
     temp_dir = tempfile.TemporaryDirectory(prefix="ytdl-")
 
@@ -265,7 +268,7 @@ def ytdl_normal_download(bot_msg, client, url):
     logging.info("Download complete.")
     if result["status"]:
         client.send_chat_action(chat_id, "upload_document")
-        video_paths: "list" = result["filepath"]
+        video_paths: list = result["filepath"]
         bot_msg.edit_text("Download complete. Sending now...")
         try:
             upload_processor(client, bot_msg, url, video_paths)
@@ -288,7 +291,7 @@ def ytdl_normal_download(bot_msg, client, url):
     temp_dir.cleanup()
 
 
-def generate_input_media(file_paths: "list", cap: "str") -> list:
+def generate_input_media(file_paths: list, cap: str) -> list:
     input_media = []
     for path in file_paths:
         mime = filetype.guess_mime(path)
@@ -305,7 +308,7 @@ def generate_input_media(file_paths: "list", cap: "str") -> list:
     return input_media
 
 
-def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, list]"):
+def upload_processor(client, bot_msg, url, vp_or_fid: typing.Union[str, list]):
     # raise pyrogram.errors.exceptions.FloodWait(13)
     # if is str, it's a file id; else it's a list of paths
     payment = Payment()
@@ -325,7 +328,7 @@ def upload_processor(client, bot_msg, url, vp_or_fid: "typing.Any[str, list]"):
         # just a file id as string
         cap, meta = gen_cap(bot_msg, url, vp_or_fid)
 
-    settings = payment.get_user_settings(str(chat_id))
+    settings = payment.get_user_settings(chat_id)
     if ARCHIVE_ID and isinstance(vp_or_fid, pathlib.Path):
         chat_id = ARCHIVE_ID
     if settings[2] == "document":

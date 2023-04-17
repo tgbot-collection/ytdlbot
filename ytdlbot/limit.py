@@ -41,14 +41,14 @@ class BuyMeACoffee:
         if next_page:
             self._get_data(next_page)
 
-    def _get_bmac_status(self, email: "str") -> "dict":
+    def _get_bmac_status(self, email: str) -> dict:
         self._get_data(self._url)
         for user in self._data:
             if user["payer_email"] == email or user["support_email"] == email:
                 return user
         return {}
 
-    def get_user_payment(self, email: "str") -> ("int", "float", "str"):
+    def get_user_payment(self, email: str) -> (int, "float", str):
         order = self._get_bmac_status(email)
         price = float(order.get("support_coffee_price", 0))
         cups = float(order.get("support_coffees", 1))
@@ -78,7 +78,7 @@ class Afdian:
 
         return data
 
-    def _get_afdian_status(self, trade_no: "str") -> "dict":
+    def _get_afdian_status(self, trade_no: str) -> dict:
         req_data = self._generate_signature()
         data = requests.post(self._url, json=req_data).json()
         # latest 50
@@ -88,7 +88,7 @@ class Afdian:
 
         return {}
 
-    def get_user_payment(self, trade_no: "str") -> ("int", "float", "str"):
+    def get_user_payment(self, trade_no: str) -> (int, float, str):
         order = self._get_afdian_status(trade_no)
         amount = float(order.get("show_amount", 0))
         # convert to USD
@@ -96,17 +96,17 @@ class Afdian:
 
 
 class Payment(Redis, MySQL):
-    def check_old_user(self, user_id: "int") -> "tuple":
+    def check_old_user(self, user_id: int) -> tuple:
         self.cur.execute("SELECT * FROM payment WHERE user_id=%s AND old_user=1", (user_id,))
         data = self.cur.fetchone()
         return data
 
-    def get_pay_token(self, user_id: "int") -> int:
+    def get_pay_token(self, user_id: int) -> int:
         self.cur.execute("SELECT token FROM payment WHERE user_id=%s", (user_id,))
         data = self.cur.fetchall() or [(0,)]
         return sum([i[0] for i in data if i[0]])
 
-    def get_free_token(self, user_id: "int") -> int:
+    def get_free_token(self, user_id: int) -> int:
         if self.r.exists(user_id):
             return int(self.r.get(user_id))
         else:
@@ -114,11 +114,11 @@ class Payment(Redis, MySQL):
             self.r.set(user_id, FREE_DOWNLOAD, ex=EXPIRE)
             return FREE_DOWNLOAD
 
-    def get_token(self, user_id):
+    def get_token(self, user_id: int):
         ttl = self.r.ttl(user_id)
         return self.get_free_token(user_id), self.get_pay_token(user_id), current_time(time.time() + ttl)
 
-    def use_free_token(self, user_id: "int"):
+    def use_free_token(self, user_id: int):
         if self.r.exists(user_id):
             self.r.decr(user_id, 1)
         else:
@@ -134,18 +134,18 @@ class Payment(Redis, MySQL):
         self.cur.execute("UPDATE payment SET token=token-1 WHERE payment_id=%s", (payment_id,))
         self.con.commit()
 
-    def use_token(self, user_id):
+    def use_token(self, user_id: int):
         free = self.get_free_token(user_id)
         if free > 0:
             self.use_free_token(user_id)
         else:
             self.use_pay_token(user_id)
 
-    def add_pay_user(self, pay_data: "list"):
+    def add_pay_user(self, pay_data: list):
         self.cur.execute("INSERT INTO payment VALUES (%s,%s,%s,%s,%s)", pay_data)
         self.con.commit()
 
-    def verify_payment(self, user_id: "int", unique: "str") -> "str":
+    def verify_payment(self, user_id: int, unique: str) -> str:
         pay = BuyMeACoffee() if "@" in unique else Afdian()
         self.cur.execute("SELECT * FROM payment WHERE payment_id=%s ", (unique,))
         data = self.cur.fetchone()

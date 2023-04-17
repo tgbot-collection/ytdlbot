@@ -87,7 +87,7 @@ Sending format: **{1}**
     custom_text = os.getenv("CUSTOM_TEXT", "")
 
     @staticmethod
-    def get_receive_link_text():
+    def get_receive_link_text() -> str:
         reserved = get_func_queue("reserved")
         if ENABLE_CELERY and reserved:
             text = f"Too many tasks. Your tasks was added to the reserved queue {reserved}."
@@ -97,7 +97,7 @@ Sending format: **{1}**
         return text
 
     @staticmethod
-    def ping_worker():
+    def ping_worker() -> str:
         from tasks import app as celery_app
 
         workers = InfluxDB().extract_dashboard_data()

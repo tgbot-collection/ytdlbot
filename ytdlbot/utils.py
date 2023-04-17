@@ -35,7 +35,7 @@ def apply_log_formatter():
     )
 
 
-def customize_logger(logger: "list"):
+def customize_logger(logger: list):
     apply_log_formatter()
     for log in logger:
         logging.getLogger(log).setLevel(level=logging.INFO)
@@ -49,12 +49,12 @@ def sizeof_fmt(num: int, suffix="B"):
     return "%.1f%s%s" % (num, "Yi", suffix)
 
 
-def is_youtube(url: "str"):
+def is_youtube(url: str):
     if url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/"):
         return True
 
 
-def adjust_formats(user_id: "str", url: "str", formats: "list", hijack=None):
+def adjust_formats(user_id: int, url: str, formats: list, hijack=None):
     from database import MySQL
 
     # high: best quality 1080P, 2K, 4K, 8K
@@ -149,7 +149,7 @@ def tail_log(f, lines=1, _buffer=4098):
 
 
 class Detector:
-    def __init__(self, logs: "str"):
+    def __init__(self, logs: str):
         self.logs = logs
 
     @staticmethod

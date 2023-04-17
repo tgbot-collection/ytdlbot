@@ -102,7 +102,7 @@ class Redis:
     def __del__(self):
         self.r.close()
 
-    def update_metrics(self, metrics):
+    def update_metrics(self, metrics: str):
         logging.info(f"Setting metrics: {metrics}")
         all_ = f"all_{metrics}"
         today = f"today_{metrics}"
@@ -110,7 +110,7 @@ class Redis:
         self.r.hincrby("metrics", today)
 
     @staticmethod
-    def generate_table(header, all_data: "list"):
+    def generate_table(header, all_data: list):
         table = BeautifulTable()
         for data in all_data:
             table.rows.append(data)
@@ -186,10 +186,10 @@ class Redis:
         file.name = f"{date}.txt"
         return file
 
-    def add_send_cache(self, unique, file_id):
+    def add_send_cache(self, unique: str, file_id: str):
         self.r.hset("cache", unique, file_id)
 
-    def get_send_cache(self, unique) -> "str":
+    def get_send_cache(self, unique) -> str:
         return self.r.hget("cache", unique)
 
     def del_send_cache(self, unique):
@@ -266,7 +266,7 @@ class MySQL:
     def __del__(self):
         self.con.close()
 
-    def get_user_settings(self, user_id: "str") -> "tuple":
+    def get_user_settings(self, user_id: int) -> tuple:
         cur = self.con.cursor()
         cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
         data = cur.fetchone()
@@ -274,7 +274,7 @@ class MySQL:
             return 100, "high", "video", "Celery"
         return data
 
-    def set_user_settings(self, user_id: int, field: "str", value: "str"):
+    def set_user_settings(self, user_id: int, field: str, value: str):
         cur = self.con.cursor()
         cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
         data = cur.fetchone()
@@ -301,7 +301,7 @@ class InfluxDB:
         self.client.close()
 
     @staticmethod
-    def get_worker_data():
+    def get_worker_data() -> dict:
         username = os.getenv("FLOWER_USERNAME", "benny")
         password = os.getenv("FLOWER_PASSWORD", "123456abc")
         token = base64.b64encode(f"{username}:{password}".encode()).decode()

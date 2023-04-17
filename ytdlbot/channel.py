@@ -13,7 +13,7 @@ from limit import Payment
 
 
 class Channel(Payment):
-    def subscribe_channel(self, user_id: "int", share_link: "str"):
+    def subscribe_channel(self, user_id: int, share_link: str) -> str:
         if not re.findall(r"youtube\.com|youtu\.be", share_link):
             raise ValueError("Is this a valid YouTube Channel link?")
         if ENABLE_VIP:
@@ -41,7 +41,7 @@ class Channel(Payment):
         logging.info("User %s subscribed channel %s", user_id, data["title"])
         return "Subscribed to {}".format(data["title"])
 
-    def unsubscribe_channel(self, user_id: "int", channel_id: "str"):
+    def unsubscribe_channel(self, user_id: int, channel_id: str) -> int:
         affected_rows = self.cur.execute(
             "DELETE FROM subscribe WHERE user_id=%s AND channel_id=%s", (user_id, channel_id)
         )
@@ -50,7 +50,7 @@ class Channel(Payment):
         return affected_rows
 
     @staticmethod
-    def extract_canonical_link(url):
+    def extract_canonical_link(url: str) -> str:
         # canonic link works for many websites. It will strip out unnecessary stuff
         props = ["canonical", "alternate", "shortlinkUrl"]
         headers = {
@@ -77,7 +77,7 @@ class Channel(Payment):
 
         return url
 
-    def get_channel_info(self, url: "str"):
+    def get_channel_info(self, url: str) -> dict:
         api_key = os.getenv("GOOGLE_API_KEY")
         canonical_link = self.extract_canonical_link(url)
         try:
@@ -104,7 +104,7 @@ class Channel(Payment):
         }
 
     @staticmethod
-    def get_latest_video(playlist_id: "str"):
+    def get_latest_video(playlist_id: str) -> str:
         api_key = os.getenv("GOOGLE_API_KEY")
         video_api = (
             f"https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=1&"
@@ -115,7 +115,7 @@ class Channel(Payment):
         logging.info(f"Latest video %s from %s", video_id, data["items"][0]["snippet"]["channelTitle"])
         return f"https://www.youtube.com/watch?v={video_id}"
 
-    def has_newer_update(self, channel_id: "str"):
+    def has_newer_update(self, channel_id: str) -> str:
         self.cur.execute("SELECT playlist,latest_video FROM channel WHERE channel_id=%s", (channel_id,))
         data = self.cur.fetchone()
         playlist_id = data[0]
@@ -127,7 +127,7 @@ class Channel(Payment):
             self.con.commit()
             return newest_video
 
-    def get_user_subscription(self, user_id: "int"):
+    def get_user_subscription(self, user_id: int) -> str:
         self.cur.execute(
             """
                select title, link, channel.channel_id from channel, subscribe 
@@ -141,7 +141,7 @@ class Channel(Payment):
             text += "[{}]({}) `{}\n`".format(*item)
         return text
 
-    def group_subscriber(self):
+    def group_subscriber(self) -> dict:
         # {"channel_id": [user_id, user_id, ...]}
         self.cur.execute("select * from subscribe where is_valid=1")
         data = self.cur.fetchall()
@@ -151,11 +151,11 @@ class Channel(Payment):
         logging.info("Checking periodic subscriber...")
         return group
 
-    def deactivate_user_subscription(self, user_id: "int"):
+    def deactivate_user_subscription(self, user_id: int):
         self.cur.execute("UPDATE subscribe set is_valid=0 WHERE user_id=%s", (user_id,))
         self.con.commit()
 
-    def sub_count(self):
+    def sub_count(self) -> str:
         sql = """
         select user_id, channel.title, channel.link
         from subscribe, channel where subscribe.channel_id = channel.channel_id
@@ -167,7 +167,7 @@ class Channel(Payment):
             text += "{} ==> [{}]({})\n".format(*item)
         return text
 
-    def del_cache(self, user_link: "str"):
+    def del_cache(self, user_link: str) -> int:
         unique = self.extract_canonical_link(user_link)
         caches = self.r.hgetall("cache")
         count = 0

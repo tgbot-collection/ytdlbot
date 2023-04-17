@@ -33,7 +33,7 @@ r = fakeredis.FakeStrictRedis()
 apply_log_formatter()
 
 
-def edit_text(bot_msg, text):
+def edit_text(bot_msg, text: str):
     key = f"{bot_msg.chat.id}-{bot_msg.message_id}"
     # if the key exists, we shouldn't send edit message
     if not r.exists(key):
@@ -142,7 +142,7 @@ class ProgressBar(tqdm):
         edit_text(self.bot_msg, t)
 
 
-def run_ffmpeg(cmd_list, bm):
+def run_ffmpeg(cmd_list: list, bm):
     cmd_list = cmd_list.copy()[1:]
     ProgressBar.b = bm
     ffpb.main(cmd_list, tqdm=ProgressBar)
@@ -154,7 +154,7 @@ def can_convert_mp4(video_path, uid):
     return True
 
 
-def ytdl_download(url, tempdir: "str", bm, **kwargs) -> dict:
+def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> dict:
     payment = Payment()
     chat_id = bm.chat.id
     hijack = kwargs.get("hijack")
@@ -211,7 +211,7 @@ def ytdl_download(url, tempdir: "str", bm, **kwargs) -> dict:
         return response
 
     # convert format if necessary
-    settings = payment.get_user_settings(str(chat_id))
+    settings = payment.get_user_settings(chat_id)
     if settings[2] == "video" or isinstance(settings[2], MagicMock):
         # only convert if send type is video
         convert_to_mp4(response, bm)
@@ -222,7 +222,7 @@ def ytdl_download(url, tempdir: "str", bm, **kwargs) -> dict:
     return response
 
 
-def convert_audio_format(resp: "dict", bm):
+def convert_audio_format(resp: dict, bm):
     # 1. file is audio, default format
     # 2. file is video, default format
     # 3. non default format
@@ -254,7 +254,7 @@ def convert_audio_format(resp: "dict", bm):
                 resp["filepath"][index] = new_path
 
 
-def download_instagram(url: "str", tempdir: "str"):
+def download_instagram(url: str, tempdir: str):
     if url.startswith("https://www.instagram.com"):
         api = f"https://ssmstore.store/rami/index.php?url={url}"
         res = requests.get(api).json()
@@ -270,7 +270,7 @@ def download_instagram(url: "str", tempdir: "str"):
         return True
 
 
-def split_large_video(response: "dict"):
+def split_large_video(response: dict):
     original_video = None
     split = False
     for original_video in response.get("filepath", []):

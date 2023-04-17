@@ -63,7 +63,7 @@ channel = Channel()
 
 
 def private_use(func):
-    def wrapper(client: "Client", message: "types.Message"):
+    def wrapper(client: Client, message: types.Message):
         chat_id = getattr(message.from_user, "id", None)
 
         # message type check
@@ -83,7 +83,10 @@ def private_use(func):
 
         if REQUIRED_MEMBERSHIP:
             try:
-                if app.get_chat_member(REQUIRED_MEMBERSHIP, chat_id).status not in [
+                member: typing.Union[types.ChatMember, typing.Coroutine] = app.get_chat_member(
+                    REQUIRED_MEMBERSHIP, chat_id
+                )
+                if member.status not in [
                     "creator",
                     "administrator",
                     "member",
@@ -103,7 +106,7 @@ def private_use(func):
 
 
 @app.on_message(filters.command(["start"]))
-def start_handler(client: "Client", message: "types.Message"):
+def start_handler(client: Client, message: types.Message):
     payment = Payment()
     from_id = message.from_user.id
     logging.info("Welcome to youtube-dl bot!")
@@ -121,21 +124,21 @@ def start_handler(client: "Client", message: "types.Message"):
 
 
 @app.on_message(filters.command(["help"]))
-def help_handler(client: "Client", message: "types.Message"):
+def help_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
     client.send_message(chat_id, BotText.help, disable_web_page_preview=True)
 
 
 @app.on_message(filters.command(["about"]))
-def about_handler(client: "Client", message: "types.Message"):
+def about_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
     client.send_message(chat_id, BotText.about)
 
 
 @app.on_message(filters.command(["sub"]))
-def subscribe_handler(client: "Client", message: "types.Message"):
+def subscribe_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
     if message.text == "/sub":
@@ -150,7 +153,7 @@ def subscribe_handler(client: "Client", message: "types.Message"):
 
 
 @app.on_message(filters.command(["unsub"]))
-def unsubscribe_handler(client: "Client", message: "types.Message"):
+def unsubscribe_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
     text = message.text.split(" ")
@@ -167,7 +170,7 @@ def unsubscribe_handler(client: "Client", message: "types.Message"):
 
 
 @app.on_message(filters.command(["patch"]))
-def patch_handler(client: "Client", message: "types.Message"):
+def patch_handler(client: Client, message: types.Message):
     username = message.from_user.username
     chat_id = message.chat.id
     if username == OWNER:
@@ -178,7 +181,7 @@ def patch_handler(client: "Client", message: "types.Message"):
 
 
 @app.on_message(filters.command(["uncache"]))
-def uncache_handler(client: "Client", message: "types.Message"):
+def uncache_handler(client: Client, message: types.Message):
     username = message.from_user.username
     link = message.text.split()[1]
     if username == OWNER:
@@ -187,14 +190,14 @@ def uncache_handler(client: "Client", message: "types.Message"):
 
 
 @app.on_message(filters.command(["purge"]))
-def purge_handler(client: "Client", message: "types.Message"):
+def purge_handler(client: Client, message: types.Message):
     username = message.from_user.username
     if username == OWNER:
         message.reply_text(purge_tasks(), quote=True)
 
 
 @app.on_message(filters.command(["ping"]))
-def ping_handler(client: "Client", message: "types.Message"):
+def ping_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
     if os.uname().sysname == "Darwin" or ".heroku" in os.getenv("PYTHONHOME", ""):
@@ -209,7 +212,7 @@ def ping_handler(client: "Client", message: "types.Message"):
 
 
 @app.on_message(filters.command(["sub_count"]))
-def sub_count_handler(client: "Client", message: "types.Message"):
+def sub_count_handler(client: Client, message: types.Message):
     username = message.from_user.username
     chat_id = message.chat.id
     if username == OWNER:
@@ -220,7 +223,7 @@ def sub_count_handler(client: "Client", message: "types.Message"):
 
 
 @app.on_message(filters.command(["direct"]))
-def direct_handler(client: "Client", message: "types.Message"):
+def direct_handler(client: Client, message: types.Message):
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, "typing")
     url = re.sub(r"/direct\s*", "", message.text)
@@ -232,14 +235,14 @@ def direct_handler(client: "Client", message: "types.Message"):
 
     bot_msg = message.reply_text("Request received.", quote=True)
     redis.update_metrics("direct_request")
-    direct_download_entrance(bot_msg, client, url)
+    direct_download_entrance(client, bot_msg, url)
 
 
 @app.on_message(filters.command(["settings"]))
-def settings_handler(client: "Client", message: "types.Message"):
+def settings_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
-    data = MySQL().get_user_settings(str(chat_id))
+    data = MySQL().get_user_settings(chat_id)
     set_mode = data[-1]
     text = {"Local": "Celery", "Celery": "Local"}.get(set_mode, "Local")
     mode_text = f"Download mode: **{set_mode}**"
@@ -268,7 +271,7 @@ def settings_handler(client: "Client", message: "types.Message"):
 
 
 @app.on_message(filters.command(["buy"]))
-def buy_handler(client: "Client", message: "types.Message"):
+def buy_handler(client: Client, message: types.Message):
     # process as chat.id, not from_user.id
     chat_id = message.chat.id
     text = message.text.strip()
@@ -297,7 +300,7 @@ def buy_handler(client: "Client", message: "types.Message"):
 
 
 @app.on_message(filters.command(["redeem"]))
-def redeem_handler(client: "Client", message: "types.Message"):
+def redeem_handler(client: Client, message: types.Message):
     payment = Payment()
     chat_id = message.chat.id
     text = message.text.strip()
@@ -306,7 +309,7 @@ def redeem_handler(client: "Client", message: "types.Message"):
     message.reply_text(msg, quote=True)
 
 
-def generate_invoice(amount: "int", title: "str", description: "str", payload: "str"):
+def generate_invoice(amount: int, title: str, description: str, payload: str):
     invoice = raw_types.input_media_invoice.InputMediaInvoice(
         invoice=raw_types.invoice.Invoice(
             currency="USD", prices=[raw_types.LabeledPrice(label="price", amount=amount)]
@@ -323,7 +326,7 @@ def generate_invoice(amount: "int", title: "str", description: "str", payload: "
 
 @app.on_message(filters.incoming & filters.text)
 @private_use
-def download_handler(client: "Client", message: "types.Message"):
+def download_handler(client: Client, message: types.Message):
     payment = Payment()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, "typing")
@@ -366,7 +369,7 @@ def download_handler(client: "Client", message: "types.Message"):
     text = BotText.get_receive_link_text()
     try:
         # raise pyrogram.errors.exceptions.FloodWait(10)
-        bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text(text, quote=True)
+        bot_msg: typing.Union[types.Message, typing.Coroutine] = message.reply_text(text, quote=True)
     except pyrogram.errors.Flood as e:
         f = BytesIO()
         f.write(str(e).encode())
@@ -385,7 +388,7 @@ def download_handler(client: "Client", message: "types.Message"):
 
 
 @app.on_callback_query(filters.regex(r"document|video|audio"))
-def send_method_callback(client: "Client", callback_query: types.CallbackQuery):
+def send_method_callback(client: Client, callback_query: types.CallbackQuery):
     chat_id = callback_query.message.chat.id
     data = callback_query.data
     logging.info("Setting %s file type to %s", chat_id, data)
@@ -394,7 +397,7 @@ def send_method_callback(client: "Client", callback_query: types.CallbackQuery):
 
 
 @app.on_callback_query(filters.regex(r"high|medium|low"))
-def download_resolution_callback(client: "Client", callback_query: types.CallbackQuery):
+def download_resolution_callback(client: Client, callback_query: types.CallbackQuery):
     chat_id = callback_query.message.chat.id
     data = callback_query.data
     logging.info("Setting %s file type to %s", chat_id, data)
@@ -403,7 +406,7 @@ def download_resolution_callback(client: "Client", callback_query: types.Callbac
 
 
 @app.on_callback_query(filters.regex(r"convert"))
-def audio_callback(client: "Client", callback_query: types.CallbackQuery):
+def audio_callback(client: Client, callback_query: types.CallbackQuery):
     if not ENABLE_FFMPEG:
         callback_query.answer("Audio conversion is disabled now.")
         callback_query.message.reply_text("Audio conversion is disabled now.")
@@ -416,7 +419,7 @@ def audio_callback(client: "Client", callback_query: types.CallbackQuery):
 
 
 @app.on_callback_query(filters.regex(r"Local|Celery"))
-def owner_local_callback(client: "Client", callback_query: types.CallbackQuery):
+def owner_local_callback(client: Client, callback_query: types.CallbackQuery):
     chat_id = callback_query.message.chat.id
     MySQL().set_user_settings(chat_id, "mode", callback_query.data)
     callback_query.answer(f"Download mode was changed to {callback_query.data}")
@@ -430,8 +433,10 @@ def periodic_sub_check():
             logging.info(f"periodic update:{video_url} - {uids}")
             for uid in uids:
                 try:
-                    bot_msg = app.send_message(uid, f"{video_url} is downloading...", disable_web_page_preview=True)
-                    ytdl_download_entrance(bot_msg, app, video_url)
+                    bot_msg: typing.Union[types.Message, typing.Coroutine] = app.send_message(
+                        uid, f"{video_url} is downloading...", disable_web_page_preview=True
+                    )
+                    ytdl_download_entrance(app, bot_msg, video_url)
                 except (exceptions.bad_request_400.PeerIdInvalid, exceptions.bad_request_400.UserIsBlocked) as e:
                     logging.warning("User is blocked or deleted. %s", e)
                     channel.deactivate_user_subscription(uid)
@@ -442,7 +447,7 @@ def periodic_sub_check():
 
 
 @app.on_raw_update()
-def raw_update(client: "Client", update, users, chats):
+def raw_update(client: Client, update, users, chats):
     payment = Payment()
     action = getattr(getattr(update, "message", None), "action", None)
     if update.QUALNAME == "types.UpdateBotPrecheckoutQuery":
