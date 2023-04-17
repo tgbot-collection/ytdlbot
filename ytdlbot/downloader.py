@@ -122,7 +122,7 @@ def convert_to_mp4(resp: dict, bot_msg):
                 edit_text(bot_msg, f"{current_time()}: Converting {path.name} to mp4. Please wait.")
                 new_file_path = path.with_suffix(".mp4")
                 logging.info("Detected %s, converting to mp4...", mime)
-                run_ffmpeg(["ffmpeg", "-y", "-i", path, new_file_path], bot_msg)
+                run_ffmpeg_progressbar(["ffmpeg", "-y", "-i", path, new_file_path], bot_msg)
                 index = resp["filepath"].index(path)
                 resp["filepath"][index] = new_file_path
 
@@ -142,7 +142,7 @@ class ProgressBar(tqdm):
         edit_text(self.bot_msg, t)
 
 
-def run_ffmpeg(cmd_list: list, bm):
+def run_ffmpeg_progressbar(cmd_list: list, bm):
     cmd_list = cmd_list.copy()[1:]
     ProgressBar.b = bm
     ffpb.main(cmd_list, tqdm=ProgressBar)
@@ -241,14 +241,14 @@ def convert_audio_format(resp: dict, bm):
                         break
                 ext = audio_stream["codec_name"]
                 new_path = path.with_suffix(f".{ext}")
-                run_ffmpeg(["ffmpeg", "-y", "-i", path, "-vn", "-acodec", "copy", new_path], bm)
+                run_ffmpeg_progressbar(["ffmpeg", "-y", "-i", path, "-vn", "-acodec", "copy", new_path], bm)
                 path.unlink()
                 index = resp["filepath"].index(path)
                 resp["filepath"][index] = new_path
             else:
                 logging.info("Not default format, converting %s to %s", path, AUDIO_FORMAT)
                 new_path = path.with_suffix(f".{AUDIO_FORMAT}")
-                run_ffmpeg(["ffmpeg", "-y", "-i", path, new_path], bm)
+                run_ffmpeg_progressbar(["ffmpeg", "-y", "-i", path, new_path], bm)
                 path.unlink()
                 index = resp["filepath"].index(path)
                 resp["filepath"][index] = new_path
@@ -267,6 +267,12 @@ def download_instagram(url: str, tempdir: str):
             save_path = pathlib.Path(tempdir, f"{id(link)}.{ext}")
             with open(save_path, "wb") as f:
                 f.write(requests.get(link, stream=True).content)
+        # telegram send webp as sticker, so we'll convert it to png
+        for path in pathlib.Path(tempdir).glob("*.webp"):
+            logging.info("Converting %s to png", path)
+            new_path = path.with_suffix(".jpg")
+            ffmpeg.input(path).output(new_path.as_posix()).run()
+            path.unlink()
         return True
 
 

@@ -165,12 +165,12 @@ def direct_download_entrance(client: Client, bot_msg: typing.Union[types.Message
         direct_normal_download(client, bot_msg, url)
 
 
-def audio_entrance(bot_msg, client):
+def audio_entrance(client, bot_msg):
     if ENABLE_CELERY:
         async_task(audio_task, bot_msg.chat.id, bot_msg.message_id)
         # audio_task.delay(bot_msg.chat.id, bot_msg.message_id)
     else:
-        normal_audio(bot_msg, client)
+        normal_audio(client, bot_msg)
 
 
 def direct_normal_download(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):

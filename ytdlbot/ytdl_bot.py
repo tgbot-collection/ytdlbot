@@ -415,7 +415,7 @@ def audio_callback(client: Client, callback_query: types.CallbackQuery):
     callback_query.answer(f"Converting to audio...please wait patiently")
     redis.update_metrics("audio_request")
     vmsg = callback_query.message
-    audio_entrance(vmsg, client)
+    audio_entrance(client, vmsg)
 
 
 @app.on_callback_query(filters.regex(r"Local|Celery"))
