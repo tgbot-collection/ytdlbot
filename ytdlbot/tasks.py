@@ -29,9 +29,7 @@ import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from celery import Celery
 from celery.worker.control import Panel
-from pyrogram import Client
-from pyrogram import idle
-from pyrogram import types
+from pyrogram import Client, idle, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
@@ -125,40 +123,38 @@ def forward_video(client, bot_msg, url: str):
     unique = get_unique_clink(url, chat_id)
     cached_fid = redis.get_send_cache(unique)
     if not cached_fid:
+        redis.update_metrics("cache_miss")
         return False
 
-    try:
-        res_msg: "Message" = upload_processor(client, bot_msg, url, cached_fid)
-        obj = res_msg.document or res_msg.video or res_msg.audio or res_msg.animation or res_msg.photo
+    res_msg: "Message" = upload_processor(client, bot_msg, url, cached_fid)
+    obj = res_msg.document or res_msg.video or res_msg.audio or res_msg.animation or res_msg.photo
 
-        caption, _ = gen_cap(bot_msg, url, obj)
-        res_msg.edit_text(caption, reply_markup=gen_video_markup())
-        bot_msg.edit_text(f"Download success!✅✅✅")
-        redis.update_metrics("cache_hit")
-        return True
-    except Exception as e:
-        traceback.print_exc()
-        logging.error("Failed to forward message %s", e)
-        redis.del_send_cache(unique)
-        redis.update_metrics("cache_miss")
+    caption, _ = gen_cap(bot_msg, url, obj)
+    res_msg.edit_text(caption, reply_markup=gen_video_markup())
+    bot_msg.edit_text(f"Download success!✅✅✅")
+    redis.update_metrics("cache_hit")
+    return True
 
 
 def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str):
     payment = Payment()
     chat_id = bot_msg.chat.id
-    if forward_video(client, bot_msg, url):
-        return
-    mode = payment.get_user_settings(chat_id)[-1]
-    if ENABLE_CELERY and mode in [None, "Celery"]:
-        async_task(ytdl_download_task, chat_id, bot_msg.message_id, url)
-        # ytdl_download_task.delay(chat_id, bot_msg.message_id, url)
-    else:
-        ytdl_normal_download(client, bot_msg, url)
+    try:
+        if forward_video(client, bot_msg, url):
+            return
+        mode = payment.get_user_settings(chat_id)[-1]
+        if ENABLE_CELERY and mode in [None, "Celery"]:
+            async_task(ytdl_download_task, chat_id, bot_msg.message_id, url)
+            # ytdl_download_task.delay(chat_id, bot_msg.message_id, url)
+        else:
+            ytdl_normal_download(client, bot_msg, url)
+    except Exception as e:
+        logging.error("Failed to download %s, error: ", url, e)
+        bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[0:4000]}`", disable_web_page_preview=True)
 
 
 def direct_download_entrance(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
     if ENABLE_CELERY:
-        # TODO disable it for now
         direct_normal_download(client, bot_msg, url)
         # direct_download_task.delay(bot_msg.chat.id, bot_msg.message_id, url)
     else:
@@ -228,10 +224,10 @@ def normal_audio(client: Client, bot_msg: typing.Union[types.Message, typing.Cor
     with tempfile.TemporaryDirectory(prefix="ytdl-") as tmp:
         client.send_chat_action(chat_id, "record_audio")
         # just try to download the audio using yt-dlp
-        resp = ytdl_download(orig_url, tmp, status_msg, hijack="bestaudio[ext=m4a]")
+        filepath = ytdl_download(orig_url, tmp, status_msg, hijack="bestaudio[ext=m4a]")
         status_msg.edit_text("Sending audio now...")
         client.send_chat_action(chat_id, "upload_audio")
-        for f in resp["filepath"]:
+        for f in filepath:
             client.send_audio(chat_id, f)
         status_msg.edit_text("✅ Conversion complete.")
         Redis().update_metrics("audio_success")
@@ -264,29 +260,23 @@ def ytdl_normal_download(client: Client, bot_msg: typing.Union[types.Message, ty
     chat_id = bot_msg.chat.id
     temp_dir = tempfile.TemporaryDirectory(prefix="ytdl-")
 
-    result = ytdl_download(url, temp_dir.name, bot_msg)
+    video_paths = ytdl_download(url, temp_dir.name, bot_msg)
     logging.info("Download complete.")
-    if result["status"]:
-        client.send_chat_action(chat_id, "upload_document")
-        video_paths: list = result["filepath"]
-        bot_msg.edit_text("Download complete. Sending now...")
-        try:
-            upload_processor(client, bot_msg, url, video_paths)
-        except pyrogram.errors.Flood as e:
-            logging.critical("FloodWait from Telegram: %s", e)
-            client.send_message(
-                chat_id,
-                f"I'm being rate limited by Telegram. Your video will come after {e.x} seconds. Please wait patiently.",
-            )
-            flood_owner_message(client, e)
-            time.sleep(e.x)
-            upload_processor(client, bot_msg, url, video_paths)
+    client.send_chat_action(chat_id, "upload_document")
+    bot_msg.edit_text("Download complete. Sending now...")
+    try:
+        upload_processor(client, bot_msg, url, video_paths)
+    except pyrogram.errors.Flood as e:
+        logging.critical("FloodWait from Telegram: %s", e)
+        client.send_message(
+            chat_id,
+            f"I'm being rate limited by Telegram. Your video will come after {e.x} seconds. Please wait patiently.",
+        )
+        flood_owner_message(client, e)
+        time.sleep(e.x)
+        upload_processor(client, bot_msg, url, video_paths)
 
-        bot_msg.edit_text("Download success!✅")
-    else:
-        client.send_chat_action(chat_id, "typing")
-        tb = result["error"][0:4000]
-        bot_msg.edit_text(f"Download failed!❌\n\n```{tb}```", disable_web_page_preview=True)
+    bot_msg.edit_text("Download success!✅")
 
     temp_dir.cleanup()
 

@@ -14,6 +14,7 @@ import random
 import re
 import subprocess
 import time
+import traceback
 from io import StringIO
 from unittest.mock import MagicMock
 
@@ -105,28 +106,23 @@ def upload_hook(current, total, bot_msg):
     edit_text(bot_msg, text)
 
 
-def convert_to_mp4(resp: dict, bot_msg):
+def convert_to_mp4(video_paths: list, bot_msg):
     default_type = ["video/x-flv", "video/webm"]
-    if resp["status"]:
-        # all_converted = []
-        for path in resp["filepath"]:
-            # if we can't guess file type, we assume it's video/mp4
-            mime = getattr(filetype.guess(path), "mime", "video/mp4")
-            if mime in default_type:
-                if not can_convert_mp4(path, bot_msg.chat.id):
-                    logging.warning("Conversion abort for %s", bot_msg.chat.id)
-                    bot_msg._client.send_message(
-                        bot_msg.chat.id, "Can't convert your video to streaming format. ffmpeg has been disabled."
-                    )
-                    break
-                edit_text(bot_msg, f"{current_time()}: Converting {path.name} to mp4. Please wait.")
-                new_file_path = path.with_suffix(".mp4")
-                logging.info("Detected %s, converting to mp4...", mime)
-                run_ffmpeg_progressbar(["ffmpeg", "-y", "-i", path, new_file_path], bot_msg)
-                index = resp["filepath"].index(path)
-                resp["filepath"][index] = new_file_path
-
-        return resp
+    # all_converted = []
+    for path in video_paths:
+        # if we can't guess file type, we assume it's video/mp4
+        mime = getattr(filetype.guess(path), "mime", "video/mp4")
+        if mime in default_type:
+            if not can_convert_mp4(path, bot_msg.chat.id):
+                logging.warning("Conversion abort for %s", bot_msg.chat.id)
+                bot_msg._client.send_message(bot_msg.chat.id, "Can't convert your video. ffmpeg has been disabled.")
+                break
+            edit_text(bot_msg, f"{current_time()}: Converting {path.name} to mp4. Please wait.")
+            new_file_path = path.with_suffix(".mp4")
+            logging.info("Detected %s, converting to mp4...", mime)
+            run_ffmpeg_progressbar(["ffmpeg", "-y", "-i", path, new_file_path], bot_msg)
+            index = video_paths.index(path)
+            video_paths[index] = new_file_path
 
 
 class ProgressBar(tqdm):
@@ -154,11 +150,10 @@ def can_convert_mp4(video_path, uid):
     return True
 
 
-def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> dict:
+def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> list:
     payment = Payment()
     chat_id = bm.chat.id
     hijack = kwargs.get("hijack")
-    response = {"status": True, "error": "", "filepath": []}
     output = pathlib.Path(tempdir, "%(title).70s.%(ext)s").as_posix()
     ydl_opts = {
         "progress_hooks": [lambda d: download_hook(d, bm)],
@@ -182,9 +177,11 @@ def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> dict:
     ]
     adjust_formats(chat_id, url, formats, hijack)
     if download_instagram(url, tempdir):
-        return {"status": True, "error": "", "filepath": list(pathlib.Path(tempdir).glob("*"))}
+        return list(pathlib.Path(tempdir).glob("*"))
 
     address = ["::", "0.0.0.0"] if IPv6 else [None]
+    error = None
+    video_paths = None
     for format_ in formats:
         ydl_opts["format"] = format_
         for addr in address:
@@ -194,64 +191,57 @@ def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> dict:
                 logging.info("Downloading for %s with format %s", url, format_)
                 with ytdl.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
-                response["status"] = True
-                response["error"] = ""
-                response["filepath"] = list(pathlib.Path(tempdir).glob("*"))
+                video_paths = list(pathlib.Path(tempdir).glob("*"))
                 break
-            except Exception as e:
-                logging.error("Download failed for %s ", url)
-                response["status"] = False
-                response["error"] = str(e)
-
-        if response["status"]:
+            except Exception:
+                error = traceback.format_exc()
+                logging.error("Download failed for %s - %s, try another way", format_, url)
+        if error is None:
             break
 
-    logging.info("%s - %s", url, response)
-    if response["status"] is False:
-        return response
+    if not video_paths:
+        raise Exception(error)
 
     # convert format if necessary
     settings = payment.get_user_settings(chat_id)
     if settings[2] == "video" or isinstance(settings[2], MagicMock):
         # only convert if send type is video
-        convert_to_mp4(response, bm)
+        convert_to_mp4(video_paths, bm)
     if settings[2] == "audio" or hijack == "bestaudio[ext=m4a]":
-        convert_audio_format(response, bm)
-    # disable it for now
-    # split_large_video(response)
-    return response
+        convert_audio_format(video_paths, bm)
+    # split_large_video(video_paths)
+    return video_paths
 
 
-def convert_audio_format(resp: dict, bm):
+def convert_audio_format(video_paths: list, bm):
     # 1. file is audio, default format
     # 2. file is video, default format
     # 3. non default format
-    if resp["status"]:
-        path: "pathlib.Path"
-        for path in resp["filepath"]:
-            streams = ffmpeg.probe(path)["streams"]
-            if AUDIO_FORMAT is None and len(streams) == 1 and streams[0]["codec_type"] == "audio":
-                logging.info("%s is audio, default format, no need to convert", path)
-            elif AUDIO_FORMAT is None and len(streams) >= 2:
-                logging.info("%s is video, default format, need to extract audio", path)
-                audio_stream = {"codec_name": "m4a"}
-                for stream in streams:
-                    if stream["codec_type"] == "audio":
-                        audio_stream = stream
-                        break
-                ext = audio_stream["codec_name"]
-                new_path = path.with_suffix(f".{ext}")
-                run_ffmpeg_progressbar(["ffmpeg", "-y", "-i", path, "-vn", "-acodec", "copy", new_path], bm)
-                path.unlink()
-                index = resp["filepath"].index(path)
-                resp["filepath"][index] = new_path
-            else:
-                logging.info("Not default format, converting %s to %s", path, AUDIO_FORMAT)
-                new_path = path.with_suffix(f".{AUDIO_FORMAT}")
-                run_ffmpeg_progressbar(["ffmpeg", "-y", "-i", path, new_path], bm)
-                path.unlink()
-                index = resp["filepath"].index(path)
-                resp["filepath"][index] = new_path
+
+    for path in video_paths:
+        streams = ffmpeg.probe(path)["streams"]
+        if AUDIO_FORMAT is None and len(streams) == 1 and streams[0]["codec_type"] == "audio":
+            logging.info("%s is audio, default format, no need to convert", path)
+        elif AUDIO_FORMAT is None and len(streams) >= 2:
+            logging.info("%s is video, default format, need to extract audio", path)
+            audio_stream = {"codec_name": "m4a"}
+            for stream in streams:
+                if stream["codec_type"] == "audio":
+                    audio_stream = stream
+                    break
+            ext = audio_stream["codec_name"]
+            new_path = path.with_suffix(f".{ext}")
+            run_ffmpeg_progressbar(["ffmpeg", "-y", "-i", path, "-vn", "-acodec", "copy", new_path], bm)
+            path.unlink()
+            index = video_paths.index(path)
+            video_paths[index] = new_path
+        else:
+            logging.info("Not default format, converting %s to %s", path, AUDIO_FORMAT)
+            new_path = path.with_suffix(f".{AUDIO_FORMAT}")
+            run_ffmpeg_progressbar(["ffmpeg", "-y", "-i", path, new_path], bm)
+            path.unlink()
+            index = video_paths.index(path)
+            video_paths[index] = new_path
 
 
 def download_instagram(url: str, tempdir: str):
@@ -276,10 +266,10 @@ def download_instagram(url: str, tempdir: str):
         return True
 
 
-def split_large_video(response: dict):
+def split_large_video(video_paths: list):
     original_video = None
     split = False
-    for original_video in response.get("filepath", []):
+    for original_video in video_paths:
         size = os.stat(original_video).st_size
         if size > TG_MAX_SIZE:
             split = True
@@ -288,7 +278,7 @@ def split_large_video(response: dict):
             os.remove(original_video)
 
     if split and original_video:
-        response["filepath"] = [i.as_posix() for i in pathlib.Path(original_video).parent.glob("*")]
+        return [i for i in pathlib.Path(original_video).parent.glob("*")]
 
 
 if __name__ == "__main__":
