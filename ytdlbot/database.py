@@ -41,6 +41,9 @@ class FakeMySQL:
     def close(self):
         pass
 
+    def ping(self, reconnect):
+        pass
+
 
 class Cursor:
     def __init__(self):
@@ -50,7 +53,8 @@ class Cursor:
     def execute(self, *args, **kwargs):
         sql = self.sub(args[0])
         new_args = (sql,) + args[1:]
-        return self.cur.execute(*new_args, **kwargs)
+        with contextlib.suppress(sqlite3.OperationalError):
+            return self.cur.execute(*new_args, **kwargs)
 
     def fetchall(self):
         return self.cur.fetchall()
@@ -245,13 +249,14 @@ class MySQL:
     """
 
     def __init__(self):
-        if MYSQL_HOST:
+        try:
             self.con = pymysql.connect(
                 host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl", charset="utf8mb4"
             )
-        else:
+        except pymysql.err.OperationalError:
             self.con = FakeMySQL()
 
+        self.con.ping(reconnect=True)
         self.cur = self.con.cursor()
         self.init_db()
         super().__init__()
