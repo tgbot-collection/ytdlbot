@@ -62,3 +62,5 @@ FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 5)
 TOKEN_PRICE = os.getenv("BUY_UNIT", 20)  # one USD=20 credits
 
 RATE_LIMIT = os.getenv("RATE_LIMIT", 10)
+
+DSN = os.getenv("DSN")

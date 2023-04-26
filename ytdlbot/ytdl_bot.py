@@ -17,6 +17,7 @@ import typing
 from io import BytesIO
 
 import pyrogram.errors
+import sentry_sdk
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
@@ -29,6 +30,7 @@ from channel import Channel
 from client_init import create_app
 from config import (
     AUTHORIZED_USER,
+    DSN,
     ENABLE_CELERY,
     ENABLE_FFMPEG,
     ENABLE_VIP,
@@ -60,6 +62,8 @@ app = create_app(session)
 logging.info("Authorized users are %s", AUTHORIZED_USER)
 redis = Redis()
 channel = Channel()
+if DSN:
+    sentry_sdk.init(dsn=DSN)
 
 
 def private_use(func):
