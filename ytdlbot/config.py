@@ -11,7 +11,7 @@ import os
 
 # general settings
 WORKERS: int = int(os.getenv("WORKERS", 100))
-PYRO_WORKERS: int = int(os.getenv("PYRO_WORKERS", min(32, os.cpu_count() + 4)))
+PYRO_WORKERS: int = int(os.getenv("PYRO_WORKERS", min(64, (os.cpu_count() + 4) * 10)))
 APP_ID: int = int(os.getenv("APP_ID", 198214))
 APP_HASH = os.getenv("APP_HASH", "1234b90")
 TOKEN = os.getenv("TOKEN", "1234")
@@ -61,6 +61,6 @@ ENABLE_ARIA2 = os.getenv("ENABLE_ARIA2", False)
 FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 5)
 TOKEN_PRICE = os.getenv("BUY_UNIT", 20)  # one USD=20 credits
 
-RATE_LIMIT = os.getenv("RATE_LIMIT", 10)
+RATE_LIMIT = os.getenv("RATE_LIMIT", 20)
 
 DSN = os.getenv("DSN")
