@@ -71,9 +71,10 @@ class Cursor:
 
 class Redis:
     def __init__(self):
-        if REDIS:
+        try:
             self.r = redis.StrictRedis(host=REDIS, db=0, decode_responses=True)
-        else:
+            self.r.ping()
+        except redis.RedisError:
             self.r = fakeredis.FakeStrictRedis(host=REDIS, db=0, decode_responses=True)
 
         db_banner = "=" * 20 + "DB data" + "=" * 20
