@@ -17,6 +17,7 @@ import typing
 from io import BytesIO
 
 import pyrogram.errors
+import requests
 import sentry_sdk
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
@@ -328,6 +329,17 @@ def generate_invoice(amount: int, title: str, description: str, payload: str):
     return invoice
 
 
+def search(kw: str):
+    api = f"https://dmesg.app/ytdlbot.php?search={kw}"
+    # title, url, time, image
+    text, index = "", 1
+    for item in requests.get(api).json()["results"][:10]:
+        item["index"] = index
+        text += "{index}. {title}\n{url}\n{time}\n\n".format(**item)
+        index += 1
+    return text
+
+
 @app.on_message(filters.incoming & filters.text)
 @private_use
 def download_handler(client: Client, message: types.Message):
@@ -342,7 +354,8 @@ def download_handler(client: Client, message: types.Message):
     # check url
     if not re.findall(r"^https?://", url.lower()):
         redis.update_metrics("bad_request")
-        message.reply_text("I think you should send me a link.", quote=True)
+        text = search(url)
+        message.reply_text(text, quote=True)
         return
 
     # disable by default
