@@ -141,13 +141,13 @@ def forward_video(client, bot_msg, url: str):
     return True
 
 
-def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str):
+def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mode=None):
     payment = Payment()
     chat_id = bot_msg.chat.id
     try:
         if forward_video(client, bot_msg, url):
             return
-        mode = payment.get_user_settings(chat_id)[-1]
+        mode = mode or payment.get_user_settings(chat_id)[-1]
         if ENABLE_CELERY and mode in [None, "Celery"]:
             async_task(ytdl_download_task, chat_id, bot_msg.message_id, url)
             # ytdl_download_task.delay(chat_id, bot_msg.message_id, url)

@@ -453,7 +453,7 @@ def periodic_sub_check():
                     bot_msg: typing.Union[types.Message, typing.Coroutine] = app.send_message(
                         uid, f"{video_url} is downloading...", disable_web_page_preview=True
                     )
-                    ytdl_download_entrance(app, bot_msg, video_url)
+                    ytdl_download_entrance(app, bot_msg, video_url, mode="direct")
                 except (exceptions.bad_request_400.PeerIdInvalid, exceptions.bad_request_400.UserIsBlocked) as e:
                     logging.warning("User is blocked or deleted. %s", e)
                     channel.deactivate_user_subscription(uid)
