@@ -51,6 +51,7 @@ To prevent abuse, each user is limited to 5 downloads per 24 hours.
 
 5. I will record your unique ID after a successful payment, which is usually your payment ID or email address.
 
+6. Paid user can change default download mode to Local mode in settings, which is faster. If your used up all your tokens, you will be reset to default mode.
 
 **Download token price:**
 1. Everyone: {FREE_DOWNLOAD} tokens per 24 hours, free of charge.
