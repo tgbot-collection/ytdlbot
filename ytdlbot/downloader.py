@@ -246,6 +246,7 @@ def convert_audio_format(video_paths: list, bm):
 
 def download_instagram(url: str, tempdir: str):
     if url.startswith("https://www.instagram.com"):
+        logging.info("Requesting instagram download link for %s", url)
         api = f"https://ytdlbot.dmesg.app?token={TOKEN}&url={url}"
         res = requests.get(api).json()
         if isinstance(res, dict):

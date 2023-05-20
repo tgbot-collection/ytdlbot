@@ -344,6 +344,8 @@ def search(kw: str):
 
 
 def link_checker(url: str) -> str:
+    if url.startswith("https://www.instagram.com"):
+        return ""
     ytdl = yt_dlp.YoutubeDL()
 
     if (

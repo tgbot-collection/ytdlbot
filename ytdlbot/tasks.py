@@ -154,7 +154,7 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
         else:
             ytdl_normal_download(client, bot_msg, url)
     except Exception as e:
-        logging.error("Failed to download %s, error: ", url, e)
+        logging.error("Failed to download %s, error: %s", url, e)
         bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[0:4000]}`", disable_web_page_preview=True)
 
 
@@ -326,6 +326,7 @@ def upload_processor(client, bot_msg, url, vp_or_fid: typing.Union[str, list]):
     settings = payment.get_user_settings(chat_id)
     if ARCHIVE_ID and isinstance(vp_or_fid, pathlib.Path):
         chat_id = ARCHIVE_ID
+
     if settings[2] == "document":
         logging.info("Sending as document")
         try:
@@ -362,6 +363,7 @@ def upload_processor(client, bot_msg, url, vp_or_fid: typing.Union[str, list]):
             progress_args=(bot_msg,),
         )
     else:
+        # settings==video
         logging.info("Sending as video")
         try:
             res_msg = client.send_video(
@@ -374,27 +376,29 @@ def upload_processor(client, bot_msg, url, vp_or_fid: typing.Union[str, list]):
                 reply_markup=markup,
                 **meta,
             )
-        except ValueError:
-            logging.info("Retry to send as animation")
-            res_msg = client.send_animation(
-                chat_id,
-                vp_or_fid,
-                caption=cap,
-                progress=upload_hook,
-                progress_args=(bot_msg,),
-                reply_markup=markup,
-                **meta,
-            )
-        except FileNotFoundError:
-            # this is likely a photo
-            logging.info("Retry to send as photo")
-            res_msg = client.send_photo(
-                chat_id,
-                vp_or_fid,
-                caption=cap,
-                progress=upload_hook,
-                progress_args=(bot_msg,),
-            )
+        except Exception:
+            # try to send as annimation, photo
+            try:
+                logging.warning("Retry to send as animation")
+                res_msg = client.send_animation(
+                    chat_id,
+                    vp_or_fid,
+                    caption=cap,
+                    progress=upload_hook,
+                    progress_args=(bot_msg,),
+                    reply_markup=markup,
+                    **meta,
+                )
+            except Exception:
+                # this is likely a photo
+                logging.warning("Retry to send as photo")
+                res_msg = client.send_photo(
+                    chat_id,
+                    vp_or_fid,
+                    caption=cap,
+                    progress=upload_hook,
+                    progress_args=(bot_msg,),
+                )
 
     unique = get_unique_clink(url, bot_msg.chat.id)
     obj = res_msg.document or res_msg.video or res_msg.audio or res_msg.animation or res_msg.photo
