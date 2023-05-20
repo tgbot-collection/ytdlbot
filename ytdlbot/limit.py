@@ -102,11 +102,12 @@ class Payment(Redis, MySQL):
         return data
 
     def get_pay_token(self, user_id: int) -> int:
-        self.cur.execute("SELECT token FROM payment WHERE user_id=%s", (user_id,))
-        data = self.cur.fetchall() or [(0,)]
+        self.cur.execute("SELECT token, old_user FROM payment WHERE user_id=%s", (user_id,))
+        data = self.cur.fetchall() or [(0, False)]
         number = sum([i[0] for i in data if i[0]])
-        if number == 0:
-            logging.info("User %s has no token, set download mode to Celery", user_id)
+        if number == 0 and data[0][1] != 1:
+            # not old user, no token
+            logging.warning("User %s has no token, set download mode to Celery", user_id)
             # change download mode to Celery
             self.set_user_settings(user_id, "mode", "Celery")
         return number
