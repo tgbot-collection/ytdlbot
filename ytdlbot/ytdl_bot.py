@@ -354,7 +354,7 @@ def link_checker(url: str) -> str:
 
     if re.findall(r"m3u8|\.m3u8|\.m3u$", url.lower()):
         return "m3u8 links are disabled."
-    if ytdl.extract_info(url, download=False).get("live_status"):
+    if ytdl.extract_info(url, download=False).get("live_status") == "is_live":
         return "Live stream links are disabled. Please download it after the stream ends."
 
 

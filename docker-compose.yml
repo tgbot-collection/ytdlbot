@@ -35,12 +35,14 @@ services:
     volumes:
       - ./data/instagram.com_cookies.txt:/ytdlbot/ytdlbot/instagram.com_cookies.txt
       - ./data/vnstat/:/var/lib/vnstat/
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
 
   flower:
     image: bennythink/ytdlbot
     env_file:
       - env/ytdl.env
-    restart: on-failure
+    restart: unless-stopped
     command: [ "/usr/local/bin/celery",
                "-A", "flower_tasks", "flower",
                "--basic_auth=benny:123456",
@@ -48,4 +50,4 @@ services:
     volumes:
       - ./data/flower:/ytdlbot/ytdlbot/flower
     ports:
-      - "5555:5555"
+      - "127.0.0.1:15555:5555"
