@@ -19,6 +19,7 @@ from io import BytesIO
 import pyrogram.errors
 import requests
 import sentry_sdk
+import yt_dlp
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
@@ -252,7 +253,7 @@ def settings_handler(client: Client, message: types.Message):
     set_mode = data[-1]
     text = {"Local": "Celery", "Celery": "Local"}.get(set_mode, "Local")
     mode_text = f"Download mode: **{set_mode}**"
-    if message.chat.username == OWNER:
+    if message.chat.username == OWNER or payment.get_pay_token(chat_id):
         extra = [InlineKeyboardButton(f"Change download mode to {text}", callback_data=text)]
     else:
         extra = []
@@ -341,6 +342,22 @@ def search(kw: str):
     return text
 
 
+def link_checker(url: str) -> str:
+    ytdl = yt_dlp.YoutubeDL()
+
+    if (
+        not PLAYLIST_SUPPORT
+        and re.findall(r"^https://www\.youtube\.com/channel/", Channel.extract_canonical_link(url))
+        or "list" in url
+    ):
+        return "Playlist or channel links are disabled."
+
+    if re.findall(r"m3u8|\.m3u8|\.m3u$", url.lower()):
+        return "m3u8 links are disabled."
+    if ytdl.extract_info(url, download=False).get("live_status"):
+        return "Live stream links are disabled. Please download it after the stream ends."
+
+
 @app.on_message(filters.incoming & filters.text)
 @private_use
 def download_handler(client: Client, message: types.Message):
@@ -359,16 +376,10 @@ def download_handler(client: Client, message: types.Message):
         message.reply_text(text, quote=True)
         return
 
-    # disable by default
-    if not PLAYLIST_SUPPORT:
-        if re.findall(r"^https://www\.youtube\.com/channel/", Channel.extract_canonical_link(url)) or "list" in url:
-            message.reply_text(
-                "The ability to download a channel or list has been disabled."
-                "Kindly provide me with the specific link for each video instead.",
-                quote=True,
-            )
-            redis.update_metrics("reject_channel")
-            return
+    if text := link_checker(url):
+        message.reply_text(text, quote=True)
+        redis.update_metrics("reject_link_checker")
+        return
 
     # old user is not limited by token
     if ENABLE_VIP and not payment.check_old_user(chat_id):
@@ -452,9 +463,9 @@ def periodic_sub_check():
             for uid in uids:
                 try:
                     bot_msg: typing.Union[types.Message, typing.Coroutine] = app.send_message(
-                        uid, f"{video_url} is downloading...", disable_web_page_preview=True
+                        uid, f"{video_url} is out. Watch it on YouTube"
                     )
-                    ytdl_download_entrance(app, bot_msg, video_url, mode="direct")
+                    # ytdl_download_entrance(app, bot_msg, video_url, mode="direct")
                 except (exceptions.bad_request_400.PeerIdInvalid, exceptions.bad_request_400.UserIsBlocked) as e:
                     logging.warning("User is blocked or deleted. %s", e)
                     channel.deactivate_user_subscription(uid)
