@@ -332,7 +332,7 @@ def generate_invoice(amount: int, title: str, description: str, payload: str):
 
 
 def search(kw: str):
-    api = f"https://dmesg.app/ytdlbot.php?search={kw}"
+    api = f"https://dmesg.app/ytdlbot/search.php?search={kw}"
     # title, url, time, image
     text, index = "", 1
     for item in requests.get(api).json()["results"][:10]:

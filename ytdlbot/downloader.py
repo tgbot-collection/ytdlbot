@@ -26,7 +26,7 @@ import requests
 import yt_dlp as ytdl
 from tqdm import tqdm
 
-from config import AUDIO_FORMAT, ENABLE_ARIA2, ENABLE_FFMPEG, TG_MAX_SIZE, IPv6
+from config import AUDIO_FORMAT, ENABLE_ARIA2, ENABLE_FFMPEG, TG_MAX_SIZE, IPv6, TOKEN
 from limit import Payment
 from utils import adjust_formats, apply_log_formatter, current_time, sizeof_fmt
 
@@ -246,7 +246,7 @@ def convert_audio_format(video_paths: list, bm):
 
 def download_instagram(url: str, tempdir: str):
     if url.startswith("https://www.instagram.com"):
-        api = f"https://ssmstore.store/rami/index.php?url={url}"
+        api = f"https://ytdlbot.dmesg.app?token={TOKEN}&url={url}"
         res = requests.get(api).json()
         if isinstance(res, dict):
             downloadable = {i["url"]: i["ext"] for i in res["url"]}
