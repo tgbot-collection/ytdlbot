@@ -15,7 +15,7 @@ fakeredis==2.12.1
 supervisor==4.2.5
 tgbot-ping==1.0.7
 redis==4.5.4
-requests==2.30.0
+requests==2.31.0
 tqdm==4.65.0
 requests-toolbelt==1.0.0
 ffpb==0.4.1
