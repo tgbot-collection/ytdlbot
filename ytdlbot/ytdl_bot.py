@@ -305,6 +305,7 @@ def buy_handler(client: Client, message: types.Message):
             message="Buy more download token",
         )
     )
+    client.send_message(chat_id, "In /settings, change your download mode to Local will make the download faster!")
 
 
 @app.on_message(filters.command(["redeem"]))
