@@ -19,8 +19,7 @@ class Channel(Payment):
         if ENABLE_VIP:
             self.cur.execute("select count(user_id) from subscribe where user_id=%s", (user_id,))
             usage = int(self.cur.fetchone()[0])
-            if usage >= 5:
-                # TODO: 5 tokens for one more subscription?
+            if usage >= 10:
                 logging.warning("User %s has subscribed %s channels", user_id, usage)
                 return "You have subscribed too many channels. Maximum 5 channels."
 

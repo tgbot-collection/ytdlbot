@@ -23,7 +23,6 @@ from utils import get_func_queue
 
 class BotText:
     start = "Welcome to YouTube Download bot. Type /help for more information."
-    rate_limit = "**I'm being rate limited by Telegram. Please expect a delay in processing your request.**"
     help = f"""
 1. This bot should work at all times. If it doesn't, please wait for a few minutes and try sending the link again.
 
@@ -93,7 +92,7 @@ Sending format: **{1}**
         if ENABLE_CELERY and reserved:
             text = f"Too many tasks. Your tasks was added to the reserved queue {reserved}."
         else:
-            text = "Your task was added to active queue.\nProcessing...\n\n" + BotText.rate_limit
+            text = "Your task was added to active queue.\nProcessing...\n\n"
 
         return text
 
