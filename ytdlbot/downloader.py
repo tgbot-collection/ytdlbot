@@ -26,7 +26,7 @@ import requests
 import yt_dlp as ytdl
 from tqdm import tqdm
 
-from config import AUDIO_FORMAT, ENABLE_ARIA2, ENABLE_FFMPEG, TG_MAX_SIZE, IPv6, TOKEN
+from config import AUDIO_FORMAT, ENABLE_ARIA2, ENABLE_FFMPEG, TG_MAX_SIZE, IPv6, SS_YOUTUBE
 from limit import Payment
 from utils import adjust_formats, apply_log_formatter, current_time, sizeof_fmt
 
@@ -247,7 +247,7 @@ def convert_audio_format(video_paths: list, bm):
 def download_instagram(url: str, tempdir: str):
     if url.startswith("https://www.instagram.com"):
         logging.info("Requesting instagram download link for %s", url)
-        api = f"https://ytdlbot.dmesg.app?token={TOKEN}&url={url}"
+        api = SS_YOUTUBE + f"&url={url}"
         res = requests.get(api).json()
         if isinstance(res, dict):
             downloadable = {i["url"]: i["ext"] for i in res["url"]}
