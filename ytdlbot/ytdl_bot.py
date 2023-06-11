@@ -12,6 +12,7 @@ import logging
 import os
 import random
 import re
+import tempfile
 import time
 import traceback
 import typing
@@ -364,62 +365,69 @@ def link_checker(url: str) -> str:
             return "Live stream links are disabled. Please download it after the stream ends."
 
 
-@app.on_message(filters.incoming & filters.text)
+@app.on_message(filters.incoming & (filters.text | filters.document))
 @private_use
 def download_handler(client: Client, message: types.Message):
     payment = Payment()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, "typing")
     redis.user_count(chat_id)
+    if message.document:
+        with tempfile.NamedTemporaryFile(mode="r+") as tf:
+            logging.info("Downloading file to %s", tf.name)
+            message.download(tf.name)
+            contents = open(tf.name, "r").read()  # don't know why
+        urls = contents.split()
+    else:
+        urls = [re.sub(r"/ytdl\s*", "", message.text)]
+        logging.info("start %s", urls)
 
-    url = re.sub(r"/ytdl\s*", "", message.text)
-    logging.info("start %s", url)
-
-    # check url
-    if not re.findall(r"^https?://", url.lower()):
-        redis.update_metrics("bad_request")
-        text = search(url)
-        message.reply_text(text, quote=True)
-        return
-
-    if text := link_checker(url):
-        message.reply_text(text, quote=True)
-        redis.update_metrics("reject_link_checker")
-        return
-
-    # old user is not limited by token
-    if ENABLE_VIP and not payment.check_old_user(chat_id):
-        free, pay, reset = payment.get_token(chat_id)
-        if free + pay <= 0:
-            message.reply_text(
-                f"You don't have enough token. Please wait until {reset} or /buy more token.", quote=True
-            )
-            redis.update_metrics("reject_token")
+    for url in urls:
+        # check url
+        if not re.findall(r"^https?://", url.lower()):
+            redis.update_metrics("bad_request")
+            text = search(url)
+            message.reply_text(text, quote=True)
             return
-        else:
-            payment.use_token(chat_id)
 
-    redis.update_metrics("video_request")
+        if text := link_checker(url):
+            message.reply_text(text, quote=True)
+            redis.update_metrics("reject_link_checker")
+            return
 
-    text = BotText.get_receive_link_text()
-    try:
-        # raise pyrogram.errors.exceptions.FloodWait(10)
-        bot_msg: typing.Union[types.Message, typing.Coroutine] = message.reply_text(text, quote=True)
-    except pyrogram.errors.Flood as e:
-        f = BytesIO()
-        f.write(str(e).encode())
-        f.write(b"Your job will be done soon. Just wait! Don't rush.")
-        f.name = "Please don't flood me.txt"
-        bot_msg = message.reply_document(
-            f, caption=f"Flood wait! Please wait {e.x} seconds...." f"Your job will start automatically", quote=True
-        )
-        f.close()
-        client.send_message(OWNER, f"Flood wait! 🙁 {e.x} seconds....")
-        time.sleep(e.x)
+        # old user is not limited by token
+        if ENABLE_VIP and not payment.check_old_user(chat_id):
+            free, pay, reset = payment.get_token(chat_id)
+            if free + pay <= 0:
+                message.reply_text(
+                    f"You don't have enough token. Please wait until {reset} or /buy more token.", quote=True
+                )
+                redis.update_metrics("reject_token")
+                return
+            else:
+                payment.use_token(chat_id)
 
-    client.send_chat_action(chat_id, "upload_video")
-    bot_msg.chat = message.chat
-    ytdl_download_entrance(client, bot_msg, url)
+        redis.update_metrics("video_request")
+
+        text = BotText.get_receive_link_text()
+        try:
+            # raise pyrogram.errors.exceptions.FloodWait(10)
+            bot_msg: typing.Union[types.Message, typing.Coroutine] = message.reply_text(text, quote=True)
+        except pyrogram.errors.Flood as e:
+            f = BytesIO()
+            f.write(str(e).encode())
+            f.write(b"Your job will be done soon. Just wait! Don't rush.")
+            f.name = "Please don't flood me.txt"
+            bot_msg = message.reply_document(
+                f, caption=f"Flood wait! Please wait {e.x} seconds...." f"Your job will start automatically", quote=True
+            )
+            f.close()
+            client.send_message(OWNER, f"Flood wait! 🙁 {e.x} seconds....")
+            time.sleep(e.x)
+
+        client.send_chat_action(chat_id, "upload_video")
+        bot_msg.chat = message.chat
+        ytdl_download_entrance(client, bot_msg, url)
 
 
 @app.on_callback_query(filters.regex(r"document|video|audio"))
