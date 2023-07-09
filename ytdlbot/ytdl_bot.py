@@ -352,8 +352,10 @@ def link_checker(url: str) -> str:
 
     if (
         not PLAYLIST_SUPPORT
-        and re.findall(r"^https://www\.youtube\.com/channel/", Channel.extract_canonical_link(url))
-        or "list" in url
+        and (
+         re.findall(r"^https://www\.youtube\.com/channel/", Channel.extract_canonical_link(url))
+         or "list" in url
+        )
     ):
         return "Playlist or channel links are disabled."
 
