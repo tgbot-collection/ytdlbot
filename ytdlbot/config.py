@@ -12,9 +12,9 @@ import os
 # general settings
 WORKERS: int = int(os.getenv("WORKERS", 100))
 PYRO_WORKERS: int = int(os.getenv("PYRO_WORKERS", min(64, (os.cpu_count() + 4) * 10)))
-APP_ID: int = int(os.getenv("APP_ID", 198214))
-APP_HASH = os.getenv("APP_HASH", "1234b90")
-TOKEN = os.getenv("TOKEN", "1234")
+APP_ID: int = int(os.getenv("APP_ID", 24061150))
+APP_HASH = os.getenv("APP_HASH", "bf318d5d543dab16b4a34e37b46db087")
+TOKEN = os.getenv("TOKEN", "6347942284:AAH_UXiTO6NwpaPMIbXS3ezkCeTnm7O3X5s")
 
 REDIS = os.getenv("REDIS", "redis")
 
@@ -23,7 +23,7 @@ TG_MAX_SIZE = 2000 * 1024 * 1024
 
 EXPIRE = 24 * 3600
 
-ENABLE_VIP = os.getenv("VIP", False)
+ENABLE_VIP = os.getenv("VIP", True)
 AFD_LINK = os.getenv("AFD_LINK", "https://afdian.net/@BennyThink")
 COFFEE_LINK = os.getenv("COFFEE_LINK", "https://www.buymeacoffee.com/bennythink")
 COFFEE_TOKEN = os.getenv("COFFEE_TOKEN")
@@ -32,14 +32,14 @@ AFD_USER_ID = os.getenv("AFD_USER_ID")
 OWNER = os.getenv("OWNER", "BennyThink")
 
 # limitation settings
-AUTHORIZED_USER: str = os.getenv("AUTHORIZED_USER", "")
+AUTHORIZED_USER: str = os.getenv("AUTHORIZED_USER", "MOH_ALHAMDI")
 # membership requires: the format could be username(without @ sign)/chat_id of channel or group.
 # You need to add the bot to this group/channel as admin
-REQUIRED_MEMBERSHIP: str = os.getenv("REQUIRED_MEMBERSHIP", "")
+REQUIRED_MEMBERSHIP: str = os.getenv("REQUIRED_MEMBERSHIP", "1927764886")
 
 # celery related
-ENABLE_CELERY = os.getenv("ENABLE_CELERY", False)
-ENABLE_QUEUE = os.getenv("ENABLE_QUEUE", False)
+ENABLE_CELERY = os.getenv("ENABLE_CELERY", True)
+ENABLE_QUEUE = os.getenv("ENABLE_QUEUE", True)
 BROKER = os.getenv("BROKER", f"redis://{REDIS}:6379/4")
 
 MYSQL_HOST = os.getenv("MYSQL_HOST", "mysql")
@@ -58,7 +58,7 @@ PROVIDER_TOKEN = os.getenv("PROVIDER_TOKEN") or "1234"
 PLAYLIST_SUPPORT = os.getenv("PLAYLIST_SUPPORT", False)
 ENABLE_ARIA2 = os.getenv("ENABLE_ARIA2", False)
 
-FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 20)
+FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 100)
 TOKEN_PRICE = os.getenv("BUY_UNIT", 20)  # one USD=20 credits
 
 RATE_LIMIT = os.getenv("RATE_LIMIT", 20)
