@@ -3,6 +3,7 @@
 
 # ytdlbot - downloader.py
 # 8/14/21 16:53
+#
 
 __author__ = "Benny <benny.think@gmail.com>"
 
@@ -17,7 +18,7 @@ import traceback
 from io import StringIO
 from unittest.mock import MagicMock
 
-import fakeredis  
+import fakeredis
 import ffmpeg
 import ffpb
 import filetype
@@ -26,7 +27,7 @@ import yt_dlp as ytdl
 from tqdm import tqdm
 
 from config import AUDIO_FORMAT, ENABLE_ARIA2, ENABLE_FFMPEG, TG_MAX_SIZE, IPv6, SS_YOUTUBE
-from limit import Payment  
+from limit import Payment
 from utils import adjust_formats, apply_log_formatter, current_time, sizeof_fmt
 
 r = fakeredis.FakeStrictRedis()
@@ -35,7 +36,7 @@ apply_log_formatter()
 
 def edit_text(bot_msg, text: str):
     key = f"{bot_msg.chat.id}-{bot_msg.message_id}"
-    # إذا كانت المفتاح موجودة ، فلا ينبغي إرسال رسالة تعديل
+    # if the key exists, we shouldn't send edit message
     if not r.exists(key):
         time.sleep(random.random())
         r.set(key, "ok", ex=3)
@@ -57,7 +58,7 @@ def tqdm_progress(desc, total, finished, speed="", eta=""):
         ascii=False,
         unit_scale=True,
         ncols=30,
-        bar_format="{l_bar}{bar} |{n_fmt}/{total_fmt} ", 
+        bar_format="{l_bar}{bar} |{n_fmt}/{total_fmt} ",
     )
     raw_output = f.getvalue()
     tqdm_output = raw_output.split("|")
@@ -66,10 +67,10 @@ def tqdm_progress(desc, total, finished, speed="", eta=""):
     text = f"""
 {desc}
 
-{progress}  
+{progress}
 {detail}
-{more("السرعة:", speed)}
-{more("المتبقي:", eta)}
+{more("Speed:", speed)}
+{more("ETA:", eta)}
     """
     f.close()
     return text
@@ -80,9 +81,9 @@ def remove_bash_color(text):
 
 
 def download_hook(d: dict, bot_msg):
-    # بما أننا نستخدم celery ، قد تكون موقع الخادم موجودة في قارة مختلفة.
-    # لذلك ، لا يمكننا تشغيل الخطاف بشكل متكرر جدًا.
-    # المفتاح هو user_id + download_link
+    # since we're using celery, server location may be located in different continent.
+    # Therefore, we can't trigger the hook very often.
+    # the key is user_id + download_link
     original_url = d["info_dict"]["original_url"]
     key = f"{bot_msg.chat.id}-{original_url}"
 
@@ -90,18 +91,18 @@ def download_hook(d: dict, bot_msg):
         downloaded = d.get("downloaded_bytes", 0)
         total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
         if total > TG_MAX_SIZE:
-            raise Exception(f"حجم ملف التنزيل الخاص بك {sizeof_fmt(total)} كبير جدًا بالنسبة لتليجرام.")
+            raise Exception(f"Your download file size {sizeof_fmt(total)} is too large for Telegram.")
 
         # percent = remove_bash_color(d.get("_percent_str", "N/A"))
-        speed = remove_bash_color(d.get("_speed_str", "غير متوفر"))
+        speed = remove_bash_color(d.get("_speed_str", "N/A"))
         eta = remove_bash_color(d.get("_eta_str", d.get("eta")))
-        text = tqdm_progress("جاري التنزيل...", total, downloaded, speed, eta)
+        text = tqdm_progress("Downloading...", total, downloaded, speed, eta)
         edit_text(bot_msg, text)
         r.set(key, "ok", ex=5)
 
 
 def upload_hook(current, total, bot_msg):
-    text = tqdm_progress("جاري الرفع...", total, current)
+    text = tqdm_progress("Uploading...", total, current)
     edit_text(bot_msg, text)
 
 
@@ -109,16 +110,16 @@ def convert_to_mp4(video_paths: list, bot_msg):
     default_type = ["video/x-flv", "video/webm"]
     # all_converted = []
     for path in video_paths:
-        # إذا لم نتمكن من تخمين نوع الملف ، نفترض أنه video/mp4
+        # if we can't guess file type, we assume it's video/mp4
         mime = getattr(filetype.guess(path), "mime", "video/mp4")
         if mime in default_type:
             if not can_convert_mp4(path, bot_msg.chat.id):
-                logging.warning("تم إلغاء التحويل لـ %s", bot_msg.chat.id)
-                bot_msg._client.send_message(bot_msg.chat.id, "لا يمكن تحويل مقطع الفيديو الخاص بك. تم تعطيل ffmpeg.")
+                logging.warning("Conversion abort for %s", bot_msg.chat.id)
+                bot_msg._client.send_message(bot_msg.chat.id, "Can't convert your video. ffmpeg has been disabled.")
                 break
-            edit_text(bot_msg, f"{current_time()}: جاري تحويل {path.name} إلى mp4. يرجى الانتظار.")
+            edit_text(bot_msg, f"{current_time()}: Converting {path.name} to mp4. Please wait.")
             new_file_path = path.with_suffix(".mp4")
-            logging.info("تم اكتشاف %s ، يتم التحويل إلى mp4...", mime)
+            logging.info("Detected %s, converting to mp4...", mime)
             run_ffmpeg_progressbar(["ffmpeg", "-y", "-i", path, new_file_path], bot_msg)
             index = video_paths.index(path)
             video_paths[index] = new_file_path
@@ -133,7 +134,7 @@ class ProgressBar(tqdm):
 
     def update(self, n=1):
         super().update(n)
-        t = tqdm_progress("جاري التحويل...", self.total, self.n)
+        t = tqdm_progress("Converting...", self.total, self.n)
         edit_text(self.bot_msg, t)
 
 
