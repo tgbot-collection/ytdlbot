@@ -32,7 +32,7 @@ AFD_USER_ID = os.getenv("AFD_USER_ID")
 OWNER = os.getenv("OWNER", "BennyThink")
 
 # limitation settings
-AUTHORIZED_USER: str = os.getenv("AUTHORIZED_USER", "MOH_ALHAMDI")
+AUTHORIZED_USER: str = os.getenv("AUTHORIZED_USER", "5001758934")
 # membership requires: the format could be username(without @ sign)/chat_id of channel or group.
 # You need to add the bot to this group/channel as admin
 REQUIRED_MEMBERSHIP: str = os.getenv("REQUIRED_MEMBERSHIP", "alhamditecnoo")
