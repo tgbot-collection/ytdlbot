@@ -66,20 +66,19 @@ class BotText:
 3. دفع Telegram: سيتم تفعيل دفعتك تلقائيًا.
 
 تريد شراء المزيد من الرموز في وقت واحد؟ دعنا نقول 100؟ تفضل! `/buy 123`
-    """
-    private = "هذا البوت للاستخدام الخاص"
-    membership_require = f"تحتاج إلى الانضمام إلى هذه المجموعة أو القناة لاستخدام هذا البوت\\n\\nhttps://t.me/{REQUIRED_MEMBERSHIP}"
-
+        """
+    private = "هذا البوت للاستخدام الشخصي"
+    membership_require = f"عليك الاشتراك في هذه القناه لاستخدام البوت\n\nhttps://t.me/{REQUIRED_MEMBERSHIP}"
     settings = """
-يرجى اختيار التنسيق وجودة الفيديو المرغوبة.ملاحظة أن هذه الإعدادات تنطبق فقط على مقاطع الفيديو من YouTube.
+Please choose the desired format and video quality for your video. Note that these settings only **apply to YouTube videos**.
 
-يوصى بالجودة العالية. الجودة المتوسطة هي 720P ، في حين أن الجودة المنخفضة هي 480P.
+High quality is recommended. Medium quality is 720P, while low quality is 480P.
 
-يرجى مراعاة أنه إذا اخترت إرسال الفيديو كمستند ، فلن يكون من الممكن بثه.
+Please keep in mind that if you choose to send the video as a document, it will not be possible to stream it.
 
-إعداداتك الحالية:
-جودة الفيديو: **{0}**
-تنسيق الإرسال: **{1}**
+Your current settings:
+Video quality: **{0}**
+Sending format: **{1}**
 """
     custom_text = os.getenv("CUSTOM_TEXT", "")
 
