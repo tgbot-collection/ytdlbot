@@ -23,7 +23,7 @@ TG_MAX_SIZE = 2000 * 1024 * 1024
 
 EXPIRE = 24 * 3600
 
-ENABLE_VIP = os.getenv("VIP", True)
+ENABLE_VIP = os.getenv("VIP", False)
 AFD_LINK = os.getenv("AFD_LINK", "https://afdian.net/@BennyThink")
 COFFEE_LINK = os.getenv("COFFEE_LINK", "https://www.buymeacoffee.com/bennythink")
 COFFEE_TOKEN = os.getenv("COFFEE_TOKEN")
@@ -38,8 +38,8 @@ AUTHORIZED_USER: str = os.getenv("AUTHORIZED_USER", "5001758934")
 REQUIRED_MEMBERSHIP: str = os.getenv("REQUIRED_MEMBERSHIP", "alhamditecnoo")
 
 # celery related
-ENABLE_CELERY = os.getenv("ENABLE_CELERY", True)
-ENABLE_QUEUE = os.getenv("ENABLE_QUEUE", True)
+ENABLE_CELERY = os.getenv("ENABLE_CELERY", False)
+ENABLE_QUEUE = os.getenv("ENABLE_QUEUE", False)
 BROKER = os.getenv("BROKER", f"redis://{REDIS}:6379/4")
 
 MYSQL_HOST = os.getenv("MYSQL_HOST", "mysql")
