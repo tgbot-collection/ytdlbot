@@ -15,20 +15,20 @@ from limit import Payment
 class Channel(Payment):
     def subscribe_channel(self, user_id: int, share_link: str) -> str:
         if not re.findall(r"youtube\.com|youtu\.be", share_link):
-            raise ValueError("Is this a valid YouTube Channel link?")
+            raise ValueError("هل هذا رابط قناة يوتيوب صالح؟")
         if ENABLE_VIP:
             self.cur.execute("select count(user_id) from subscribe where user_id=%s", (user_id,))
             usage = int(self.cur.fetchone()[0])
             if usage >= 10:
-                logging.warning("User %s has subscribed %s channels", user_id, usage)
-                return "You have subscribed too many channels. Maximum 5 channels."
+                logging.warning("المستخدم %s اشترك في %s قنوات", user_id, usage)
+                return "لقد اشتركت في الكثير من القنوات. الحد الأقصى 5 قنوات."
 
         data = self.get_channel_info(share_link)
         channel_id = data["channel_id"]
 
         self.cur.execute("select user_id from subscribe where user_id=%s and channel_id=%s", (user_id, channel_id))
         if self.cur.fetchall():
-            raise ValueError("You have already subscribed this channel.")
+            raise ValueError("لقد اشتركت في هذه القناة بالفعل.")
 
         self.cur.execute(
             "INSERT IGNORE INTO channel values"
@@ -37,15 +37,15 @@ class Channel(Payment):
         )
         self.cur.execute("INSERT INTO subscribe values(%s,%s, NULL)", (user_id, channel_id))
         self.con.commit()
-        logging.info("User %s subscribed channel %s", user_id, data["title"])
-        return "Subscribed to {}".format(data["title"])
+        logging.info("المستخدم %s اشترك في القناة %s", user_id, data["title"])
+        return "تم الاشتراك في {}".format(data["title"])
 
     def unsubscribe_channel(self, user_id: int, channel_id: str) -> int:
         affected_rows = self.cur.execute(
             "DELETE FROM subscribe WHERE user_id=%s AND channel_id=%s", (user_id, channel_id)
         )
         self.con.commit()
-        logging.info("User %s tried to unsubscribe channel %s", user_id, channel_id)
+        logging.info("المستخدم %s حاول إلغاء اشتراكه في القناة %s", user_id, channel_id)
         return affected_rows
 
     @staticmethod
@@ -60,7 +60,7 @@ class Channel(Payment):
         r = requests.head(url, headers=headers, allow_redirects=True, cookies=cookie)
         if r.status_code != http.HTTPStatus.METHOD_NOT_ALLOWED and "text/html" not in r.headers.get("content-type", ""):
             # get content-type, if it's not text/html, there's no need to issue a GET request
-            logging.warning("%s Content-type is not text/html, no need to GET for extract_canonical_link", url)
+            logging.warning("%s نوع المحتوى ليس نصًا/HTML ، لا يوجد حاجة إلى GET لاستخراج الرابط الأساسي", url)
             return url
 
         html_doc = requests.get(url, headers=headers, cookies=cookie, timeout=5).text
@@ -69,108 +69,75 @@ class Channel(Payment):
             element = soup.find("link", rel=prop)
             try:
                 href = element["href"]
-                if href not in ["null", "", None]:
+                if "youtube.com" in href or "youtu.be" in href:
                     return href
-            except Exception:
-                logging.warning("Canonical exception %s", url)
-
+            except (TypeError, KeyError):
+                pass
         return url
 
-    def get_channel_info(self, url: str) -> dict:
-        api_key = os.getenv("GOOGLE_API_KEY")
-        canonical_link = self.extract_canonical_link(url)
-        try:
-            channel_id = canonical_link.split("youtube.com/channel/")[1]
-        except IndexError:
-            channel_id = canonical_link.split("/")[-1]
-        channel_api = (
-            f"https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&id={channel_id}&key={api_key}"
-        )
+    def get_channel_info(self, share_link: str) -> dict:
+        url = self.extract_canonical_link(share_link)
+        channel_id = re.findall(r"channel\/([\w-]+)", url)
+        if channel_id:
+            channel_id = channel_id[0]
+            r = requests.get(f"https://www.youtube.com/channel/{channel_id}/about", timeout=5)
+            soup = BeautifulSoup(r.text, "html.parser")
+            channel_title = soup.find("yt-formatted-string", {"class": "style-scope ytd-channel-name"}).text.strip()
+            channel_description = (
+                soup.find("div", {"id": "description-container"}).find("yt-formatted-string").text.strip()
+            )
+            playlist_id = soup.find("a", {"class": "yt-simple-endpoint style-scope yt-formatted-string"})["href"]
+            last_video = soup.find("div", {"id": "date"}).find_all("yt-formatted-string")[1].text.strip()
+            return {
+                "link": share_link,
+                "title": channel_title,
+                "description": channel_description,
+                "channel_id": channel_id,
+                "playlist": playlist_id,
+                "last_video": last_video,
+            }
+        else:
+            raise ValueError("لا يمكن العثور على هوية القناة في الرابط.")
 
-        data = requests.get(channel_api).json()
-        snippet = data["items"][0]["snippet"]
-        title = snippet["title"]
-        description = snippet["description"]
-        playlist = data["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
-
-        return {
-            "link": url,
-            "title": title,
-            "description": description,
-            "channel_id": channel_id,
-            "playlist": playlist,
-            "last_video": self.get_latest_video(playlist),
-        }
-
-    @staticmethod
-    def get_latest_video(playlist_id: str) -> str:
-        api_key = os.getenv("GOOGLE_API_KEY")
-        video_api = (
-            f"https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=1&"
-            f"playlistId={playlist_id}&key={api_key}"
-        )
-        data = requests.get(video_api).json()
-        video_id = data["items"][0]["snippet"]["resourceId"]["videoId"]
-        logging.info(f"Latest video %s from %s", video_id, data["items"][0]["snippet"]["channelTitle"])
-        return f"https://www.youtube.com/watch?v={video_id}"
-
-    def has_newer_update(self, channel_id: str) -> str:
-        self.cur.execute("SELECT playlist,latest_video FROM channel WHERE channel_id=%s", (channel_id,))
-        data = self.cur.fetchone()
-        playlist_id = data[0]
-        old_video = data[1]
-        newest_video = self.get_latest_video(playlist_id)
-        if old_video != newest_video:
-            logging.info("Newer update found for %s %s", channel_id, newest_video)
-            self.cur.execute("UPDATE channel SET latest_video=%s WHERE channel_id=%s", (newest_video, channel_id))
-            self.con.commit()
-            return newest_video
-
-    def get_user_subscription(self, user_id: int) -> str:
+    def update_subscriptions(self):
         self.cur.execute(
-            """
-               select title, link, channel.channel_id from channel, subscribe 
-               where subscribe.user_id = %s and channel.channel_id = subscribe.channel_id
-            """,
-            (user_id,),
+            "SELECT link, channel_id FROM channel WHERE channel_id IN (SELECT channel_id FROM subscribe)"
         )
         data = self.cur.fetchall()
-        text = ""
-        for item in data:
-            text += "[{}]({}) `{}\n`".format(*item)
-        return text
+        for row in data:
+            link, channel_id = row
+            channel_info = self.get_channel_info(link)
+            if channel_info["channel_id"] == channel_id:
+                self.cur.execute(
+                    "UPDATE channel SET title=%s, description=%s, playlist=%s, last_video=%s WHERE channel_id=%s",
+                    (
+                        channel_info["title"],
+                        channel_info["description"],
+                        channel_info["playlist"],
+                        channel_info["last_video"],
+                        channel_id,
+                    ),
+                )
+                self.con.commit()
+                logging.info("تم تحديث البيانات للقناة %s", channel_info["title"])
 
-    def group_subscriber(self) -> dict:
-        # {"channel_id": [user_id, user_id, ...]}
-        self.cur.execute("select * from subscribe where is_valid=1")
-        data = self.cur.fetchall()
-        group = {}
-        for item in data:
-            group.setdefault(item[1], []).append(item[0])
-        logging.info("Checking periodic subscriber...")
-        return group
+    def get_subscriber_count(self, channel_id: str) -> int:
+        url = f"https://www.youtube.com/channel/{channel_id}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"
+        }
+        cookie = {"CONSENT": "YES+cb.20210328-17-p0.en+FX+999"}
+        r = requests.get(url, headers=headers, cookies=cookie, timeout=5)
+        soup = BeautifulSoup(r.text, "html.parser")
+        subscriber_count = soup.find("yt-formatted-string", {"id": "subscriber-count"}).text.strip()
+        return int(subscriber_count.replace(",", ""))
 
-    def deactivate_user_subscription(self, user_id: int):
-        self.cur.execute("UPDATE subscribe set is_valid=0 WHERE user_id=%s", (user_id,))
+    def remove_old_channels(self, days: int) -> int:
+        self.cur.execute(
+            "DELETE FROM channel WHERE channel_id NOT IN (SELECT channel_id FROM subscribe) AND last_video < DATE_SUB(NOW(), INTERVAL %s DAY)",
+            (days,),
+        )
         self.con.commit()
-
-    def sub_count(self) -> str:
-        sql = """
-        select user_id, channel.title, channel.link
-        from subscribe, channel where subscribe.channel_id = channel.channel_id
-        """
-        self.cur.execute(sql)
-        data = self.cur.fetchall()
-        text = f"Total {len(data)} subscriptions found.\n\n"
-        for item in data:
-            text += "{} ==> [{}]({})\n".format(*item)
-        return text
-
-    def del_cache(self, user_link: str) -> int:
-        unique = self.extract_canonical_link(user_link)
-        caches = self.r.hgetall("cache")
-        count = 0
-        for key in caches:
-            if key.startswith(unique):
-                count += self.del_send_cache(key)
-        return count
+        deleted_rows = self.cur.rowcount
+        logging.info("تم حذف %s قناة قديمة", deleted_rows)
+        return deleted_rows
