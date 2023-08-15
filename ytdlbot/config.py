@@ -63,5 +63,4 @@ TOKEN_PRICE = os.getenv("BUY_UNIT", 20)  # one USD=20 credits
 
 RATE_LIMIT = os.getenv("RATE_LIMIT", 20)
 
-DSN = os.getenv("DSN")
 SS_YOUTUBE = os.getenv("SS_YOUTUBE", "https://ytdlbot.dmesg.app?token=123456")

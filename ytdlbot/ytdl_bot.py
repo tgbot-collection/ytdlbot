@@ -20,7 +20,6 @@ from io import BytesIO
 
 import pyrogram.errors
 import requests
-import sentry_sdk
 import yt_dlp
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
@@ -34,7 +33,6 @@ from channel import Channel
 from client_init import create_app
 from config import (
     AUTHORIZED_USER,
-    DSN,
     ENABLE_CELERY,
     ENABLE_FFMPEG,
     ENABLE_VIP,
@@ -66,8 +64,6 @@ app = create_app(session)
 logging.info("Authorized users are %s", AUTHORIZED_USER)
 redis = Redis()
 channel = Channel()
-if DSN:
-    sentry_sdk.init(dsn=DSN)
 
 
 def private_use(func):
@@ -355,12 +351,8 @@ def link_checker(url: str) -> str:
         return ""
     ytdl = yt_dlp.YoutubeDL()
 
-    if (
-        not PLAYLIST_SUPPORT
-        and (
-         re.findall(r"^https://www\.youtube\.com/channel/", Channel.extract_canonical_link(url))
-         or "list" in url
-        )
+    if not PLAYLIST_SUPPORT and (
+        re.findall(r"^https://www\.youtube\.com/channel/", Channel.extract_canonical_link(url)) or "list" in url
     ):
         return "Playlist or channel links are disabled."
 
