@@ -1,7 +1,7 @@
 pyrogram==1.4.16
 tgcrypto==1.2.5
 yt-dlp==2023.7.6
-APScheduler==3.10.1
+APScheduler==3.10.3
 beautifultable==1.1.0
 ffmpeg-python==0.2.0
 PyMySQL==1.1.0
