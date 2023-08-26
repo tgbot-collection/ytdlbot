@@ -55,7 +55,7 @@ class Channel(Payment):
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"
         }
-        cookie = {"CONSENT": "YES+cb.20210328-17-p0.en+FX+999"}
+        cookie = {"CONSENT": "PENDING+197"}
         # send head request first
         r = requests.head(url, headers=headers, allow_redirects=True, cookies=cookie)
         if r.status_code != http.HTTPStatus.METHOD_NOT_ALLOWED and "text/html" not in r.headers.get("content-type", ""):
@@ -174,3 +174,7 @@ class Channel(Payment):
             if key.startswith(unique):
                 count += self.del_send_cache(key)
         return count
+
+
+if __name__ == "__main__":
+    Channel.extract_canonical_link("https://www.youtube.com/watch?v=X4otYJGByic")
