@@ -13,6 +13,7 @@ import os
 import pathlib
 import random
 import re
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -42,6 +43,7 @@ from config import (
     ENABLE_QUEUE,
     ENABLE_VIP,
     OWNER,
+    RCLONE_PATH,
     RATE_LIMIT,
     WORKERS,
 )
@@ -278,6 +280,11 @@ def ytdl_normal_download(client: Client, bot_msg: typing.Union[types.Message, ty
 
     bot_msg.edit_text("Download success!✅")
 
+    # setup rclone environment var to back up the downloaded file
+    if RCLONE_PATH:
+        for item in os.listdir(temp_dir.name):
+            logging.info("Copying %s to %s", item, RCLONE_PATH)
+            shutil.copy(os.path.join(temp_dir.name, item), RCLONE_PATH)
     temp_dir.cleanup()
 
 
