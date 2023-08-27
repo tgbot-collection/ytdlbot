@@ -72,7 +72,7 @@ def private_use(func):
 
         # message type check
         if message.chat.type != "private" and not message.text.lower().startswith("/ytdl"):
-            logging.warning("%s, it's annoying me...🙄️ ", message.text)
+            logging.debug("%s, it's annoying me...🙄️ ", message.text)
             return
 
         # authorized users check
