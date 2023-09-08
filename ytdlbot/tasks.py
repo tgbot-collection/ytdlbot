@@ -32,7 +32,7 @@ import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from celery import Celery
 from celery.worker.control import Panel
-from pyrogram import Client, idle, types, enums
+from pyrogram import Client, enums, idle, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
@@ -45,8 +45,8 @@ from config import (
     ENABLE_QUEUE,
     ENABLE_VIP,
     OWNER,
-    RCLONE_PATH,
     RATE_LIMIT,
+    RCLONE_PATH,
     WORKERS,
 )
 from constant import BotText
@@ -450,14 +450,8 @@ def gen_cap(bm, url, video_path):
 
 def gen_video_markup():
     markup = InlineKeyboardMarkup(
-        [
-            [  # First row
-                InlineKeyboardButton(  # Generates a callback query when pressed
-                    "convert to audio", callback_data="convert"
-                )
-            ]
-        ]
-    )
+        [[InlineKeyboardButton("convert to audio", callback_data="convert")]]
+    )  # First row  # Generates a callback query when pressed
     return markup
 
 
