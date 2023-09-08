@@ -273,9 +273,8 @@ class MySQL:
         self.con.close()
 
     def get_user_settings(self, user_id: int) -> tuple:
-        cur = self.con.cursor()
-        cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
-        data = cur.fetchone()
+        self.cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
+        data = self.cur.fetchone()
         if data is None:
             return 100, "high", "video", "Celery"
         return data

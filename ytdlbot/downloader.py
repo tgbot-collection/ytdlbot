@@ -35,7 +35,7 @@ apply_log_formatter()
 
 
 def edit_text(bot_msg, text: str):
-    key = f"{bot_msg.chat.id}-{bot_msg.message_id}"
+    key = f"{bot_msg.chat.id}-{bot_msg.id}"
     # if the key exists, we shouldn't send edit message
     if not r.exists(key):
         time.sleep(random.random())
