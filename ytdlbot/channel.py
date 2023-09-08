@@ -69,10 +69,10 @@ class Channel(Payment):
             element = soup.find("link", rel=prop)
             try:
                 href = element["href"]
-                if href not in ["null", "", None]:
+                if href not in ["null", "", None, "https://consent.youtube.com/m"]:
                     return href
-            except Exception:
-                logging.warning("Canonical exception %s", url)
+            except Exception as e:
+                logging.debug("Canonical exception %s %s e", url, e)
 
         return url
 
@@ -177,4 +177,5 @@ class Channel(Payment):
 
 
 if __name__ == "__main__":
-    Channel.extract_canonical_link("https://www.youtube.com/watch?v=X4otYJGByic")
+    s = Channel.extract_canonical_link("https://www.youtube.com/shorts/KkbYbknjPBM")
+    print(s)
