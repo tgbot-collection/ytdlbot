@@ -536,7 +536,7 @@ if __name__ == "__main__":
     threading.Thread(target=run_celery, daemon=True).start()
 
     scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
-    scheduler.add_job(auto_restart, "interval", seconds=900)
+    scheduler.add_job(auto_restart, "interval", seconds=120)
     scheduler.start()
 
     idle()
