@@ -1,11 +1,11 @@
-FROM python:3.10-alpine as builder
+FROM python:3.11-alpine as builder
 
 RUN apk update && apk add  --no-cache tzdata alpine-sdk libffi-dev ca-certificates
 ADD requirements.txt /tmp/
 RUN pip3 install --user -r /tmp/requirements.txt && rm /tmp/requirements.txt
 
 
-FROM python:3.10-alpine
+FROM python:3.11-alpine
 WORKDIR /ytdlbot/ytdlbot
 ENV TZ=Europe/Stockholm
 

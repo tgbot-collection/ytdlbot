@@ -255,6 +255,7 @@ class MySQL:
                 host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl", charset="utf8mb4"
             )
         except pymysql.err.OperationalError:
+            logging.warning("Using fake MySQL connection.")
             self.con = FakeMySQL()
 
         self.con.ping(reconnect=True)
