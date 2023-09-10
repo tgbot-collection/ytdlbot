@@ -7,6 +7,7 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
+import asyncio
 import logging
 import math
 import os
@@ -15,6 +16,7 @@ import random
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -30,7 +32,7 @@ import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from celery import Celery
 from celery.worker.control import Panel
-from pyrogram import Client, idle, types
+from pyrogram import Client, enums, idle, types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
@@ -43,8 +45,8 @@ from config import (
     ENABLE_QUEUE,
     ENABLE_VIP,
     OWNER,
-    RCLONE_PATH,
     RATE_LIMIT,
+    RCLONE_PATH,
     WORKERS,
 )
 from constant import BotText
@@ -71,24 +73,23 @@ app = Celery("tasks", broker=BROKER)
 redis = Redis()
 channel = Channel()
 
-session = "ytdl-celery"
-celery_client = create_app(session)
+bot = create_app("ytdl-celery")
 
 
 def get_messages(chat_id, message_id):
     try:
-        return celery_client.get_messages(chat_id, message_id)
+        return bot.get_messages(chat_id, message_id)
     except ConnectionError as e:
         logging.critical("WTH!!! %s", e)
-        celery_client.start()
-        return celery_client.get_messages(chat_id, message_id)
+        bot.start()
+        return bot.get_messages(chat_id, message_id)
 
 
 @app.task(rate_limit=f"{RATE_LIMIT}/m")
 def ytdl_download_task(chat_id, message_id, url: str):
     logging.info("YouTube celery tasks started for %s", url)
     bot_msg = get_messages(chat_id, message_id)
-    ytdl_normal_download(celery_client, bot_msg, url)
+    ytdl_normal_download(bot, bot_msg, url)
     logging.info("YouTube celery tasks ended.")
 
 
@@ -96,7 +97,7 @@ def ytdl_download_task(chat_id, message_id, url: str):
 def audio_task(chat_id, message_id):
     logging.info("Audio celery tasks started for %s-%s", chat_id, message_id)
     bot_msg = get_messages(chat_id, message_id)
-    normal_audio(celery_client, bot_msg)
+    normal_audio(bot, bot_msg)
     logging.info("Audio celery tasks ended.")
 
 
@@ -116,7 +117,7 @@ def get_unique_clink(original_url: str, user_id: int):
 def direct_download_task(chat_id, message_id, url):
     logging.info("Direct download celery tasks started for %s", url)
     bot_msg = get_messages(chat_id, message_id)
-    direct_normal_download(celery_client, bot_msg, url)
+    direct_normal_download(bot, bot_msg, url)
     logging.info("Direct download celery tasks ended.")
 
 
@@ -146,8 +147,8 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
             return
         mode = mode or payment.get_user_settings(chat_id)[-1]
         if ENABLE_CELERY and mode in [None, "Celery"]:
-            async_task(ytdl_download_task, chat_id, bot_msg.message_id, url)
-            # ytdl_download_task.delay(chat_id, bot_msg.message_id, url)
+            async_task(ytdl_download_task, chat_id, bot_msg.id, url)
+            # ytdl_download_task.delay(chat_id, bot_msg.id, url)
         else:
             ytdl_normal_download(client, bot_msg, url)
     except Exception as e:
@@ -158,15 +159,15 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
 def direct_download_entrance(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
     if ENABLE_CELERY:
         direct_normal_download(client, bot_msg, url)
-        # direct_download_task.delay(bot_msg.chat.id, bot_msg.message_id, url)
+        # direct_download_task.delay(bot_msg.chat.id, bot_msg.id, url)
     else:
         direct_normal_download(client, bot_msg, url)
 
 
 def audio_entrance(client, bot_msg):
     if ENABLE_CELERY:
-        async_task(audio_task, bot_msg.chat.id, bot_msg.message_id)
-        # audio_task.delay(bot_msg.chat.id, bot_msg.message_id)
+        async_task(audio_task, bot_msg.chat.id, bot_msg.id)
+        # audio_task.delay(bot_msg.chat.id, bot_msg.id)
     else:
         normal_audio(client, bot_msg)
 
@@ -205,7 +206,7 @@ def direct_normal_download(client: Client, bot_msg: typing.Union[types.Message, 
         logging.info("Downloaded file %s", filename)
         st_size = os.stat(filepath).st_size
 
-        client.send_chat_action(chat_id, "upload_document")
+        client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_DOCUMENT)
         client.send_document(
             bot_msg.chat.id,
             filepath,
@@ -224,11 +225,11 @@ def normal_audio(client: Client, bot_msg: typing.Union[types.Message, typing.Cor
     )
     orig_url: str = re.findall(r"https?://.*", bot_msg.caption)[0]
     with tempfile.TemporaryDirectory(prefix="ytdl-") as tmp:
-        client.send_chat_action(chat_id, "record_audio")
+        client.send_chat_action(chat_id, enums.ChatAction.RECORD_AUDIO)
         # just try to download the audio using yt-dlp
         filepath = ytdl_download(orig_url, tmp, status_msg, hijack="bestaudio[ext=m4a]")
         status_msg.edit_text("Sending audio now...")
-        client.send_chat_action(chat_id, "upload_audio")
+        client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_AUDIO)
         for f in filepath:
             client.send_audio(chat_id, f)
         status_msg.edit_text("✅ Conversion complete.")
@@ -264,18 +265,18 @@ def ytdl_normal_download(client: Client, bot_msg: typing.Union[types.Message, ty
 
     video_paths = ytdl_download(url, temp_dir.name, bot_msg)
     logging.info("Download complete.")
-    client.send_chat_action(chat_id, "upload_document")
+    client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_DOCUMENT)
     bot_msg.edit_text("Download complete. Sending now...")
     try:
         upload_processor(client, bot_msg, url, video_paths)
-    except pyrogram.errors.Flood as e:
+    except pyrogram.errors.FloodWait as e:
         logging.critical("FloodWait from Telegram: %s", e)
         client.send_message(
             chat_id,
-            f"I'm being rate limited by Telegram. Your video will come after {e.x} seconds. Please wait patiently.",
+            f"I'm being rate limited by Telegram. Your video will come after {e.value} seconds. Please wait patiently.",
         )
         flood_owner_message(client, e)
-        time.sleep(e.x)
+        time.sleep(e.value)
         upload_processor(client, bot_msg, url, video_paths)
 
     bot_msg.edit_text("Download success!✅")
@@ -407,7 +408,7 @@ def upload_processor(client, bot_msg, url, vp_or_fid: typing.Union[str, list]):
     redis.add_send_cache(unique, getattr(obj, "file_id", None))
     redis.update_metrics("video_success")
     if ARCHIVE_ID and isinstance(vp_or_fid, pathlib.Path):
-        client.forward_messages(bot_msg.chat.id, ARCHIVE_ID, res_msg.message_id)
+        client.forward_messages(bot_msg.chat.id, ARCHIVE_ID, res_msg.id)
     return res_msg
 
 
@@ -449,14 +450,8 @@ def gen_cap(bm, url, video_path):
 
 def gen_video_markup():
     markup = InlineKeyboardMarkup(
-        [
-            [  # First row
-                InlineKeyboardButton(  # Generates a callback query when pressed
-                    "convert to audio", callback_data="convert"
-                )
-            ]
-        ]
-    )
+        [[InlineKeyboardButton("convert to audio", callback_data="convert")]]
+    )  # First row  # Generates a callback query when pressed
     return markup
 
 
@@ -506,28 +501,43 @@ def async_task(task_name, *args):
     task_name.apply_async(args=args, queue=destination)
 
 
-def run_celery():
-    worker_name = os.getenv("WORKER_NAME", "")
-    argv = ["-A", "tasks", "worker", "--loglevel=info", "--pool=threads", f"--concurrency={WORKERS}", "-n", worker_name]
-    if ENABLE_QUEUE:
-        argv.extend(["-Q", worker_name])
-    app.worker_main(argv)
-
-
 def purge_tasks():
     count = app.control.purge()
     return f"purged {count} tasks."
 
 
+def run_celery():
+    # 创建一个新的事件循环
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        worker_name = os.getenv("WORKER_NAME", "")
+        argv = [
+            "-A",
+            "tasks",
+            "worker",
+            "--loglevel=info",
+            "--pool=threads",
+            f"--concurrency={WORKERS}",
+            "-n",
+            worker_name,
+        ]
+        if ENABLE_QUEUE:
+            argv.extend(["-Q", worker_name])
+        app.worker_main(argv)
+    except:
+        logging.warning("Celery worker failed to start.")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    # celery_client.start()
     print("Bootstrapping Celery worker now.....")
     time.sleep(5)
     threading.Thread(target=run_celery, daemon=True).start()
 
     scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
-    scheduler.add_job(auto_restart, "interval", seconds=900)
+    scheduler.add_job(auto_restart, "interval", seconds=120)
     scheduler.start()
 
     idle()
-    celery_client.stop()
+    bot.stop()

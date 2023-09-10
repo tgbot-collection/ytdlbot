@@ -21,6 +21,7 @@ services:
       - ./db_data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: 'root'
+    command: --default-authentication-plugin=mysql_native_password
     logging:
       driver: none
 
@@ -33,7 +34,6 @@ services:
       - socat
       - redis
     volumes:
-      - ./data/instagram.com_cookies.txt:/ytdlbot/ytdlbot/instagram.com_cookies.txt
       - ./data/vnstat/:/var/lib/vnstat/
     labels:
       - "com.centurylinklabs.watchtower.enable=true"

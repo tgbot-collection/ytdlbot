@@ -254,7 +254,9 @@ class MySQL:
             self.con = pymysql.connect(
                 host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl", charset="utf8mb4"
             )
+            logging.debug("Used real MySQL connection.")
         except pymysql.err.OperationalError:
+            logging.warning("Using fake MySQL connection.")
             self.con = FakeMySQL()
 
         self.con.ping(reconnect=True)
@@ -273,9 +275,8 @@ class MySQL:
         self.con.close()
 
     def get_user_settings(self, user_id: int) -> tuple:
-        cur = self.con.cursor()
-        cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
-        data = cur.fetchone()
+        self.cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
+        data = self.cur.fetchone()
         if data is None:
             return 100, "high", "video", "Celery"
         return data

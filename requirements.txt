@@ -1,11 +1,11 @@
-pyrogram==1.4.16
+pyrogram==2.0.106
 tgcrypto==1.2.5
 yt-dlp==2023.7.6
 APScheduler==3.10.4
 beautifultable==1.1.0
 ffmpeg-python==0.2.0
 PyMySQL==1.1.0
-celery==5.3.1
+celery==5.3.4
 filetype==1.2.0
 flower==2.0.1
 psutil==5.9.5
