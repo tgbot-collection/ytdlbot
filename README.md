@@ -142,6 +142,7 @@ You can configure all the following environment variables:
 * ENABLE_FFMPEG = os.getenv("ENABLE_FFMPEG", False)
 * PROVIDER_TOKEN: stripe token on Telegram payment
 * PLAYLIST_SUPPORT: download playlist support
+* M3U8_SUPPORT: download m3u8 files support
 * ENABLE_ARIA2: enable aria2c download
 * FREE_DOWNLOAD: free download count per day
 * TOKEN_PRICE: token price per 1 USD
