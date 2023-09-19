@@ -148,6 +148,8 @@ You can configure all the following environment variables:
 * TOKEN_PRICE: token price per 1 USD
 * GOOGLE_API_KEY: YouTube API key, required for YouTube video subscription.
 * RCLONE_PATH: rclone path to upload files to cloud storage
+* TMPFILE_PATH: tmpfile path(file download path)
+
 ## 3.2 Set up init data
 
 If you only need basic functionality, you can skip this step.
