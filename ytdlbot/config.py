@@ -66,3 +66,9 @@ RATE_LIMIT = os.getenv("RATE_LIMIT", 20)
 
 SS_YOUTUBE = os.getenv("SS_YOUTUBE", "https://ytdlbot.dmesg.app?token=123456")
 RCLONE_PATH = os.getenv("RCLONE")
+
+# This will set the value for the tmpfile path(download path) if it is set.
+# If TMPFILE is not set, it will return None and use system’s default temporary file path.
+# Please ensure that the directory exists and you have necessary permissions to write to it.
+# If you don't know what this is just leave it as it is.
+TMPFILE_PATH = os.getenv("TMPFILE")

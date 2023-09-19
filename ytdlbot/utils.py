@@ -26,6 +26,8 @@ import psutil
 
 from flower_tasks import app
 
+from config import TMPFILE_PATH
+
 inspect = app.control.inspect()
 
 
@@ -219,14 +221,14 @@ def auto_restart():
     for method in method_list:
         if method():
             logging.critical("Bye bye world!☠️")
-            for item in pathlib.Path(tempfile.gettempdir()).glob("ytdl-*"):
+            for item in pathlib.Path(TMPFILE_PATH or tempfile.gettempdir()).glob("ytdl-*"):
                 shutil.rmtree(item, ignore_errors=True)
 
             psutil.Process().kill()
 
 
 def clean_tempfile():
-    for item in pathlib.Path(tempfile.gettempdir()).glob("ytdl-*"):
+    for item in pathlib.Path(TMPFILE_PATH or tempfile.gettempdir()).glob("ytdl-*"):
         if time.time() - item.stat().st_ctime > 3600:
             shutil.rmtree(item, ignore_errors=True)
 

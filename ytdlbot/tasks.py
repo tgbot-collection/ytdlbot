@@ -48,6 +48,7 @@ from config import (
     RATE_LIMIT,
     RCLONE_PATH,
     WORKERS,
+    TMPFILE_PATH
 )
 from constant import BotText
 from database import Redis
@@ -193,7 +194,7 @@ def direct_normal_download(client: Client, bot_msg: typing.Union[types.Message, 
     if not filename:
         filename = quote_plus(url)
 
-    with tempfile.TemporaryDirectory(prefix="ytdl-") as f:
+    with tempfile.TemporaryDirectory(prefix="ytdl-", dir=TMPFILE_PATH) as f:
         filepath = f"{f}/{filename}"
         # consume the req.content
         downloaded = 0
@@ -224,7 +225,7 @@ def normal_audio(client: Client, bot_msg: typing.Union[types.Message, typing.Cor
         "Converting to audio...please wait patiently", quote=True
     )
     orig_url: str = re.findall(r"https?://.*", bot_msg.caption)[0]
-    with tempfile.TemporaryDirectory(prefix="ytdl-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="ytdl-", dir=TMPFILE_PATH) as tmp:
         client.send_chat_action(chat_id, enums.ChatAction.RECORD_AUDIO)
         # just try to download the audio using yt-dlp
         filepath = ytdl_download(orig_url, tmp, status_msg, hijack="bestaudio[ext=m4a]")
@@ -261,7 +262,7 @@ def flood_owner_message(client, ex):
 
 def ytdl_normal_download(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
     chat_id = bot_msg.chat.id
-    temp_dir = tempfile.TemporaryDirectory(prefix="ytdl-")
+    temp_dir = tempfile.TemporaryDirectory(prefix="ytdl-", dir=TMPFILE_PATH)
 
     video_paths = ytdl_download(url, temp_dir.name, bot_msg)
     logging.info("Download complete.")
