@@ -26,14 +26,7 @@ import requests
 import yt_dlp as ytdl
 from tqdm import tqdm
 
-from config import (
-    AUDIO_FORMAT,
-    ENABLE_ARIA2,
-    ENABLE_FFMPEG,
-    SS_YOUTUBE,
-    TG_MAX_SIZE,
-    IPv6,
-)
+from config import AUDIO_FORMAT, ENABLE_ARIA2, ENABLE_FFMPEG, TG_MAX_SIZE, IPv6, SS_YOUTUBE
 from limit import Payment
 from utils import adjust_formats, apply_log_formatter, current_time, sizeof_fmt
 
@@ -42,7 +35,7 @@ apply_log_formatter()
 
 
 def edit_text(bot_msg, text: str):
-    key = f"{bot_msg.chat.id}-{bot_msg.id}"
+    key = f"{bot_msg.chat.id}-{bot_msg.message_id}"
     # if the key exists, we shouldn't send edit message
     if not r.exists(key):
         time.sleep(random.random())

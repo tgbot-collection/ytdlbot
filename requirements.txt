@@ -1,6 +1,6 @@
-pyrogram==2.0.106
+pyrogram==1.4.16
 tgcrypto==1.2.5
-yt-dlp==2023.9.24
+yt-dlp==2023.10.7
 APScheduler==3.10.4
 beautifultable==1.1.0
 ffmpeg-python==0.2.0
@@ -11,10 +11,10 @@ flower==2.0.1
 psutil==5.9.5
 influxdb==5.3.1
 beautifulsoup4==4.12.2
-fakeredis==2.18.1
+fakeredis==2.19.0
 supervisor==4.2.5
 tgbot-ping==1.0.7
-redis==5.0.0
+redis==5.0.1
 requests==2.31.0
 tqdm==4.66.1
 requests-toolbelt==1.0.0
