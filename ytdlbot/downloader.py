@@ -176,12 +176,17 @@ def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> list:
             "--max-concurrent-downloads=16",
             "--split=16",
         ]
-    formats = [
-        # webm , vp9 and av01 are not streamable on telegram, so we'll extract mp4 and not av01 codec
-        "bestvideo[ext=mp4][vcodec!*=av01][vcodec!*=vp09]+bestaudio[ext=m4a]/bestvideo+bestaudio",
-        "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
-        None,
-    ]
+    if url.startswith("https://drive.google.com"):
+        # Always use the `source` format for Google Drive URLs.
+        formats = ["source"]
+    else:
+        # Use the default formats for other URLs.
+        formats = [
+            # webm , vp9 and av01 are not streamable on telegram, so we'll extract only mp4
+            "bestvideo[ext=mp4][vcodec!*=av01][vcodec!*=vp09]+bestaudio[ext=m4a]/bestvideo+bestaudio",
+            "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
+            None,
+        ]
     adjust_formats(chat_id, url, formats, hijack)
     if download_instagram(url, tempdir):
         return list(pathlib.Path(tempdir).glob("*"))
