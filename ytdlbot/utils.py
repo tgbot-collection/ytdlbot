@@ -173,14 +173,22 @@ class Detector:
         ]
         for indicator in indicators:
             if indicator in self.logs:
-                logging.warning("Potential crash detected by %s, it's time to commit suicide...", self.func_name())
+                logging.critical("kick out crash: %s", self.func_name())
                 return True
         logging.debug("No crash detected.")
 
     def next_salt_detector(self):
         text = "Next salt in"
         if self.logs.count(text) >= 4:
-            logging.warning("Potential crash detected by %s, it's time to commit suicide...", self.func_name())
+            logging.critical("Next salt crash: %s", self.func_name())
+            return True
+
+    def msg_id_detector(self):
+        text = "The msg_id is too low"
+        if text in self.logs:
+            logging.critical("msg id crash: %s ", self.func_name())
+            for item in pathlib.Path("/ytdlbot/ytdlbot").glob("*.session"):
+                item.unlink(missing_ok=True)
             return True
 
     # def idle_detector(self):
@@ -196,16 +204,16 @@ def auto_restart():
     if not os.path.exists(log_path):
         return
     with open(log_path) as f:
-        logs = "".join(tail_log(f, lines=10))
+        logs = "".join(tail_log(f, lines=50))
 
     det = Detector(logs)
     method_list = [getattr(det, func) for func in dir(det) if func.endswith("_detector")]
     for method in method_list:
         if method():
-            logging.critical("Bye bye world!☠️")
+            logging.critical("%s bye bye world!☠️", method)
             for item in pathlib.Path(TMPFILE_PATH or tempfile.gettempdir()).glob("ytdl-*"):
                 shutil.rmtree(item, ignore_errors=True)
-
+            time.sleep(5)
             psutil.Process().kill()
 
 
