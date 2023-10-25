@@ -187,7 +187,7 @@ class Detector:
         text = "The msg_id is too low"
         if text in self.logs:
             logging.critical("msg id crash: %s ", self.func_name())
-            for item in pathlib.Path("/ytdlbot/ytdlbot").glob("*.session"):
+            for item in pathlib.Path(__file__).parent.glob("*.session"):
                 item.unlink(missing_ok=True)
             return True
 
