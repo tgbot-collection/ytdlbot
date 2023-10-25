@@ -10,7 +10,6 @@ __author__ = "Benny <benny.think@gmail.com>"
 import contextlib
 import logging
 import os
-from pathlib import Path
 import random
 import re
 import tempfile
@@ -18,6 +17,7 @@ import time
 import traceback
 import typing
 from io import BytesIO
+from pathlib import Path
 
 import pyrogram.errors
 import requests
@@ -508,6 +508,7 @@ def raw_update(client: Client, update, users, chats):
         payment.add_pay_user([uid, amount, action.charge.provider_charge_id, 0, amount * TOKEN_PRICE])
         client.send_message(uid, f"Thank you {uid}. Payment received: {amount} {action.currency}")
 
+
 def temp_fix_The_msg_id_is_too_low():
     current_dir = Path(__file__).parent
     s_file_path = current_dir / "ytdl-main.session"
@@ -515,8 +516,8 @@ def temp_fix_The_msg_id_is_too_low():
         print(f"Deleting session file :", s_file_path)
         os.remove(s_file_path)
 
+
 if __name__ == "__main__":
-    temp_fix_The_msg_id_is_too_low()
     MySQL()
     scheduler = BackgroundScheduler(timezone="Asia/Shanghai", job_defaults={"max_instances": 5})
     scheduler.add_job(redis.reset_today, "cron", hour=0, minute=0)
