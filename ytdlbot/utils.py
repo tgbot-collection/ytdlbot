@@ -187,8 +187,9 @@ class Detector:
         text = "The msg_id is too low"
         if text in self.logs:
             logging.critical("msg id crash: %s ", self.func_name())
-            for item in pathlib.Path(__file__).parent.glob("*.session"):
+            for item in pathlib.Path(__file__).parent.glob("ytdl-*"):
                 item.unlink(missing_ok=True)
+            time.sleep(3)
             return True
 
     # def idle_detector(self):
@@ -204,7 +205,7 @@ def auto_restart():
     if not os.path.exists(log_path):
         return
     with open(log_path) as f:
-        logs = "".join(tail_log(f, lines=50))
+        logs = "".join(tail_log(f, lines=100))
 
     det = Detector(logs)
     method_list = [getattr(det, func) for func in dir(det) if func.endswith("_detector")]
