@@ -59,10 +59,10 @@ PLAYLIST_SUPPORT = os.getenv("PLAYLIST_SUPPORT", False)
 M3U8_SUPPORT = os.getenv("M3U8_SUPPORT", False)
 ENABLE_ARIA2 = os.getenv("ENABLE_ARIA2", False)
 
-FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 20)
+FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 40)
 TOKEN_PRICE = os.getenv("BUY_UNIT", 20)  # one USD=20 credits
 
-RATE_LIMIT = os.getenv("RATE_LIMIT", 20)
+RATE_LIMIT = os.getenv("RATE_LIMIT", 60)
 
 SS_YOUTUBE = os.getenv("SS_YOUTUBE", "https://ytdlbot.dmesg.app?token=123456")
 RCLONE_PATH = os.getenv("RCLONE")
