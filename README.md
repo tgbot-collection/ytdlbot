@@ -77,13 +77,39 @@ Need help with deployment or exclusive features? I offer paid service - contact 
 
 To deploy this bot, follow these steps:
 
-1. Clone the code from the repository.
-2. Install FFmpeg.
-3. Install Python 3.6 or a later version.
-4. Install Aria2 and add it to the PATH.
-5. Install the required packages by running `pip3 install -r requirements.txt`.
-6. Set the environment variables `TOKEN`, `APP_ID`, `APP_HASH`, and any others that you may need.
-7. Run `python3 ytdl_bot.py`.
+1. Install bot dependencies
+   * Install Python 3.6 or a later version, FFmpeg.
+   * Aria2 and add it to the PATH.
+
+2. Clone the code from the repository and cd into it.
+   * ```Bash
+     git clone --branch pyrogram-v2 "https://github.com/tgbot-collection/ytdlbot.git
+     ```
+   * ```Bash
+     cd ytdlbot/
+     ```
+3. Creating a virtual environment and installing required modules in Python.
+   * ```Python
+     python -m venv venv
+     ```
+   * ```Bash
+     source venv/bin/activate   #Linux
+     #or
+     .\venv\Scripts\activate   #Windows
+     ```
+   * ```Python
+     pip install --upgrade pip
+     ```
+   * ```Python
+     pip install -r requirements.txt
+     ```
+4. Set the environment variables `TOKEN`, `APP_ID`, `APP_HASH`, and any others that you may need.
+   * Change values in ytdlbot/config.py or
+   * Use export APP_ID=111 APP_HASH=111 TOKEN=123 
+5. Finally run the bot with
+   * ```Python
+     python ytdl_bot.py
+     ```
 
 ## Docker
 
