@@ -26,59 +26,52 @@ class BotText:
     help = f"""
 1. This bot should work at all times. If it doesn't, please wait for a few minutes and try sending the link again.
 
-2. At the time of writing, this bot consumes more than 100GB of network traffic per day. 
-To prevent abuse, each user is limited to 5 downloads per 24 hours.
+2. Source code is here: https://github.com/tgbot-collection/ytdlbot
 
-3. You have the option to buy more tokens. Type /buy for more information.
-
-4. The source code for this bot will always remain open and can be found here: https://github.com/tgbot-collection/ytdlbot
-
-5. Need help with deployment or exclusive features? I offer paid service - contact me at @BennyThink
     """
 
     about = "YouTube Downloader by @BennyThink.\n\nOpen source on GitHub: https://github.com/tgbot-collection/ytdlbot"
 
     buy = f"""
 **Terms:**
-1. You can use this service free of charge for up to {FREE_DOWNLOAD} downloads within a 24-hour period, regardless of whether the download is successful or not.
+1. You can use this bot to download video for {FREE_DOWNLOAD} times within a 24-hour period.
 
-2. You can purchase additional download tokens, which will be valid indefinitely.
+2. You can purchase additional download tokens, which will be valid permanently.
 
-3. I will not gather any personal information, so I won't know how many or which videos you have downloaded.
+3. Refunds are possible, contact me if you need that @BennyThink
 
-4. Refunds are possible, but you will be responsible for the processing fee charged by the payment provider (Stripe, Buy Me a Coffee, etc.).
-
-5. I will record your unique ID after a successful payment, which is usually your payment ID or email address.
-
-6. Paid user can change default download mode to Local mode in settings, which is faster. If your used up all your tokens, you will be reset to default mode.
+4. Paid user can change default download mode to Local mode in settings, which is faster.
 
 **Download token price:**
-1. Everyone: {FREE_DOWNLOAD} tokens per 24 hours, free of charge.
-2. 1 USD == {TOKEN_PRICE} tokens, valid indefinitely.
-3. 7 CNY == {TOKEN_PRICE} tokens, valid indefinitely.
+valid permanently
+1. 1 USD == {TOKEN_PRICE} tokens
+2. 7 CNY == {TOKEN_PRICE} tokens
+3. 10 TRX == {TOKEN_PRICE} tokens
 
-**Payment option:**
-1.  AFDIAN(AliPay, WeChat Pay and PayPal): {AFD_LINK}
+**Payment options:**
+Pay the amount you want. For example you can send 20 TRX for {TOKEN_PRICE * 2} tokens.
+1. AFDIAN(AliPay, WeChat Pay and PayPal): {AFD_LINK}
 2. Buy me a coffee: {COFFEE_LINK}
 3. Telegram Payment(Stripe), see following invoice.
+4. TRON(TRX), see following QR code.
 
 **After payment:**
 
 1. Afdian: Provide your order number with the /redeem command (e.g., `/redeem 123456`).
 2. Buy Me a Coffee: Provide your email with the /redeem command (e.g., `/redeem some@one.com`). **Use different email each time.**
-3. Telegram Payment: Your payment will be automatically activated.
+3. Telegram Payment & Tron(TRX): Your payment will be automatically activated within 60s. Check /start to see your balance.
 
-Want to buy more token at once? Let's say 100? Here you go! `/buy 123`
+Want to buy more token with Telegram payment? Let's say 100? Here you go! `/buy 123`
     """
     private = "This bot is for private use"
     membership_require = f"You need to join this group or channel to use this bot\n\nhttps://t.me/{REQUIRED_MEMBERSHIP}"
 
     settings = """
-Please choose the desired format and video quality for your video. Note that these settings only **apply to YouTube videos**.
+Please choose the preferred format and video quality for your video. These settings only **apply to YouTube videos**.
 
-High quality is recommended. Medium quality is 720P, while low quality is 480P.
+High quality is recommended. Medium quality aims to 720P, while low quality is 480P.
 
-Please keep in mind that if you choose to send the video as a document, it will not be possible to stream it.
+If you choose to send the video as a document, it will not be possible to stream it.
 
 Your current settings:
 Video quality: **{0}**
@@ -90,7 +83,7 @@ Sending format: **{1}**
     def get_receive_link_text() -> str:
         reserved = get_func_queue("reserved")
         if ENABLE_CELERY and reserved:
-            text = f"Too many tasks. Your tasks was added to the reserved queue {reserved}."
+            text = f"Your tasks was added to the reserved queue {reserved}. Processing...\n\n"
         else:
             text = "Your task was added to active queue.\nProcessing...\n\n"
 
