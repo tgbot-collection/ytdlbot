@@ -299,6 +299,8 @@ https://www.instagram.com/p/CZtUDyyv1u1/
 
 Found this bot useful? You can donate to support the development of this bot.
 
+## Donation Platforms
+
 * [Buy me a coffee](https://www.buymeacoffee.com/bennythink)
 * [Afdian](https://afdian.net/@BennyThink)
 * [GitHub Sponsor](https://github.com/sponsors/BennyThink)
@@ -311,6 +313,16 @@ You can choose to donate via Stripe.
 |--------------------------------------------------|--------------------------------------------------|
 | [USD](https://buy.stripe.com/cN203sdZB98RevC3cd) | [CNY](https://buy.stripe.com/dR67vU4p13Ox73a6oq) |
 | ![](assets/USD.png)                              | ![](assets/CNY.png)                              |
+
+## Cryptocurrency
+
+TRX or USDT(TRC20)
+
+![](assets/tron.png)
+
+```
+TF9peZjC2FYjU4xNMPg3uP4caYLJxtXeJS
+```
 
 # License
 
