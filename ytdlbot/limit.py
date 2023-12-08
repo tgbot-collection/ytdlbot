@@ -28,6 +28,7 @@ from config import (
     TOKEN_PRICE,
     TRON_MNEMONIC,
     TRONGRID_KEY,
+    TRX_SIGNAL,
 )
 from database import MySQL, Redis
 from utils import apply_log_formatter, current_time
@@ -136,10 +137,11 @@ class TronTrx:
         db = MySQL()
         con = db.con
         cur = db.cur
-        cur.execute("select user_id from payment where payment_id like 'tron,0,T%'")
+        cur.execute("select user_id from payment where payment_id like 'tron,%'")
         data = cur.fetchall()
         index = len(data)
         path = f"m/44'/195'/1'/0/{index}"
+        logging.info("Generating address for user %s with path %s", user_id, path)
         addr = self.client.generate_address_from_mnemonic(TRON_MNEMONIC, account_path=path)["base58check_address"]
         # add row in db, unpaid
         cur.execute("insert into payment values (%s,%s,%s,%s,%s)", (user_id, 0, f"tron,0,{addr},{index}", 0, 0))
@@ -161,16 +163,18 @@ class TronTrx:
                 balance = self.client.get_account_balance(addr)
             except:
                 balance = 0
-            logging.info("User %s has %s TRX", user_id, balance)
             if balance:
+                logging.info("User %s has %s TRX", user_id, balance)
                 # paid, calc token count
                 token_count = int(balance / 10 * TOKEN_PRICE)
                 cur.execute(
-                    "update payment set token=%s,payment_id=%s where user_id=%s",
-                    (token_count, f"tron,1,{addr},{index}", user_id),
+                    "update payment set token=%s,payment_id=%s where user_id=%s and payment_id like %s",
+                    (token_count, f"tron,1,{addr},{index}", user_id, f"tron,%{addr}%"),
                 )
                 con.commit()
                 self.central_transfer(addr, index, int(balance * 1_000_000))
+                logging.debug("Dispatch signal now....")
+                TRX_SIGNAL.send("cron", user_id=user_id, text=f"{balance} TRX received, {token_count} tokens added.")
 
 
 class Payment(Redis, MySQL):
@@ -251,4 +255,4 @@ class Payment(Redis, MySQL):
 if __name__ == "__main__":
     a = TronTrx()
     # a.central_wallet()
-    a.central_transfer("TGcSoCcojja71xGJTQcwCSvwBDMjAx9THp", 0, 1_000_000)
+    a.check_payment()

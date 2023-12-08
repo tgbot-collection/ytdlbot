@@ -44,6 +44,7 @@ from config import (
     PROVIDER_TOKEN,
     REQUIRED_MEMBERSHIP,
     TOKEN_PRICE,
+    TRX_SIGNAL,
 )
 from constant import BotText
 from database import InfluxDB, MySQL, Redis
@@ -61,7 +62,7 @@ from utils import auto_restart, clean_tempfile, customize_logger, get_revision
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
 logging.getLogger("apscheduler.executors.default").propagate = False
 
-app = create_app("ytdl-main")
+app = create_app(":memory:")
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
 redis = Redis()
@@ -521,8 +522,16 @@ def temp_fix_The_msg_id_is_too_low():
         os.remove(s_file_path)
 
 
+def trx_notify(_, **kwargs):
+    user_id = kwargs.get("user_id")
+    text = kwargs.get("text")
+    logging.info("Sending trx notification to %s", user_id)
+    app.send_message(user_id, text)
+
+
 if __name__ == "__main__":
     MySQL()
+    TRX_SIGNAL.connect(trx_notify)
     scheduler = BackgroundScheduler(timezone="Asia/Shanghai", job_defaults={"max_instances": 5})
     scheduler.add_job(redis.reset_today, "cron", hour=0, minute=0)
     scheduler.add_job(auto_restart, "interval", seconds=600)

@@ -25,3 +25,4 @@ coloredlogs==15.0.1
 tronpy==0.4.0
 mnemonic==0.20
 qrcode==7.4.2
+blinker==1.7.0

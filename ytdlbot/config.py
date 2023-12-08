@@ -9,6 +9,8 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import os
 
+from blinker import signal
+
 # general settings
 WORKERS: int = int(os.getenv("WORKERS", 100))
 PYRO_WORKERS: int = int(os.getenv("PYRO_WORKERS", min(64, (os.cpu_count() + 4) * 10)))
@@ -75,3 +77,4 @@ TOKEN_PRICE = os.getenv("BUY_UNIT", 20)  # one USD=20 credits
 TRONGRID_KEY = os.getenv("TRONGRID_KEY", "").split(",")
 # the default mnemonic is for nile testnet
 TRON_MNEMONIC = os.getenv("TRON_MNEMONIC", "cram floor today legend service drill pitch leaf car govern harvest soda")
+TRX_SIGNAL = signal("trx_received")
