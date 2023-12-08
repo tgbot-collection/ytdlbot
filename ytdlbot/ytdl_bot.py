@@ -20,6 +20,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pyrogram.errors
+import qrcode
 import requests
 import yt_dlp
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -37,16 +38,17 @@ from config import (
     ENABLE_CELERY,
     ENABLE_FFMPEG,
     ENABLE_VIP,
+    M3U8_SUPPORT,
     OWNER,
     PLAYLIST_SUPPORT,
-    M3U8_SUPPORT,
     PROVIDER_TOKEN,
     REQUIRED_MEMBERSHIP,
     TOKEN_PRICE,
+    TRX_SIGNAL,
 )
 from constant import BotText
 from database import InfluxDB, MySQL, Redis
-from limit import Payment
+from limit import Payment, TronTrx
 from tasks import app as celery_app
 from tasks import (
     audio_entrance,
@@ -60,8 +62,7 @@ from utils import auto_restart, clean_tempfile, customize_logger, get_revision
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
 logging.getLogger("apscheduler.executors.default").propagate = False
 
-session = "ytdl-main"
-app = create_app(session)
+app = create_app(":memory:")
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
 redis = Redis()
@@ -286,7 +287,6 @@ def settings_handler(client: Client, message: types.Message):
 def buy_handler(client: Client, message: types.Message):
     # process as chat.id, not from_user.id
     chat_id = message.chat.id
-    text = message.text.strip()
     client.send_chat_action(chat_id, "typing")
     client.send_message(chat_id, BotText.buy, disable_web_page_preview=True)
     # generate telegram invoice here
@@ -309,7 +309,12 @@ def buy_handler(client: Client, message: types.Message):
             message="Buy more download token",
         )
     )
-    client.send_message(chat_id, "In /settings, change your download mode to Local will make the download faster!")
+
+    addr = TronTrx().get_payment_address(chat_id)
+    with BytesIO() as bio:
+        qr = qrcode.make(addr)
+        qr.save(bio)
+        client.send_photo(chat_id, bio, caption=f"Send TRX to `{addr}`")
 
 
 @app.on_message(filters.command(["redeem"]))
@@ -517,13 +522,22 @@ def temp_fix_The_msg_id_is_too_low():
         os.remove(s_file_path)
 
 
+def trx_notify(_, **kwargs):
+    user_id = kwargs.get("user_id")
+    text = kwargs.get("text")
+    logging.info("Sending trx notification to %s", user_id)
+    app.send_message(user_id, text)
+
+
 if __name__ == "__main__":
     MySQL()
+    TRX_SIGNAL.connect(trx_notify)
     scheduler = BackgroundScheduler(timezone="Asia/Shanghai", job_defaults={"max_instances": 5})
     scheduler.add_job(redis.reset_today, "cron", hour=0, minute=0)
     scheduler.add_job(auto_restart, "interval", seconds=600)
-    scheduler.add_job(clean_tempfile, "interval", seconds=60)
-    scheduler.add_job(InfluxDB().collect_data, "interval", seconds=60)
+    scheduler.add_job(clean_tempfile, "interval", seconds=120)
+    scheduler.add_job(InfluxDB().collect_data, "interval", seconds=120)
+    scheduler.add_job(TronTrx().check_payment, "interval", seconds=60)
     #  default quota allocation of 10,000 units per day
     scheduler.add_job(periodic_sub_check, "interval", seconds=3600)
     scheduler.start()

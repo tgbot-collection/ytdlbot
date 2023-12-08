@@ -12,6 +12,11 @@ import logging
 import time
 
 import requests
+from tronpy import Tron
+from tronpy.exceptions import TransactionError, ValidationError
+from tronpy.hdwallet import key_from_seed, seed_from_mnemonic
+from tronpy.keys import PrivateKey
+from tronpy.providers import HTTPProvider
 
 from config import (
     AFD_TOKEN,
@@ -21,6 +26,9 @@ from config import (
     FREE_DOWNLOAD,
     OWNER,
     TOKEN_PRICE,
+    TRON_MNEMONIC,
+    TRONGRID_KEY,
+    TRX_SIGNAL,
 )
 from database import MySQL, Redis
 from utils import apply_log_formatter, current_time
@@ -93,6 +101,80 @@ class Afdian:
         amount = float(order.get("show_amount", 0))
         # convert to USD
         return amount / 7, trade_no
+
+
+class TronTrx:
+    def __init__(self):
+        if TRON_MNEMONIC == "cram floor today legend service drill pitch leaf car govern harvest soda":
+            logging.warning("Using nile testnet")
+            provider = HTTPProvider(endpoint_uri="https://nile.trongrid.io")
+            network = "nile"
+        else:
+            provider = HTTPProvider(api_key=TRONGRID_KEY)
+            network = "mainnet"
+        self.client = Tron(provider, network=network)
+
+    def central_transfer(self, from_, index, amount: int):
+        logging.info("Generated key with index %s", index)
+        seed = seed_from_mnemonic(TRON_MNEMONIC, passphrase="")
+        key = PrivateKey(key_from_seed(seed, account_path=f"m/44'/195'/1'/0/{index}"))
+        central = self.central_wallet()
+        logging.info("Transfer %s TRX from %s to %s", amount, from_, central)
+        try:
+            self.client.trx.transfer(from_, central, amount).build().sign(key).broadcast()
+        except (TransactionError, ValidationError):
+            logging.error("Failed to transfer %s TRX to %s. Lower and try again.", amount, from_)
+            if amount > 1_100_000:
+                # 1.1 trx transfer fee
+                self.client.trx.transfer(from_, central, amount - 1_100_000).build().sign(key).broadcast()
+
+    def central_wallet(self):
+        wallet = self.client.generate_address_from_mnemonic(TRON_MNEMONIC, account_path="m/44'/195'/0'/0/0")
+        return wallet["base58check_address"]
+
+    def get_payment_address(self, user_id):
+        # payment_id is like tron,0,TN8Mn9KKv3cSrKyrt6Xx5L18nmezbpiW31,index where 0 means unpaid
+        db = MySQL()
+        con = db.con
+        cur = db.cur
+        cur.execute("select user_id from payment where payment_id like 'tron,%'")
+        data = cur.fetchall()
+        index = len(data)
+        path = f"m/44'/195'/1'/0/{index}"
+        logging.info("Generating address for user %s with path %s", user_id, path)
+        addr = self.client.generate_address_from_mnemonic(TRON_MNEMONIC, account_path=path)["base58check_address"]
+        # add row in db, unpaid
+        cur.execute("insert into payment values (%s,%s,%s,%s,%s)", (user_id, 0, f"tron,0,{addr},{index}", 0, 0))
+        con.commit()
+        return addr
+
+    def check_payment(self):
+        db = MySQL()
+        con = db.con
+        cur = db.cur
+
+        cur.execute("select user_id, payment_id from payment where payment_id like 'tron,0,T%'")
+        data = cur.fetchall()
+        logging.info("Checking %s unpaid payment", len(data))
+        for row in data:
+            user_id = row[0]
+            addr, index = row[1].split(",")[2:]
+            try:
+                balance = self.client.get_account_balance(addr)
+            except:
+                balance = 0
+            if balance:
+                logging.info("User %s has %s TRX", user_id, balance)
+                # paid, calc token count
+                token_count = int(balance / 10 * TOKEN_PRICE)
+                cur.execute(
+                    "update payment set token=%s,payment_id=%s where user_id=%s and payment_id like %s",
+                    (token_count, f"tron,1,{addr},{index}", user_id, f"tron,%{addr}%"),
+                )
+                con.commit()
+                self.central_transfer(addr, index, int(balance * 1_000_000))
+                logging.debug("Dispatch signal now....")
+                TRX_SIGNAL.send("cron", user_id=user_id, text=f"{balance} TRX received, {token_count} tokens added.")
 
 
 class Payment(Redis, MySQL):
@@ -168,3 +250,9 @@ class Payment(Redis, MySQL):
             return "Payment not found. Please check your payment ID or email address"
         self.add_pay_user([user_id, amount, pay_id, 0, amount * TOKEN_PRICE])
         return "Thanks! Your payment has been verified. /start to get your token details"
+
+
+if __name__ == "__main__":
+    a = TronTrx()
+    # a.central_wallet()
+    a.check_payment()

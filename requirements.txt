@@ -5,7 +5,7 @@ APScheduler==3.10.4
 beautifultable==1.1.0
 ffmpeg-python==0.2.0
 PyMySQL==1.1.0
-celery==5.3.5
+celery==5.3.6
 filetype==1.2.0
 flower==2.0.1
 psutil==5.9.6
@@ -22,3 +22,7 @@ ffpb==0.4.1
 youtube-search-python==1.6.6
 token-bucket==0.3.0
 coloredlogs==15.0.1
+tronpy==0.4.0
+mnemonic==0.20
+qrcode==7.4.2
+blinker==1.7.0
