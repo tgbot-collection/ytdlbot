@@ -72,7 +72,7 @@ This bot can be deployed on any platform that supports Python.
 To deploy this bot, follow these steps:
 
 1. Install bot dependencies
-   * Install Python 3.6 or a later version, FFmpeg.
+   * Install Python 3.8 or a later version, FFmpeg.
    * (optional)Aria2 and add it to the PATH.
 
 2. Clone the code from the repository and cd into it.
