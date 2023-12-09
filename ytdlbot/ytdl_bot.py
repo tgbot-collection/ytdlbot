@@ -17,7 +17,6 @@ import time
 import traceback
 import typing
 from io import BytesIO
-from pathlib import Path
 
 import pyrogram.errors
 import qrcode
@@ -287,19 +286,47 @@ def buy_handler(client: Client, message: types.Message):
     # process as chat.id, not from_user.id
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
-    client.send_message(chat_id, BotText.buy, disable_web_page_preview=True)
-    # generate telegram invoice here
-    payload = f"{message.chat.id}-buy"
-    token_count = message.text.replace("/buy", "").strip()
     # currency USD
+    token_count = message.text.replace("/buy", "").strip()
     if token_count.isdigit():
         price = int(int(token_count) / TOKEN_PRICE * 100)
     else:
         price = 100
-    invoice = generate_invoice(
-        price, f"Buy {TOKEN_PRICE} download tokens", "You can pay by Telegram payment or using link above", payload
-    )
 
+    markup = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("Bot Payments", callback_data=f"bot-payments-{price}"),
+                InlineKeyboardButton("TRON(TRX)", callback_data="tron-trx"),
+            ],
+        ]
+    )
+    client.send_message(chat_id, BotText.buy, disable_web_page_preview=True, reply_markup=markup)
+
+
+@app.on_callback_query(filters.regex(r"tron-trx"))
+def tronpayment_btn_calback(client: Client, callback_query: types.CallbackQuery):
+    callback_query.answer("Generating QR code...")
+    chat_id = callback_query.message.chat.id
+    client.send_chat_action(chat_id, "typing")
+
+    addr = TronTrx().get_payment_address(chat_id)
+    with BytesIO() as bio:
+        qr = qrcode.make(addr)
+        qr.save(bio)
+        client.send_photo(chat_id, bio, caption=f"Send any amount of TRX to `{addr}`")
+
+
+@app.on_callback_query(filters.regex(r"bot-payments-.*"))
+def bot_payment_btn_calback(client: Client, callback_query: types.CallbackQuery):
+    callback_query.answer("Generating invoice...")
+    chat_id = callback_query.message.chat.id
+    client.send_chat_action(chat_id, "typing")
+
+    data = callback_query.data
+    price = int(data.split("-")[-1])
+    payload = f"{chat_id}-buy"
+    invoice = generate_invoice(price, f"Buy {TOKEN_PRICE} download tokens", "Pay by card", payload)
     app.send(
         functions.messages.SendMedia(
             peer=(raw_types.InputPeerUser(user_id=chat_id, access_hash=0)),
@@ -308,12 +335,6 @@ def buy_handler(client: Client, message: types.Message):
             message="Buy more download token",
         )
     )
-
-    addr = TronTrx().get_payment_address(chat_id)
-    with BytesIO() as bio:
-        qr = qrcode.make(addr)
-        qr.save(bio)
-        client.send_photo(chat_id, bio, caption=f"Send TRX to `{addr}`")
 
 
 @app.on_message(filters.command(["redeem"]))
@@ -501,14 +522,6 @@ def raw_update(client: Client, update, users, chats):
         client.send_message(uid, f"Thank you {uid}. Payment received: {amount} {action.currency}")
 
 
-def temp_fix_The_msg_id_is_too_low():
-    current_dir = Path(__file__).parent
-    s_file_path = current_dir / "ytdl-main.session"
-    if os.path.exists(s_file_path):
-        print(f"Deleting session file :", s_file_path)
-        os.remove(s_file_path)
-
-
 def trx_notify(_, **kwargs):
     user_id = kwargs.get("user_id")
     text = kwargs.get("text")
@@ -524,7 +537,7 @@ if __name__ == "__main__":
     scheduler.add_job(auto_restart, "interval", seconds=600)
     scheduler.add_job(clean_tempfile, "interval", seconds=120)
     scheduler.add_job(InfluxDB().collect_data, "interval", seconds=120)
-    scheduler.add_job(TronTrx().check_payment, "interval", seconds=60)
+    scheduler.add_job(TronTrx().check_payment, "interval", seconds=60, max_instances=1)
     #  default quota allocation of 10,000 units per day
     scheduler.add_job(periodic_sub_check, "interval", seconds=3600)
     scheduler.start()

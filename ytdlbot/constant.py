@@ -23,11 +23,11 @@ from utils import get_func_queue
 
 class BotText:
     start = "Welcome to YouTube Download bot. Type /help for more information."
+
     help = f"""
 1. This bot should work at all times. If it doesn't, please wait for a few minutes and try sending the link again.
 
-2. Source code is here: https://github.com/tgbot-collection/ytdlbot
-
+2. Source code: https://github.com/tgbot-collection/ytdlbot
     """
 
     about = "YouTube Downloader by @BennyThink.\n\nOpen source on GitHub: https://github.com/tgbot-collection/ytdlbot"
@@ -36,34 +36,35 @@ class BotText:
 **Terms:**
 1. You can use this bot to download video for {FREE_DOWNLOAD} times within a 24-hour period.
 
-2. You can purchase additional download tokens, which will be valid permanently.
+2. You can buy additional download tokens, valid permanently.
 
 3. Refunds are possible, contact me if you need that @BennyThink
 
 4. Paid user can change default download mode to Local mode in settings, which is faster.
 
-**Download token price:**
+**Price:**
 valid permanently
 1. 1 USD == {TOKEN_PRICE} tokens
 2. 7 CNY == {TOKEN_PRICE} tokens
 3. 10 TRX == {TOKEN_PRICE} tokens
 
 **Payment options:**
-Pay the amount you want. For example you can send 20 TRX for {TOKEN_PRICE * 2} tokens.
+Pay any amount you want. For example you can send 20 TRX for {TOKEN_PRICE * 2} tokens.
 1. AFDIAN(AliPay, WeChat Pay and PayPal): {AFD_LINK}
 2. Buy me a coffee: {COFFEE_LINK}
-3. Telegram Payment(Stripe), see following invoice.
-4. TRON(TRX), see following QR code.
+3. Telegram Bot Payment(Stripe), please click Bot Payment button.
+4. TRON(TRX), please click TRON(TRX) button.
 
 **After payment:**
-
-1. Afdian: Provide your order number with the /redeem command (e.g., `/redeem 123456`).
-2. Buy Me a Coffee: Provide your email with the /redeem command (e.g., `/redeem some@one.com`). **Use different email each time.**
-3. Telegram Payment & Tron(TRX): Your payment will be automatically activated within 60s. Check /start to see your balance.
+1. Afdian: attach order number with /redeem command (e.g., `/redeem 123456`).
+2. Buy Me a Coffee: attach email with /redeem command (e.g., `/redeem 123@x.com`). **Use different email each time.**
+3. Telegram Payment & Tron(TRX): automatically activated within 60s. Check /start to see your balance.
 
 Want to buy more token with Telegram payment? Let's say 100? Here you go! `/buy 123`
     """
+
     private = "This bot is for private use"
+
     membership_require = f"You need to join this group or channel to use this bot\n\nhttps://t.me/{REQUIRED_MEMBERSHIP}"
 
     settings = """
