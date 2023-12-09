@@ -21,7 +21,6 @@ from pathlib import Path
 
 import pyrogram.errors
 import qrcode
-import requests
 import yt_dlp
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, types
@@ -342,17 +341,6 @@ def generate_invoice(amount: int, title: str, description: str, payload: str):
     return invoice
 
 
-def search(kw: str):
-    api = f"https://dmesg.app/ytdlbot/search.php?search={kw}"
-    # title, url, time, image
-    text, index = "", 1
-    for item in requests.get(api).json()["results"][:10]:
-        item["index"] = index
-        text += "{index}. {title}\n{url}\n{time}\n\n".format(**item)
-        index += 1
-    return text
-
-
 def link_checker(url: str) -> str:
     if url.startswith("https://www.instagram.com"):
         return ""
@@ -392,8 +380,7 @@ def download_handler(client: Client, message: types.Message):
         # check url
         if not re.findall(r"^https?://", url.lower()):
             redis.update_metrics("bad_request")
-            text = search(url)
-            message.reply_text(text, quote=True)
+            message.reply_text("please send an URL", quote=True)
             return
 
         if text := link_checker(url):
