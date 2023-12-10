@@ -12,9 +12,10 @@ mnemonic = "web horse smile ramp olive slush blue property world physical donkey
 client = Tron(network="nile")
 
 from_ = client.generate_address_from_mnemonic(mnemonic, account_path="m/44'/195'/0'/0/0")["base58check_address"]
-print("my addr: ", from_)
+balance = client.get_account_balance(from_)
+print("my addr: ", from_, "balance: ", balance)
 to = input("to: ")
-amount = int(input("amount: 1_000_000\n"))
+amount = int(input("amount in TRX: "))
 
 
 def mnemonic_to_private_key():
@@ -23,6 +24,6 @@ def mnemonic_to_private_key():
     return PrivateKey(private_key)
 
 
-t = client.trx.transfer(from_, to, amount).build().inspect().sign(mnemonic_to_private_key()).broadcast()
+t = client.trx.transfer(from_, to, amount * 1_000_000).build().sign(mnemonic_to_private_key()).broadcast()
 
 print(t.wait())
