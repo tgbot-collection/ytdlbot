@@ -171,6 +171,7 @@ class TronTrx:
                     "update payment set token=%s,payment_id=%s where user_id=%s and payment_id like %s",
                     (token_count, f"tron,1,{addr},{index}", user_id, f"tron,%{addr}%"),
                 )
+                cur.execute("UPDATE settings SET mode='Local' WHERE user_id=%s", (user_id,))
                 con.commit()
                 self.central_transfer(addr, index, int(balance * 1_000_000))
                 logging.debug("Dispatch signal now....")
@@ -231,6 +232,7 @@ class Payment(Redis, MySQL):
 
     def add_pay_user(self, pay_data: list):
         self.cur.execute("INSERT INTO payment VALUES (%s,%s,%s,%s,%s)", pay_data)
+        self.set_user_settings(pay_data[0], "mode", "Local")
         self.con.commit()
 
     def verify_payment(self, user_id: int, unique: str) -> str:

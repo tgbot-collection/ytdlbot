@@ -22,10 +22,10 @@ from utils import get_func_queue
 
 
 class BotText:
-    start = "Welcome to YouTube Download bot. Type /help for more information."
+    start = "Welcome to YouTube Download bot. Type /help for more information. Join https://t.me/+OGRC8tp9-U9mZDZl for updates."
 
     help = f"""
-1. This bot should work at all times. If it doesn't, please wait for a few minutes and try sending the link again.
+1. If the bot doesn't work, try again or join https://t.me/+OGRC8tp9-U9mZDZl for updates.
 
 2. Source code: https://github.com/tgbot-collection/ytdlbot
     """
@@ -40,7 +40,7 @@ class BotText:
 
 3. Refunds are possible, contact me if you need that @BennyThink
 
-4. Paid user can change default download mode to Local mode in settings, which is faster.
+4. Download for paid user will be automatically changed to Local mode to avoid queuing.
 
 **Price:**
 valid permanently
