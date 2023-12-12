@@ -28,6 +28,7 @@ from pyrogram.raw import functions
 from pyrogram.raw import types as raw_types
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from tgbot_ping import get_runtime
+from youtubesearchpython import VideosSearch
 
 from channel import Channel
 from client_init import create_app
@@ -380,6 +381,19 @@ def link_checker(url: str) -> str:
             return "Live stream links are disabled. Please download it after the stream ends."
 
 
+def search_ytb(kw: str):
+    videosSearch = VideosSearch(kw, limit=10)
+
+    text = ""
+    results = videosSearch.result()["result"]
+    for item in results:
+        title = item.get("title")
+        link = item.get("link")
+        index = results.index(item) + 1
+        text += f"{index}. {title}\n{link}\n\n"
+    return text
+
+
 @app.on_message(filters.incoming & (filters.text | filters.document))
 @private_use
 def download_handler(client: Client, message: types.Message):
@@ -401,7 +415,8 @@ def download_handler(client: Client, message: types.Message):
         # check url
         if not re.findall(r"^https?://", url.lower()):
             redis.update_metrics("bad_request")
-            message.reply_text("please send an URL", quote=True)
+            text = search_ytb(url)
+            message.reply_text(text, quote=True, disable_web_page_preview=True)
             return
 
         if text := link_checker(url):
