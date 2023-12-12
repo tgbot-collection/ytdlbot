@@ -30,7 +30,6 @@ from config import (
     AUDIO_FORMAT,
     ENABLE_ARIA2,
     ENABLE_FFMPEG,
-    INSTAGRAM_SESSION,
     TG_MAX_SIZE,
     IPv6,
 )
@@ -272,62 +271,13 @@ def split_large_video(video_paths: list):
 
 
 def download_instagram(url: str, tempdir: str):
-    if not url.startswith("https://www.instagram.com"):
-        return
-    logging.info("Requesting instagram download link for %s", url)
-    cookies = {"sessionid": INSTAGRAM_SESSION}
+    resp = requests.get(f"https://ytdlbot.dmesg.app/?url={url}").json()
+    if url_results := resp.get("data"):
+        for link in url_results:
+            content = requests.get(link, stream=True).content
+            ext = filetype.guess_extension(content)
+            save_path = pathlib.Path(tempdir, f"{id(link)}.{ext}")
+            with open(save_path, "wb") as f:
+                f.write(content)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "cross-site",
-        "Pragma": "no-cache",
-        "Cache-Control": "no-cache",
-    }
-
-    params = {"__a": "1", "__d": "dis"}
-
-    try:
-        data = requests.get(url, params=params, cookies=cookies, headers=headers).json()
-    except Exception:
-        logging.warning("Can't get instagram data for %s", url)
-        return
-
-    url_results = []
-    if carousels := data["items"][0].get("carousel_media"):
-        for carousel in carousels:
-            if carousel.get("video_versions"):
-                url_results.append(carousel["video_versions"][0]["url"])
-            else:
-                url_results.append(carousel["image_versions2"]["candidates"][0]["url"])
-
-    elif video := data["items"][0].get("video_versions"):
-        url_results.append(video[0]["url"])
-    elif image := data["items"][0].get("image_versions2"):
-        url_results.append(image["candidates"][0]["url"])
-    else:
-        logging.warning("Can't find any downloadable link for %s", url)
-        return
-
-    for link in url_results:
-        content = requests.get(link, stream=True).content
-        ext = filetype.guess_extension(content)
-        save_path = pathlib.Path(tempdir, f"{id(link)}.{ext}")
-        with open(save_path, "wb") as f:
-            f.write(content)
-
-    return True
-
-
-if __name__ == "__main__":
-    pass
-    # download_instagram("https://www.instagram.com/p/CXpxSyOrWCA/", "image")
-    # download_instagram("https://www.instagram.com/p/Cah_7gnDVUW/", "video")
-    # download_instagram("https://www.instagram.com/p/C0ozGsjtY0W/", "reels")
-    # download_instagram("https://www.instagram.com/p/C0ozPQ5o536/?img_index=1", "image carousel")
-    # download_instagram("https://www.instagram.com/p/C0ozhsVo-m8/?img_index=1", "video image carousel")
+        return True

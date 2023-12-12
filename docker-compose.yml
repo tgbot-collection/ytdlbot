@@ -51,3 +51,13 @@ services:
       - ./data/flower:/ytdlbot/ytdlbot/flower
     ports:
       - "127.0.0.1:15555:5555"
+
+  instagram:
+    image: bennythink/ytdlbot
+    env_file:
+      - env/ytdl.env
+    restart: always
+    command: [ "/usr/local/bin/python",  "/ytdlbot/ytdlbot/instagram.py" ]
+
+    ports:
+      - "127.0.0.1:15000:5000"
