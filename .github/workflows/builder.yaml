@@ -1,6 +1,8 @@
 name: docker image builder
 on:
   push:
+    paths-ignore:
+      - '**.md'
     branches:
       - 'master'
 
