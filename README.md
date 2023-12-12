@@ -21,6 +21,8 @@ longer be available.**
 
 [https://t.me/benny_ytdlbot](https://t.me/benny_ytdlbot)
 
+Join Telegram Channel https://t.me/+OGRC8tp9-U9mZDZl for updates.
+
 Send link directly to the bot. Any
 Websites [supported by yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md) will work t0o.
 
@@ -79,14 +81,14 @@ To deploy this bot, follow these steps:
    * ```Bash
      git clone https://github.com/tgbot-collection/ytdlbot
      ```
-   * ```Bash
+    * ```Bash
      cd ytdlbot/
      ```
 3. Creating a virtual environment and installing required modules in Python.
    * ```Python
      python -m venv venv
      ```
-   * ```Bash
+    * ```Bash
      source venv/bin/activate   # Linux
      #or
      .\venv\Scripts\activate   # Windows
@@ -94,7 +96,7 @@ To deploy this bot, follow these steps:
    * ```Python
      pip install --upgrade pip
      ```
-   * ```Python
+    * ```Python
      pip install -r requirements.txt
      ```
 4. Set the environment variables `TOKEN`, `APP_ID`, `APP_HASH`, and any others that you may need.

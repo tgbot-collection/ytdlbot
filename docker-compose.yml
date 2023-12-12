@@ -58,6 +58,3 @@ services:
       - env/ytdl.env
     restart: always
     command: [ "/usr/local/bin/python",  "/ytdlbot/ytdlbot/instagram.py" ]
-
-    ports:
-      - "127.0.0.1:15000:5000"

@@ -271,7 +271,10 @@ def split_large_video(video_paths: list):
 
 
 def download_instagram(url: str, tempdir: str):
-    resp = requests.get(f"https://ytdlbot.dmesg.app/?url={url}").json()
+    if not url.startswith("https://www.instagram.com"):
+        return False
+
+    resp = requests.get(f"http://192.168.6.1:15000/?url={url}").json()
     if url_results := resp.get("data"):
         for link in url_results:
             content = requests.get(link, stream=True).content
