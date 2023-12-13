@@ -37,6 +37,7 @@ from config import (
     ENABLE_CELERY,
     ENABLE_FFMPEG,
     ENABLE_VIP,
+    IS_BACKUP_BOT,
     M3U8_SUPPORT,
     OWNER,
     PLAYLIST_SUPPORT,
@@ -126,7 +127,7 @@ def start_handler(client: Client, message: types.Message):
     else:
         info = ""
     text = f"{BotText.start}\n\n{info}\n{BotText.custom_text}"
-    client.send_message(message.chat.id, text)
+    client.send_message(message.chat.id, text, disable_web_page_preview=True)
 
 
 @app.on_message(filters.command(["help"]))
@@ -547,12 +548,13 @@ def trx_notify(_, **kwargs):
 if __name__ == "__main__":
     MySQL()
     TRX_SIGNAL.connect(trx_notify)
-    scheduler = BackgroundScheduler(timezone="Asia/Shanghai", job_defaults={"max_instances": 5})
-    scheduler.add_job(redis.reset_today, "cron", hour=0, minute=0)
+    scheduler = BackgroundScheduler(timezone="Europe/London", job_defaults={"max_instances": 6})
     scheduler.add_job(auto_restart, "interval", seconds=600)
     scheduler.add_job(clean_tempfile, "interval", seconds=120)
-    scheduler.add_job(InfluxDB().collect_data, "interval", seconds=120)
-    scheduler.add_job(TronTrx().check_payment, "interval", seconds=60, max_instances=1)
+    if not IS_BACKUP_BOT:
+        scheduler.add_job(redis.reset_today, "cron", hour=0, minute=0)
+        scheduler.add_job(InfluxDB().collect_data, "interval", seconds=120)
+        scheduler.add_job(TronTrx().check_payment, "interval", seconds=60, max_instances=1)
     #  default quota allocation of 10,000 units per day
     scheduler.add_job(periodic_sub_check, "interval", seconds=3600)
     scheduler.start()

@@ -22,7 +22,10 @@ from utils import get_func_queue
 
 
 class BotText:
-    start = "Welcome to YouTube Download bot. Type /help for more information. Join https://t.me/+OGRC8tp9-U9mZDZl for updates."
+    start = """
+    Welcome to YouTube Download bot. Type /help for more information. 
+    Backup bot: @benny_2ytdlbot
+    Join https://t.me/+OGRC8tp9-U9mZDZl for updates."""
 
     help = f"""
 1. If the bot doesn't work, try again or join https://t.me/+OGRC8tp9-U9mZDZl for updates.
