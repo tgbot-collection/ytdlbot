@@ -69,7 +69,6 @@ logging.getLogger("apscheduler.executors.default").propagate = False
 # celery -A tasks worker --loglevel=info --pool=solo
 # app = Celery('celery', broker=BROKER, accept_content=['pickle'], task_serializer='pickle')
 app = Celery("tasks", broker=BROKER)
-redis = Redis()
 channel = Channel()
 
 session = "ytdl-celery"
@@ -122,6 +121,7 @@ def direct_download_task(chat_id, message_id, url):
 
 
 def forward_video(client, bot_msg, url: str):
+    redis = Redis()
     chat_id = bot_msg.chat.id
     unique = get_unique_clink(url, chat_id)
     cached_fid = redis.get_send_cache(unique)
@@ -307,6 +307,7 @@ def generate_input_media(file_paths: list, cap: str) -> list:
 
 
 def upload_processor(client, bot_msg, url, vp_or_fid: typing.Union[str, list]):
+    redis = Redis()
     # raise pyrogram.errors.exceptions.FloodWait(13)
     # if is str, it's a file id; else it's a list of paths
     payment = Payment()

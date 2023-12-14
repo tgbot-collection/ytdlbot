@@ -65,7 +65,6 @@ logging.getLogger("apscheduler.executors.default").propagate = False
 app = create_app(":memory:")
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
-redis = Redis()
 channel = Channel()
 
 
@@ -205,6 +204,7 @@ def purge_handler(client: Client, message: types.Message):
 
 @app.on_message(filters.command(["ping"]))
 def ping_handler(client: Client, message: types.Message):
+    redis = Redis()
     chat_id = message.chat.id
     client.send_chat_action(chat_id, "typing")
     if os.uname().sysname == "Darwin" or ".heroku" in os.getenv("PYTHONHOME", ""):
@@ -231,6 +231,7 @@ def sub_count_handler(client: Client, message: types.Message):
 
 @app.on_message(filters.command(["direct"]))
 def direct_handler(client: Client, message: types.Message):
+    redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, "typing")
     url = re.sub(r"/direct\s*", "", message.text)
@@ -398,6 +399,7 @@ def search_ytb(kw: str):
 @app.on_message(filters.incoming & (filters.text | filters.document))
 @private_use
 def download_handler(client: Client, message: types.Message):
+    redis = Redis()
     payment = Payment()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, "typing")
@@ -480,6 +482,7 @@ def download_resolution_callback(client: Client, callback_query: types.CallbackQ
 
 @app.on_callback_query(filters.regex(r"convert"))
 def audio_callback(client: Client, callback_query: types.CallbackQuery):
+    redis = Redis()
     if not ENABLE_FFMPEG:
         callback_query.answer("Audio conversion is disabled now.")
         callback_query.message.reply_text("Audio conversion is disabled now.")
@@ -546,6 +549,7 @@ def trx_notify(_, **kwargs):
 
 
 if __name__ == "__main__":
+    redis = Redis()
     MySQL()
     TRX_SIGNAL.connect(trx_notify)
     scheduler = BackgroundScheduler(timezone="Europe/London", job_defaults={"max_instances": 6})
@@ -555,8 +559,8 @@ if __name__ == "__main__":
         scheduler.add_job(redis.reset_today, "cron", hour=0, minute=0)
         scheduler.add_job(InfluxDB().collect_data, "interval", seconds=120)
         scheduler.add_job(TronTrx().check_payment, "interval", seconds=60, max_instances=1)
-    #  default quota allocation of 10,000 units per day
-    scheduler.add_job(periodic_sub_check, "interval", seconds=3600)
+        #  default quota allocation of 10,000 units per day
+        scheduler.add_job(periodic_sub_check, "interval", seconds=3600)
     scheduler.start()
     banner = f"""
 ▌ ▌         ▀▛▘     ▌       ▛▀▖              ▜            ▌

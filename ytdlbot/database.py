@@ -74,7 +74,8 @@ class Redis:
         try:
             self.r = redis.StrictRedis(host=REDIS, db=0, decode_responses=True)
             self.r.ping()
-        except redis.RedisError:
+        except Exception:
+            logging.warning("Redis connection failed, using fake redis instead.")
             self.r = fakeredis.FakeStrictRedis(host=REDIS, db=0, decode_responses=True)
 
         db_banner = "=" * 20 + "DB data" + "=" * 20
@@ -254,7 +255,8 @@ class MySQL:
             self.con = pymysql.connect(
                 host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl", charset="utf8mb4"
             )
-        except pymysql.err.OperationalError:
+        except Exception:
+            logging.warning("MySQL connection failed, using fake mysql instead.")
             self.con = FakeMySQL()
 
         self.con.ping(reconnect=True)
