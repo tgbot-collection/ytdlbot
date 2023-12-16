@@ -12,14 +12,12 @@ from pyrogram import Client
 from config import APP_HASH, APP_ID, PYRO_WORKERS, TOKEN, IPv6
 
 
-def create_app(session: str, workers: int = PYRO_WORKERS) -> Client:
-    _app = Client(
-        session,
+def create_app(name: str, workers: int = PYRO_WORKERS) -> Client:
+    return Client(
+        name,
         APP_ID,
         APP_HASH,
         bot_token=TOKEN,
         workers=workers,
         ipv6=IPv6,
     )
-
-    return _app

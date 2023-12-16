@@ -74,7 +74,7 @@ This bot can be deployed on any platform that supports Python.
 To deploy this bot, follow these steps:
 
 1. Install bot dependencies
-   * Install Python 3.8 or a later version, FFmpeg.
+   * Install Python 3.10 or a later version, FFmpeg.
    * (optional)Aria2 and add it to the PATH.
 
 2. Clone the code from the repository and cd into it.
@@ -153,7 +153,6 @@ You can configure all the following environment variables:
 * AUTHORIZED_USER: only authorized users can use the bot
 * REQUIRED_MEMBERSHIP: group or channel username, user must join this group to use the bot
 * ENABLE_CELERY: celery mode, default: disable
-* ENABLE_QUEUE: celery queue
 * BROKER: celery broker, should be redis://redis:6379/0
 * MYSQL_HOST:MySQL host
 * MYSQL_USER: MySQL username
@@ -291,11 +290,11 @@ https://twitter.com/BennyThinks/status/1475836588542341124
 
 ## Test instagram
 
-https://www.instagram.com/p/ClBSqo3PkJw/
-
-https://www.instagram.com/p/CaiAHoWDnrM/
-
-https://www.instagram.com/p/CZtUDyyv1u1/
+* single image: https://www.instagram.com/p/CXpxSyOrWCA/
+* single video: https://www.instagram.com/p/Cah_7gnDVUW/
+* reels: https://www.instagram.com/p/C0ozGsjtY0W/
+* image carousel: https://www.instagram.com/p/C0ozPQ5o536/
+* video and image carousel: https://www.instagram.com/p/C0ozhsVo-m8/
 
 # Donation
 

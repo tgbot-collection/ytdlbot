@@ -12,8 +12,8 @@ import os
 from blinker import signal
 
 # general settings
-WORKERS: int = int(os.getenv("WORKERS", 100))
-PYRO_WORKERS: int = int(os.getenv("PYRO_WORKERS", min(64, (os.cpu_count() + 4) * 10)))
+WORKERS: int = int(os.getenv("WORKERS", 10))
+PYRO_WORKERS: int = int(os.getenv("PYRO_WORKERS", min(32, (os.cpu_count() or 0) + 4)))
 APP_ID: int = int(os.getenv("APP_ID", 198214))
 APP_HASH = os.getenv("APP_HASH", "1234b90")
 TOKEN = os.getenv("TOKEN", "1234")
@@ -36,7 +36,6 @@ REQUIRED_MEMBERSHIP: str = os.getenv("REQUIRED_MEMBERSHIP", "")
 
 # celery related
 ENABLE_CELERY = os.getenv("ENABLE_CELERY", False)
-ENABLE_QUEUE = os.getenv("ENABLE_QUEUE", False)
 BROKER = os.getenv("BROKER", f"redis://{REDIS}:6379/4")
 
 MYSQL_HOST = os.getenv("MYSQL_HOST", "mysql")
@@ -48,7 +47,6 @@ ARCHIVE_ID = os.getenv("ARCHIVE_ID")
 
 IPv6 = os.getenv("IPv6", False)
 ENABLE_FFMPEG = os.getenv("ENABLE_FFMPEG", False)
-
 
 PLAYLIST_SUPPORT = os.getenv("PLAYLIST_SUPPORT", False)
 M3U8_SUPPORT = os.getenv("M3U8_SUPPORT", False)

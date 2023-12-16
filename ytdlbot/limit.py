@@ -155,8 +155,8 @@ class TronTrx:
 
         cur.execute("select user_id, payment_id from payment where payment_id like 'tron,0,T%'")
         data = cur.fetchall()
-        logging.info("Checking unpaid payment...%s", data)
         for row in data:
+            logging.info("Checking user payment %s", row)
             user_id = row[0]
             addr, index = row[1].split(",")[2:]
             try:

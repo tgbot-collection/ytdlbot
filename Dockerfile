@@ -1,16 +1,13 @@
-FROM python:3.11-alpine as builder
-
-RUN apk update && apk add  --no-cache tzdata alpine-sdk libffi-dev ca-certificates
+FROM python:3.11 as builder
 ADD requirements.txt /tmp/
 RUN pip3 install --user -r /tmp/requirements.txt && rm /tmp/requirements.txt
 
 
-FROM python:3.11-alpine
+FROM python:3.11-slim
 WORKDIR /ytdlbot/ytdlbot
-ENV TZ=Europe/Stockholm
+ENV TZ=Europe/London
 
-COPY apk.txt /tmp/
-RUN apk update && xargs apk add  < /tmp/apk.txt
+RUN apt update && apt install -y --no-install-recommends --no-install-suggests ffmpeg vnstat git aria2
 COPY --from=builder /root/.local /usr/local
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo

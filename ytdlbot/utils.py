@@ -166,7 +166,6 @@ class Detector:
             "types.UpdatesTooLong",
             "Got shutdown from remote",
             "Code is updated",
-            'Retrying "messages.GetMessages"',
             "OSError: Connection lost",
             "[Errno -3] Try again",
             "MISCONF",
@@ -179,7 +178,7 @@ class Detector:
 
     def next_salt_detector(self):
         text = "Next salt in"
-        if self.logs.count(text) >= 4:
+        if self.logs.count(text) >= 5:
             logging.critical("Next salt crash: %s", self.func_name())
             return True
 
@@ -187,17 +186,17 @@ class Detector:
         text = "The msg_id is too low"
         if text in self.logs:
             logging.critical("msg id crash: %s ", self.func_name())
-            for item in pathlib.Path(__file__).parent.glob("ytdl-*"):
+            for item in pathlib.Path(__file__).parent.glob("*.session"):
+                logging.warning("Removing session file: %s", item)
                 item.unlink(missing_ok=True)
             time.sleep(3)
             return True
 
-    # def idle_detector(self):
-    #     mtime = os.stat("/var/log/ytdl.log").st_mtime
-    #     cur_ts = time.time()
-    #     if cur_ts - mtime > 7200:
-    #         logging.warning("Potential crash detected by %s, it's time to commit suicide...", self.func_name())
-    #         return True
+    def sqlite_locked_detector(self):
+        text = "sqlite3.OperationalError: database is locked"
+        if text in self.logs:
+            logging.critical("database is locked: %s ", self.func_name())
+            return True
 
 
 def auto_restart():

@@ -24,15 +24,10 @@ import ffpb
 import filetype
 import requests
 import yt_dlp as ytdl
+from pyrogram import types
 from tqdm import tqdm
 
-from config import (
-    AUDIO_FORMAT,
-    ENABLE_ARIA2,
-    ENABLE_FFMPEG,
-    TG_MAX_SIZE,
-    IPv6,
-)
+from config import AUDIO_FORMAT, ENABLE_ARIA2, ENABLE_FFMPEG, TG_MAX_SIZE, IPv6
 from limit import Payment
 from utils import adjust_formats, apply_log_formatter, current_time, sizeof_fmt
 
@@ -40,8 +35,8 @@ r = fakeredis.FakeStrictRedis()
 apply_log_formatter()
 
 
-def edit_text(bot_msg, text: str):
-    key = f"{bot_msg.chat.id}-{bot_msg.message_id}"
+def edit_text(bot_msg: types.Message, text: str):
+    key = f"{bot_msg.chat.id}-{bot_msg.id}"
     # if the key exists, we shouldn't send edit message
     if not r.exists(key):
         time.sleep(random.random())
@@ -87,7 +82,7 @@ def remove_bash_color(text):
 
 
 def download_hook(d: dict, bot_msg):
-    # since we're using celery, server location may be located in different continent.
+    # since we're using celery, server location may be located in different region.
     # Therefore, we can't trigger the hook very often.
     # the key is user_id + download_link
     original_url = d["info_dict"]["original_url"]
