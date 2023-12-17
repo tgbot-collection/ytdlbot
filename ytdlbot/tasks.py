@@ -71,7 +71,7 @@ def get_messages(chat_id: int, message_id: int):
     try:
         return bot.get_messages(chat_id, message_id)
     except ConnectionError as e:
-        logging.critical("CRITICAL ERROR: %s", e)
+        logging.critical("BOT IS NOT STARTED YET: %s", e)
         bot.start()
         return bot.get_messages(chat_id, message_id)
 
@@ -141,6 +141,7 @@ def ytdl_download_entrance(bot_msg: types.Message, url: str, mode=None):
         if ENABLE_CELERY and mode in [None, "Celery"]:
             ytdl_download_task.delay(chat_id, bot_msg.id, url)
         else:
+            get_messages(chat_id, bot_msg.id)
             ytdl_normal_download(bot_msg, url)
     except Exception as e:
         logging.error("Failed to download %s, error: %s", url, e)
