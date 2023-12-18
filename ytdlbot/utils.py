@@ -37,7 +37,6 @@ def apply_log_formatter():
 
 
 def customize_logger(logger: list):
-    apply_log_formatter()
     for log in logger:
         logging.getLogger(log).setLevel(level=logging.INFO)
 
