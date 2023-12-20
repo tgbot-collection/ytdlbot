@@ -6,17 +6,6 @@ YouTube Download Bot🚀🎬⬇️
 
 This Telegram bot allows you to download videos from YouTube and other supported websites, including Instagram!
 
-<details> <summary>Deploy to heroku</summary>
-
-<a href="https://heroku.com/deploy"><img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku"></a>
-
-If you are having trouble deploying, you can fork the project to your personal account and deploy it from there.
-
-**Starting November 28, 2022, free Heroku Dynos, free Heroku Postgres, and free Heroku Data for Redis® plans will no
-longer be available.**
-[Heroku Announcement](https://devcenter.heroku.com/articles/free-dyno-hours)
-</details>
-
 # Usage
 
 [https://t.me/benny_ytdlbot](https://t.me/benny_ytdlbot)
@@ -24,7 +13,7 @@ longer be available.**
 Join Telegram Channel https://t.me/+OGRC8tp9-U9mZDZl for updates.
 
 Send link directly to the bot. Any
-Websites [supported by yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md) will work t0o.
+Websites [supported by yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md) will work too.
 
 # Limitations of my bot
 
@@ -50,6 +39,7 @@ own bot. See below instructions.
 10. subscriptions to YouTube Channels
 11. cache mechanism - download once for the same video.
 12. instagram posts
+13. 4 GiB file size support with Telegram Premium
 
 # Screenshots
 
@@ -115,6 +105,19 @@ One line command to run the bot
 docker run -e APP_ID=111 -e APP_HASH=111 -e TOKEN=370FXI bennythink/ytdlbot
 ```
 
+## Heroku
+
+<details> <summary>Deploy to heroku</summary>
+
+<a href="https://heroku.com/deploy"><img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku"></a>
+
+If you are having trouble deploying, you can fork the project to your personal account and deploy it from there.
+
+**Starting November 28, 2022, free Heroku Dynos, free Heroku Postgres, and free Heroku Data for Redis® plans will no
+longer be available.**
+[Heroku Announcement](https://devcenter.heroku.com/articles/free-dyno-hours)
+</details>
+
 # Complete deployment guide for docker-compose
 
 * contains every functionality
@@ -172,6 +175,7 @@ You can configure all the following environment variables:
 * TMPFILE_PATH: tmpfile path(file download path)
 * TRONGRID_KEY: TronGrid key, better use your own key to avoid rate limit
 * TRON_MNEMONIC: Tron mnemonic, the default one is on nile testnet.
+* PREMIUM_USER: premium user ID, it can help you to download files larger than 2 GiB
 
 ## 3.2 Set up init data
 
@@ -248,8 +252,15 @@ On the other machine:
 docker-compose -f worker.yml up -d
 ```
 
-**⚠️ You should not publish Redis directly on the internet.
-Instead, you can use WireGuard to wrap it up for added security.**
+**⚠️ You should not publish Redis directly on the internet. ⚠️**
+
+### 4.4 4 GiB Support
+
+1. Subscribe to Telegram Premium
+2. Setup user id `PREMIUM_USER` in `ytdl.env`
+3. Create session file by running `python premium.py`
+4. Copy the session file `premium.session` to `data` directory
+5. `docker-compose up -d premium`
 
 ## kubernetes
 

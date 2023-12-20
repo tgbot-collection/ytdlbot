@@ -173,3 +173,5 @@ reinforcement/*
 /ytdlbot/main.session
 /ytdlbot/tasks.session
 /ytdlbot/tasks.session-journal
+/ytdlbot/premium.session
+/dump.rdb

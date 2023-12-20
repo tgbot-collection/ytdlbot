@@ -40,6 +40,7 @@ from config import (
     M3U8_SUPPORT,
     OWNER,
     PLAYLIST_SUPPORT,
+    PREMIUM_USER,
     PROVIDER_TOKEN,
     REQUIRED_MEMBERSHIP,
     TOKEN_PRICE,
@@ -343,6 +344,13 @@ def redeem_handler(client: Client, message: types.Message):
     unique = text.replace("/redeem", "").strip()
     msg = payment.verify_payment(chat_id, unique)
     message.reply_text(msg, quote=True)
+
+
+@app.on_message(filters.user(PREMIUM_USER) & filters.incoming & filters.caption)
+def premium_forward(client: Client, message: types.Message):
+    media = message.video or message.audio or message.document
+    target_user = media.file_name.split(".")[0]
+    client.forward_messages(target_user, message.chat.id, message.id)
 
 
 def generate_invoice(amount: int, title: str, description: str, payload: str):

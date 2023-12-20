@@ -77,3 +77,9 @@ TRONGRID_KEY = os.getenv("TRONGRID_KEY", "").split(",")
 # the default mnemonic is for nile testnet
 TRON_MNEMONIC = os.getenv("TRON_MNEMONIC", "cram floor today legend service drill pitch leaf car govern harvest soda")
 TRX_SIGNAL = signal("trx_received")
+
+PREMIUM_USER = int(os.getenv("PREMIUM_USER"))
+
+
+class FileTooBig(Exception):
+    pass
