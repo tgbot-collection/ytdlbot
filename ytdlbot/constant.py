@@ -83,6 +83,11 @@ Sending format: **{1}**
 """
     custom_text = os.getenv("CUSTOM_TEXT", "")
 
+    premium_warning = """
+    Your file is too big, do you want me to try to send it as premium user? 
+    Owner will know who you are and what you are downloading. You may be banned if you abuse this feature.
+    """
+
     @staticmethod
     def get_receive_link_text() -> str:
         reserved = get_func_queue("reserved")

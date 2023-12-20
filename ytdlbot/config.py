@@ -56,7 +56,7 @@ PLAYLIST_SUPPORT = os.getenv("PLAYLIST_SUPPORT", False)
 M3U8_SUPPORT = os.getenv("M3U8_SUPPORT", False)
 ENABLE_ARIA2 = os.getenv("ENABLE_ARIA2", False)
 
-RATE_LIMIT = os.getenv("RATE_LIMIT", 60)
+RATE_LIMIT = os.getenv("RATE_LIMIT", 120)
 RCLONE_PATH = os.getenv("RCLONE")
 # This will set the value for the tmpfile path(download path) if it is set.
 # If TMPFILE is not set, it will return None and use system’s default temporary file path.
