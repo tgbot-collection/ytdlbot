@@ -41,6 +41,9 @@ own bot. See below instructions.
 12. instagram posts
 13. 4 GiB file size support with Telegram Premium
 
+> If you download files larger than 2 GiB, you agreed that this file will be uploaded by me. I know who you are and what
+> you download.
+
 # Screenshots
 
 ## Normal download
