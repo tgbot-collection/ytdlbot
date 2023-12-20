@@ -19,7 +19,7 @@ Websites [supported by yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supp
 
 Due to limitations on servers and bandwidth, there are some restrictions on this free service.
 
-* Each user is limited to 20 free downloads per 24-hour period
+* Each user is limited to 10 free downloads per 24-hour period
 * Maximum of three subscriptions allowed for YouTube channels.
 
 If you need more downloads, you can purchase additional tokens. Additionally, you have the option of deploying your

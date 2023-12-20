@@ -56,7 +56,7 @@ PLAYLIST_SUPPORT = os.getenv("PLAYLIST_SUPPORT", False)
 M3U8_SUPPORT = os.getenv("M3U8_SUPPORT", False)
 ENABLE_ARIA2 = os.getenv("ENABLE_ARIA2", False)
 
-RATE_LIMIT = os.getenv("RATE_LIMIT", 120)
+RATE_LIMIT = os.getenv("RATE_LIMIT", 60)
 RCLONE_PATH = os.getenv("RCLONE")
 # This will set the value for the tmpfile path(download path) if it is set.
 # If TMPFILE is not set, it will return None and use system’s default temporary file path.
@@ -71,14 +71,14 @@ COFFEE_TOKEN = os.getenv("COFFEE_TOKEN")
 AFD_TOKEN = os.getenv("AFD_TOKEN")
 AFD_USER_ID = os.getenv("AFD_USER_ID")
 PROVIDER_TOKEN = os.getenv("PROVIDER_TOKEN") or "1234"
-FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 20)
+FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 10)
 TOKEN_PRICE = os.getenv("BUY_UNIT", 20)  # one USD=20 credits
 TRONGRID_KEY = os.getenv("TRONGRID_KEY", "").split(",")
 # the default mnemonic is for nile testnet
 TRON_MNEMONIC = os.getenv("TRON_MNEMONIC", "cram floor today legend service drill pitch leaf car govern harvest soda")
 TRX_SIGNAL = signal("trx_received")
 
-PREMIUM_USER = int(os.getenv("PREMIUM_USER"))
+PREMIUM_USER = int(os.getenv("PREMIUM_USER", "0"))
 
 
 class FileTooBig(Exception):

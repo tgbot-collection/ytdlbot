@@ -23,6 +23,12 @@ app = Client("premium", APP_ID, APP_HASH, workers=PYRO_WORKERS)
 BOT_ID = int(TOKEN.split(":")[0])
 
 
+def download_hook(d: dict):
+    downloaded = d.get("downloaded_bytes", 0)
+    total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
+    print(downloaded, total)
+
+
 @app.on_message(filters.user(BOT_ID) & filters.incoming)
 async def hello(client: Client, message: types.Message):
     text = message.text
@@ -35,7 +41,7 @@ async def hello(client: Client, message: types.Message):
 
     tempdir = tempfile.TemporaryDirectory(prefix="ytdl-")
     output = pathlib.Path(tempdir.name, "%(title).70s.%(ext)s").as_posix()
-    ydl_opts = {"restrictfilenames": False, "quiet": True, "outtmpl": output}
+    ydl_opts = {"restrictfilenames": False, "quiet": True, "outtmpl": output, "progress_hooks": [download_hook]}
     formats = [
         # webm , vp9 and av01 are not streamable on telegram, so we'll extract only mp4
         "bestvideo[ext=mp4][vcodec!*=av01][vcodec!*=vp09]+bestaudio[ext=m4a]/bestvideo+bestaudio",
@@ -50,12 +56,13 @@ async def hello(client: Client, message: types.Message):
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
             break
-        except Exception:
-            logging.error("Download failed for %s. Try other options...", url)
+        except Exception as e:
+            logging.error("Download failed for %s: %s", url, e)
 
     payment = Payment()
     settings = payment.get_user_settings(user_id)
     video_path = next(pathlib.Path(tempdir.name).glob("*"))
+    logging.info("filesize: %s", video_path.stat().st_size)
     if settings[2] == "video" or isinstance(settings[2], MagicMock):
         logging.info("Sending as video")
         await client.send_video(
