@@ -254,7 +254,7 @@ docker-compose -f worker.yml up -d
 
 **⚠️ You should not publish Redis directly on the internet. ⚠️**
 
-### ### 4.4 4 GiB Support
+### 4.4 4 GiB Support
 
 1. Subscribe to Telegram Premium
 2. Setup user id `PREMIUM_USER` in `ytdl.env`
