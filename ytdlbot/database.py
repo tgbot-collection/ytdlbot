@@ -25,7 +25,7 @@ import requests
 from beautifultable import BeautifulTable
 from influxdb import InfluxDBClient
 
-from config import MYSQL_HOST, MYSQL_PASS, MYSQL_USER, REDIS, IS_BACKUP_BOT
+from config import IS_BACKUP_BOT, MYSQL_HOST, MYSQL_PASS, MYSQL_USER, REDIS
 
 init_con = sqlite3.connect(":memory:", check_same_thread=False)
 

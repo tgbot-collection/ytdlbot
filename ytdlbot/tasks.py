@@ -8,6 +8,7 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import asyncio
+import json
 import logging
 import os
 import pathlib
@@ -39,10 +40,12 @@ from config import (
     ENABLE_CELERY,
     ENABLE_VIP,
     OWNER,
+    PREMIUM_USER,
     RATE_LIMIT,
     RCLONE_PATH,
     TMPFILE_PATH,
     WORKERS,
+    FileTooBig,
 )
 from constant import BotText
 from database import Redis
@@ -50,7 +53,6 @@ from downloader import edit_text, tqdm_progress, upload_hook, ytdl_download
 from limit import Payment
 from utils import (
     apply_log_formatter,
-    auto_restart,
     customize_logger,
     get_metadata,
     get_revision,
@@ -81,7 +83,16 @@ def retrieve_message(chat_id: int, message_id: int) -> types.Message | Any:
 def ytdl_download_task(chat_id: int, message_id: int, url: str):
     logging.info("YouTube celery tasks started for %s", url)
     bot_msg = retrieve_message(chat_id, message_id)
-    ytdl_normal_download(bot, bot_msg, url)
+    try:
+        ytdl_normal_download(bot, bot_msg, url)
+    except FileTooBig as e:
+        # if you can go there, that means you have premium users set up
+        logging.warning("Seeking for help from premium user...")
+        bot_msg.edit_text(f"{e}\n\nPlease wait, I will try to send it as premium user")
+        data = {"url": url, "user_id": bot_msg.chat.id}
+        bot.send_message(PREMIUM_USER, json.dumps(data), disable_notification=True, disable_web_page_preview=True)
+    except Exception:
+        bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
     logging.info("YouTube celery tasks ended.")
 
 
@@ -140,12 +151,19 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
         redis.update_metrics("cache_miss")
         mode = mode or payment.get_user_settings(chat_id)[-1]
         if ENABLE_CELERY and mode in [None, "Celery"]:
+            # in celery mode, producer has lost control of this task.
             ytdl_download_task.delay(chat_id, bot_msg.id, url)
         else:
             ytdl_normal_download(client, bot_msg, url)
+    except FileTooBig as e:
+        logging.warning("Seeking for help from premium user...")
+        bot_msg.edit_text(f"{e}\n\nPlease wait, I will try to send it as premium user")
+        # this is only for normal node. Celery node will need to do it in celery tasks
+        data = {"url": url, "user_id": bot_msg.chat.id}
+        client.send_message(PREMIUM_USER, json.dumps(data), disable_notification=True, disable_web_page_preview=True)
     except Exception as e:
         logging.error("Failed to download %s, error: %s", url, e)
-        bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[0:4000]}`", disable_web_page_preview=True)
+        bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
 
 
 def direct_download_entrance(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
@@ -484,7 +502,7 @@ if __name__ == "__main__":
     threading.Thread(target=run_celery, daemon=True).start()
 
     scheduler = BackgroundScheduler(timezone="Europe/London")
-    scheduler.add_job(auto_restart, "interval", seconds=900)
+    # scheduler.add_job(auto_restart, "interval", seconds=900)
     scheduler.start()
 
     idle()

@@ -52,9 +52,11 @@ services:
     ports:
       - "127.0.0.1:15555:5555"
 
-  instagram:
+  premium:
     image: bennythink/ytdlbot
     env_file:
       - env/ytdl.env
     restart: always
-    command: [ "/usr/local/bin/python",  "/ytdlbot/ytdlbot/instagram.py" ]
+    volumes:
+      - ./data/premium.session:/ytdlbot/ytdlbot/premium.session
+    command: [ "/usr/local/bin/python",  "/ytdlbot/ytdlbot/premium.py" ]
