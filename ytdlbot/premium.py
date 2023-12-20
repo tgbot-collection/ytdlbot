@@ -29,6 +29,10 @@ def download_hook(d: dict):
     print(downloaded, total)
 
 
+async def upload_hook(current, total):
+    print(current, total)
+
+
 @app.on_message(filters.user(BOT_ID) & filters.incoming)
 async def hello(client: Client, message: types.Message):
     text = message.text
@@ -71,6 +75,7 @@ async def hello(client: Client, message: types.Message):
             caption="Powered by ytdlbot",
             supports_streaming=True,
             file_name=f"{user_id}.mp4",
+            progress=upload_hook,
         )
     elif settings[2] == "audio":
         logging.info("Sending as audio")
@@ -79,6 +84,7 @@ async def hello(client: Client, message: types.Message):
             video_path.as_posix(),
             caption="Powered by ytdlbot ",
             file_name=f"{user_id}.mp3",
+            progress=upload_hook,
         )
     elif settings[2] == "document":
         logging.info("Sending as document")
@@ -87,6 +93,7 @@ async def hello(client: Client, message: types.Message):
             video_path.as_posix(),
             caption="Powered by ytdlbot",
             file_name=f"{user_id}.mp4",
+            progress=upload_hook,
         )
     else:
         logging.error("Send type is not video or audio")
