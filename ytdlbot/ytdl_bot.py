@@ -8,6 +8,7 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import contextlib
+import json
 import logging
 import os
 import random
@@ -320,12 +321,15 @@ def tronpayment_btn_calback(client: Client, callback_query: types.CallbackQuery)
 def premium_click(client: Client, callback_query: types.CallbackQuery):
     data = callback_query.data
     if data == "premium-yes":
-        callback_query.answer("developing....please wait for next release")
-        # replied = callback_query.message.reply_to_message
-        # data = {"url": replied.text, "user_id": callback_query.message.chat.id}
-        # client.send_message(PREMIUM_USER, json.dumps(data), disable_notification=True, disable_web_page_preview=True)
+        callback_query.answer("Seeking premium user...")
+        callback_query.message.edit_text("Please wait patiently...no progress bar will be shown.")
+        replied = callback_query.message.reply_to_message
+        data = {"url": replied.text, "user_id": callback_query.message.chat.id}
+        client.send_message(PREMIUM_USER, json.dumps(data), disable_notification=True, disable_web_page_preview=True)
     else:
         callback_query.answer("Cancelled.")
+        original_text = callback_query.message.text
+        callback_query.message.edit_text(original_text.split("\n")[0])
 
 
 @app.on_callback_query(filters.regex(r"bot-payments-.*"))
@@ -363,6 +367,15 @@ def premium_forward(client: Client, message: types.Message):
     media = message.video or message.audio or message.document
     target_user = media.file_name.split(".")[0]
     client.forward_messages(target_user, message.chat.id, message.id)
+
+
+@app.on_message(filters.command(["ban"]) & filters.user(PREMIUM_USER))
+def ban_handler(client: Client, message: types.Message):
+    replied = message.reply_to_message.text
+    user_id = json.loads(replied).get("user_id")
+    redis = Redis()
+    redis.r.hset("ban", user_id, 1)
+    message.reply_text(f"Done, banned {user_id}.", quote=True)
 
 
 def generate_invoice(amount: int, title: str, description: str, payload: str):

@@ -85,7 +85,9 @@ Sending format: **{1}**
 
     premium_warning = """
     Your file is too big, do you want me to try to send it as premium user? 
-    Owner will know who you are and what you are downloading. You may be banned if you abuse this feature.
+    This is an experimental feature so you can only use it once per day.
+    Also, the premium user will know who you are and what you are downloading. 
+    You may be banned if you abuse this feature.
     """
 
     @staticmethod

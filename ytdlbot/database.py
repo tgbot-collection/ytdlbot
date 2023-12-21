@@ -182,6 +182,8 @@ class Redis:
             if k.startswith("today"):
                 self.r.hdel("metrics", k)
 
+        self.r.delete("premium")
+
     def user_count(self, user_id):
         self.r.hincrby("metrics", user_id)
 

@@ -8,14 +8,13 @@ import json
 import logging
 import pathlib
 import tempfile
-from unittest.mock import MagicMock
 
 import yt_dlp
 from pyrogram import Client, filters, types
 
 from config import APP_HASH, APP_ID, PYRO_WORKERS, TOKEN
-from limit import Payment
-from utils import apply_log_formatter
+from limit import Payment, Redis
+from utils import apply_log_formatter, sizeof_fmt
 
 apply_log_formatter()
 app = Client("premium", APP_ID, APP_HASH, workers=PYRO_WORKERS)
@@ -26,11 +25,11 @@ BOT_ID = int(TOKEN.split(":")[0])
 def download_hook(d: dict):
     downloaded = d.get("downloaded_bytes", 0)
     total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
-    print(downloaded, total)
+    logging.info("Downloaded %s/%s, %.2f%% complete", downloaded, total, downloaded / total * 100)
 
 
 async def upload_hook(current, total):
-    print(current, total)
+    logging.info("Uploaded %s/%s, %.2f%% complete", current, total, current / total * 100)
 
 
 @app.on_message(filters.user(BOT_ID) & filters.incoming)
@@ -66,18 +65,8 @@ async def hello(client: Client, message: types.Message):
     payment = Payment()
     settings = payment.get_user_settings(user_id)
     video_path = next(pathlib.Path(tempdir.name).glob("*"))
-    logging.info("filesize: %s", video_path.stat().st_size)
-    if settings[2] == "video" or isinstance(settings[2], MagicMock):
-        logging.info("Sending as video")
-        await client.send_video(
-            BOT_ID,
-            video_path.as_posix(),
-            caption="Powered by ytdlbot",
-            supports_streaming=True,
-            file_name=f"{user_id}.mp4",
-            progress=upload_hook,
-        )
-    elif settings[2] == "audio":
+    logging.info("Final filesize is %s", sizeof_fmt(video_path.stat().st_size))
+    if settings[2] == "audio":
         logging.info("Sending as audio")
         await client.send_audio(
             BOT_ID,
@@ -96,9 +85,19 @@ async def hello(client: Client, message: types.Message):
             progress=upload_hook,
         )
     else:
-        logging.error("Send type is not video or audio")
+        logging.info("Sending as video")
+        await client.send_video(
+            BOT_ID,
+            video_path.as_posix(),
+            caption="Powered by ytdlbot",
+            supports_streaming=True,
+            file_name=f"{user_id}.mp4",
+            progress=upload_hook,
+        )
 
     tempdir.cleanup()
+    redis = Redis()
+    redis.r.hset("premium", user_id, 1)
 
 
 if __name__ == "__main__":

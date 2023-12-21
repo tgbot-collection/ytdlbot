@@ -78,7 +78,12 @@ def retrieve_message(chat_id: int, message_id: int) -> types.Message | Any:
         return bot.get_messages(chat_id, message_id)
 
 
-def premium_button():
+def premium_button(user_id):
+    redis = Redis()
+    used = redis.r.hget("premium", user_id)
+    ban = redis.r.hget("ban", user_id)
+    if used or ban:
+        return None
     markup = types.InlineKeyboardMarkup(
         [
             [
@@ -99,7 +104,11 @@ def ytdl_download_task(chat_id: int, message_id: int, url: str):
     except FileTooBig as e:
         # if you can go there, that means you have premium users set up
         logging.warning("Seeking for help from premium user...")
-        bot_msg.edit_text(f"{e}\n\n{bot_text.premium_warning}", reply_markup=premium_button())
+        markup = premium_button(chat_id)
+        if markup:
+            bot_msg.edit_text(f"{e}\n\n{bot_text.premium_warning}", reply_markup=markup)
+        else:
+            bot_msg.edit_text(f"{e}\n\n Big file download is not available now, please try again later.")
     except Exception:
         bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
     logging.info("YouTube celery tasks ended.")
@@ -167,7 +176,11 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
     except FileTooBig as e:
         logging.warning("Seeking for help from premium user...")
         # this is only for normal node. Celery node will need to do it in celery tasks
-        bot_msg.edit_text(f"{e}\n\n{bot_text.premium_warning}", reply_markup=premium_button())
+        markup = premium_button(chat_id)
+        if markup:
+            bot_msg.edit_text(f"{e}\n\n{bot_text.premium_warning}", reply_markup=markup)
+        else:
+            bot_msg.edit_text(f"{e}\n\n Big file download is not available now, please try again later.")
     except Exception as e:
         logging.error("Failed to download %s, error: %s", url, e)
         bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
