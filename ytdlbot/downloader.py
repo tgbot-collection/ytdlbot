@@ -7,18 +7,18 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
+import functools
 import logging
 import os
 import pathlib
-import random
 import re
 import subprocess
+import threading
 import time
 import traceback
 from io import StringIO
 from unittest.mock import MagicMock
 
-import fakeredis
 import ffmpeg
 import ffpb
 import filetype
@@ -39,17 +39,41 @@ from config import (
 from limit import Payment
 from utils import adjust_formats, apply_log_formatter, current_time, sizeof_fmt
 
-r = fakeredis.FakeStrictRedis()
 apply_log_formatter()
 
 
+def debounce(wait_seconds):
+    """
+    Thread-safe debounce decorator for functions that take a message with chat.id and msg.id attributes.
+    The function will only be called if it hasn't been called with the same chat.id and msg.id in the last 'wait_seconds'.
+    """
+
+    def decorator(func):
+        last_called = {}
+        lock = threading.Lock()
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            nonlocal last_called
+            now = time.time()
+
+            # Assuming the first argument is the message object with chat.id and msg.id
+            bot_msg = args[0]
+            key = (bot_msg.chat.id, bot_msg.id)
+
+            with lock:
+                if key not in last_called or now - last_called[key] >= wait_seconds:
+                    last_called[key] = now
+                    return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+@debounce(5)
 def edit_text(bot_msg: types.Message, text: str):
-    key = f"{bot_msg.chat.id}-{bot_msg.id}"
-    # if the key exists, we shouldn't send edit message
-    if not r.exists(key):
-        time.sleep(random.random())
-        r.set(key, "ok", ex=3)
-        bot_msg.edit_text(text)
+    bot_msg.edit_text(text)
 
 
 def tqdm_progress(desc, total, finished, speed="", eta=""):
@@ -111,7 +135,6 @@ def download_hook(d: dict, bot_msg):
         eta = remove_bash_color(d.get("_eta_str", d.get("eta")))
         text = tqdm_progress("Downloading...", total, downloaded, speed, eta)
         edit_text(bot_msg, text)
-        r.set(key, "ok", ex=5)
 
 
 def upload_hook(current, total, bot_msg):
