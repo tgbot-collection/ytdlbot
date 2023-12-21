@@ -73,7 +73,7 @@ def private_use(func):
         chat_id = getattr(message.from_user, "id", None)
 
         # message type check
-        if message.chat.type != enums.ChatType.PRIVATE and not message.text.lower().startswith("/ytdl"):
+        if message.chat.type != enums.ChatType.PRIVATE and not getattr(message, "text", "").lower().startswith("/ytdl"):
             logging.debug("%s, it's annoying me...🙄️ ", message.text)
             return
 
