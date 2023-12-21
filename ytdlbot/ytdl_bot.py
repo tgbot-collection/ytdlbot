@@ -8,7 +8,6 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import contextlib
-import json
 import logging
 import os
 import random
@@ -321,9 +320,10 @@ def tronpayment_btn_calback(client: Client, callback_query: types.CallbackQuery)
 def premium_click(client: Client, callback_query: types.CallbackQuery):
     data = callback_query.data
     if data == "premium-yes":
-        replied = callback_query.message.reply_to_message
-        data = {"url": replied.text, "user_id": callback_query.message.chat.id}
-        client.send_message(PREMIUM_USER, json.dumps(data), disable_notification=True, disable_web_page_preview=True)
+        callback_query.answer("developing....please wait for next release")
+        # replied = callback_query.message.reply_to_message
+        # data = {"url": replied.text, "user_id": callback_query.message.chat.id}
+        # client.send_message(PREMIUM_USER, json.dumps(data), disable_notification=True, disable_web_page_preview=True)
     else:
         callback_query.answer("Cancelled.")
 
