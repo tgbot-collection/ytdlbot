@@ -5,7 +5,7 @@
 # 8/28/21 15:01
 #
 
-__author__ = "Benny <benny.think@gmail.com>"
+__author__ = "Hirran <hirrantech@gmail.com>"
 
 import os
 
@@ -14,9 +14,9 @@ from blinker import signal
 # general settings
 WORKERS: int = int(os.getenv("WORKERS", 10))
 PYRO_WORKERS: int = int(os.getenv("PYRO_WORKERS", 100))
-APP_ID: int = int(os.getenv("APP_ID", 198214))
-APP_HASH = os.getenv("APP_HASH", "1234b90")
-TOKEN = os.getenv("TOKEN", "1234")
+APP_ID: int = int(os.getenv("APP_ID", 24750686))
+APP_HASH = os.getenv("APP_HASH", "f22d0f3cd3045b86da1e3dbb6bb614d7")
+TOKEN = os.getenv("TOKEN", "6470095811:AAEhXtqYiO2Gp49g8H_K6jj6ggi6Nre8gGM")
 
 REDIS = os.getenv("REDIS", "redis")
 
@@ -26,7 +26,7 @@ TG_MAX_SIZE = 2000 * 1024 * 1024
 EXPIRE = 24 * 3600
 
 ENABLE_VIP = os.getenv("VIP", False)
-OWNER = os.getenv("OWNER", "BennyThink")
+OWNER = os.getenv("OWNER", "@jokervirus2")
 
 # limitation settings
 AUTHORIZED_USER: str = os.getenv("AUTHORIZED_USER", "")
@@ -65,13 +65,13 @@ RCLONE_PATH = os.getenv("RCLONE")
 TMPFILE_PATH = os.getenv("TMPFILE")
 
 # payment settings
-AFD_LINK = os.getenv("AFD_LINK", "https://afdian.net/@BennyThink")
+AFD_LINK = os.getenv("AFD_LINK", "https://telegram.me/jokervirus2")
 COFFEE_LINK = os.getenv("COFFEE_LINK", "https://www.buymeacoffee.com/bennythink")
 COFFEE_TOKEN = os.getenv("COFFEE_TOKEN")
 AFD_TOKEN = os.getenv("AFD_TOKEN")
 AFD_USER_ID = os.getenv("AFD_USER_ID")
 PROVIDER_TOKEN = os.getenv("PROVIDER_TOKEN") or "1234"
-FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 10)
+FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 50)
 TOKEN_PRICE = os.getenv("BUY_UNIT", 20)  # one USD=20 credits
 TRONGRID_KEY = os.getenv("TRONGRID_KEY", "").split(",")
 # the default mnemonic is for nile testnet
