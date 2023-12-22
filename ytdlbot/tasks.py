@@ -80,10 +80,18 @@ def retrieve_message(chat_id: int, message_id: int) -> types.Message | Any:
 
 def premium_button(user_id):
     redis = Redis()
+    payment = Payment()
     used = redis.r.hget("premium", user_id)
     ban = redis.r.hget("ban", user_id)
-    if used or ban:
+    paid_token = payment.get_pay_token(user_id)
+
+    if ban:
         return None
+    # vip mode: vip user can use once per day, normal user can't use
+    # non vip mode: everyone can use once per day
+    if used or (ENABLE_VIP and paid_token == 0):
+        return None
+
     markup = types.InlineKeyboardMarkup(
         [
             [
@@ -108,7 +116,7 @@ def ytdl_download_task(chat_id: int, message_id: int, url: str):
         if markup:
             bot_msg.edit_text(f"{e}\n\n{bot_text.premium_warning}", reply_markup=markup)
         else:
-            bot_msg.edit_text(f"{e}\n\n Big file download is not available now, please try again later.")
+            bot_msg.edit_text(f"{e}\nBig file download is not available now. Please /buy or try again later ")
     except Exception:
         bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
     logging.info("YouTube celery tasks ended.")
@@ -180,7 +188,7 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
         if markup:
             bot_msg.edit_text(f"{e}\n\n{bot_text.premium_warning}", reply_markup=markup)
         else:
-            bot_msg.edit_text(f"{e}\n\n Big file download is not available now, please try again later.")
+            bot_msg.edit_text(f"{e}\nBig file download is not available now. Please /buy or try again later ")
     except Exception as e:
         logging.error("Failed to download %s, error: %s", url, e)
         bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)

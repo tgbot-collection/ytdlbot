@@ -45,6 +45,8 @@ class BotText:
 
 4. Download for paid user will be automatically changed to Local mode to avoid queuing.
 
+5. Paid user can download files larger than 2GB.
+
 **Price:**
 valid permanently
 1. 1 USD == {TOKEN_PRICE} tokens

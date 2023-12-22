@@ -21,9 +21,9 @@ Due to limitations on servers and bandwidth, there are some restrictions on this
 
 * Each user is limited to 10 free downloads per 24-hour period
 * Maximum of three subscriptions allowed for YouTube channels.
+* Files bigger than 2 GiB will require at least 1 download token.
 
-If you need more downloads, you can purchase additional tokens. Additionally, you have the option of deploying your
-own bot. See below instructions.
+If you need more downloads, you can buy download tokens.
 
 # Features
 

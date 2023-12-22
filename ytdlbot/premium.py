@@ -68,12 +68,13 @@ async def hello(client: Client, message: types.Message):
     settings = payment.get_user_settings(user_id)
     video_path = next(pathlib.Path(tempdir.name).glob("*"))
     logging.info("Final filesize is %s", sizeof_fmt(video_path.stat().st_size))
+    caption = "Powered by @benny_ytdlbot "
     if settings[2] == "audio":
         logging.info("Sending as audio")
         await client.send_audio(
             BOT_ID,
             video_path.as_posix(),
-            caption="Powered by ytdlbot ",
+            caption=caption,
             file_name=f"{user_id}.mp3",
             progress=upload_hook,
         )
@@ -82,7 +83,7 @@ async def hello(client: Client, message: types.Message):
         await client.send_document(
             BOT_ID,
             video_path.as_posix(),
-            caption="Powered by ytdlbot",
+            caption=caption,
             file_name=f"{user_id}.mp4",
             progress=upload_hook,
         )
@@ -91,13 +92,14 @@ async def hello(client: Client, message: types.Message):
         await client.send_video(
             BOT_ID,
             video_path.as_posix(),
-            caption="Powered by ytdlbot",
+            caption=caption,
             supports_streaming=True,
             file_name=f"{user_id}.mp4",
             progress=upload_hook,
         )
 
     tempdir.cleanup()
+    logging.info("Finished sending %s", url)
 
 
 if __name__ == "__main__":

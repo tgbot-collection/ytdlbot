@@ -32,7 +32,8 @@ from config import (
     ENABLE_ARIA2,
     ENABLE_FFMPEG,
     PREMIUM_USER,
-    TG_MAX_SIZE,
+    TG_NORMAL_MAX_SIZE,
+    TG_PREMIUM_MAX_SIZE,
     FileTooBig,
     IPv6,
 )
@@ -123,7 +124,9 @@ def download_hook(d: dict, bot_msg):
     if d["status"] == "downloading":
         downloaded = d.get("downloaded_bytes", 0)
         total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
-        if total > TG_MAX_SIZE:
+        if total > TG_PREMIUM_MAX_SIZE:
+            raise Exception(f"There's no way to handle a file of {sizeof_fmt(total)}.")
+        if total > TG_NORMAL_MAX_SIZE:
             msg = f"Your download file size {sizeof_fmt(total)} is too large for Telegram."
             if PREMIUM_USER:
                 raise FileTooBig(msg)
@@ -292,10 +295,10 @@ def split_large_video(video_paths: list):
     split = False
     for original_video in video_paths:
         size = os.stat(original_video).st_size
-        if size > TG_MAX_SIZE:
+        if size > TG_NORMAL_MAX_SIZE:
             split = True
             logging.warning("file is too large %s, splitting...", size)
-            subprocess.check_output(f"sh split-video.sh {original_video} {TG_MAX_SIZE * 0.95} ".split())
+            subprocess.check_output(f"sh split-video.sh {original_video} {TG_NORMAL_MAX_SIZE * 0.95} ".split())
             os.remove(original_video)
 
     if split and original_video:
