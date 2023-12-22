@@ -42,6 +42,8 @@ async def hello(client: Client, message: types.Message):
     url = data["url"]
     user_id = data["user_id"]
 
+    redis = Redis()
+    redis.r.hset("premium", user_id, 1)
     tempdir = tempfile.TemporaryDirectory(prefix="ytdl-")
     output = pathlib.Path(tempdir.name, "%(title).70s.%(ext)s").as_posix()
     ydl_opts = {"restrictfilenames": False, "quiet": True, "outtmpl": output, "progress_hooks": [download_hook]}
@@ -96,8 +98,6 @@ async def hello(client: Client, message: types.Message):
         )
 
     tempdir.cleanup()
-    redis = Redis()
-    redis.r.hset("premium", user_id, 1)
 
 
 if __name__ == "__main__":
