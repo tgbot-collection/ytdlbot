@@ -51,7 +51,6 @@ from downloader import edit_text, tqdm_progress, upload_hook, ytdl_download
 from limit import Payment
 from utils import (
     apply_log_formatter,
-    auto_restart,
     customize_logger,
     get_metadata,
     get_revision,
@@ -530,7 +529,7 @@ if __name__ == "__main__":
     threading.Thread(target=run_celery, daemon=True).start()
 
     scheduler = BackgroundScheduler(timezone="Europe/London")
-    scheduler.add_job(auto_restart, "interval", seconds=900)
+    # scheduler.add_job(auto_restart, "interval", seconds=900)
     scheduler.start()
 
     idle()
