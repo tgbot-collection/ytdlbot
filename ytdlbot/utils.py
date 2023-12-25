@@ -193,7 +193,7 @@ def auto_restart():
     if not os.path.exists(log_path):
         return
     with open(log_path) as f:
-        logs = "".join(tail_log(f, lines=50))
+        logs = "".join(tail_log(f, lines=10))
 
     det = Detector(logs)
     method_list = [getattr(det, func) for func in dir(det) if func.endswith("_detector")]
