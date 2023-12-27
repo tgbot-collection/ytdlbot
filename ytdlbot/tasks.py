@@ -118,7 +118,11 @@ def ytdl_download_task(chat_id: int, message_id: int, url: str):
         else:
             bot_msg.edit_text(f"{e}\nBig file download is not available now. Please /buy or try again later ")
     except Exception:
-        bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
+        index = traceback.format_exc().find("yt_dlp.utils.DownloadError: ERROR: ")
+        if index:
+            bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[index + len('yt_dlp.utils.DownloadError: ERROR: '):]}`", disable_web_page_preview=True)
+        else:
+            bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
     logging.info("YouTube celery tasks ended.")
 
 
@@ -191,7 +195,11 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
             bot_msg.edit_text(f"{e}\nBig file download is not available now. Please /buy or try again later ")
     except Exception as e:
         logging.error("Failed to download %s, error: %s", url, e)
-        bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
+        index = traceback.format_exc().find("yt_dlp.utils.DownloadError: ERROR: ")
+        if index:
+            bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[index + len('yt_dlp.utils.DownloadError: ERROR: '):]}`", disable_web_page_preview=True)
+        else:
+            bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
 
 
 def direct_download_entrance(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
