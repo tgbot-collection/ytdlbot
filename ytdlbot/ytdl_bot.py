@@ -573,7 +573,7 @@ def trx_notify(_, **kwargs):
 if __name__ == "__main__":
     MySQL()
     TRX_SIGNAL.connect(trx_notify)
-    scheduler = BackgroundScheduler(timezone="Europe/London", job_defaults={"max_instances": 6})
+    scheduler = BackgroundScheduler(timezone="Europe/London")
     scheduler.add_job(auto_restart, "interval", seconds=600)
     scheduler.add_job(clean_tempfile, "interval", seconds=120)
     scheduler.add_job(gc.collect, "interval", seconds=3600)

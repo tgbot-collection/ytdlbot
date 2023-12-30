@@ -317,7 +317,7 @@ class InfluxDB:
         password = os.getenv("FLOWER_PASSWORD", "123456abc")
         token = base64.b64encode(f"{username}:{password}".encode()).decode()
         headers = {"Authorization": f"Basic {token}"}
-        r = requests.get("https://celery.dmesg.app/dashboard?json=1", headers=headers)
+        r = requests.get("https://celery.dmesg.app/workers?json=1", headers=headers)
         if r.status_code != 200:
             return dict(data=[])
         return r.json()
