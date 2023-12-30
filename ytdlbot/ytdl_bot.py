@@ -19,10 +19,12 @@ import traceback
 from io import BytesIO
 from typing import Any
 
+import objgraph
 import pyrogram.errors
 import qrcode
 import yt_dlp
 from apscheduler.schedulers.background import BackgroundScheduler
+from pympler import tracker
 from pyrogram import Client, enums, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.raw import functions
@@ -569,8 +571,17 @@ def trx_notify(_, **kwargs):
     app.send_message(user_id, text)
 
 
+def track_memory():
+    print("\n\nobjgraph result:")
+    objgraph.show_growth()
+    objgraph.show_most_common_types()
+    print("\n\npympler result:")
+    tr.print_diff()
+
+
 if __name__ == "__main__":
     MySQL()
+    tr = tracker.SummaryTracker()
     TRX_SIGNAL.connect(trx_notify)
     scheduler = BackgroundScheduler(timezone="Europe/London", job_defaults={"max_instances": 6})
     scheduler.add_job(auto_restart, "interval", seconds=600)
@@ -579,6 +590,7 @@ if __name__ == "__main__":
         scheduler.add_job(Redis().reset_today, "cron", hour=0, minute=0)
         scheduler.add_job(InfluxDB().collect_data, "interval", seconds=120)
         scheduler.add_job(TronTrx().check_payment, "interval", seconds=60, max_instances=1)
+        scheduler.add_job(track_memory, "interval", seconds=120, max_instances=1)
         #  default quota allocation of 10,000 units per day
         scheduler.add_job(periodic_sub_check, "interval", seconds=3600)
     scheduler.start()
