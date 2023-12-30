@@ -27,5 +27,3 @@ mnemonic==0.20
 qrcode==7.4.2
 blinker==1.7.0
 flask===3.0.0
-objgraph==3.6.0
-pympler==1.0.1
