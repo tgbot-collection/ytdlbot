@@ -8,6 +8,7 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import contextlib
+import gc
 import json
 import logging
 import os
@@ -575,6 +576,7 @@ if __name__ == "__main__":
     scheduler = BackgroundScheduler(timezone="Europe/London", job_defaults={"max_instances": 6})
     scheduler.add_job(auto_restart, "interval", seconds=600)
     scheduler.add_job(clean_tempfile, "interval", seconds=120)
+    scheduler.add_job(gc.collect, "interval", seconds=3600)
     if not IS_BACKUP_BOT:
         scheduler.add_job(Redis().reset_today, "cron", hour=0, minute=0)
         scheduler.add_job(InfluxDB().collect_data, "interval", seconds=120)

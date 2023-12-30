@@ -258,7 +258,7 @@ class MySQL:
             self.con = pymysql.connect(
                 host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl", charset="utf8mb4"
             )
-            self.con.ping(reconnect = True)
+            self.con.ping(reconnect=True)
         except Exception:
             logging.warning("MySQL connection failed, using fake mysql instead.")
             self.con = FakeMySQL()
