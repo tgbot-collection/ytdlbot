@@ -305,7 +305,16 @@ class MySQL:
 
 class InfluxDB:
     def __init__(self):
-        self.client = InfluxDBClient(host=os.getenv("INFLUX_HOST", "192.168.7.233"), database="celery")
+        self.client = InfluxDBClient(
+            host=os.getenv("INFLUX_HOST"),
+            path=os.getenv("INFLUX_PATH"),
+            port=443,
+            username="nova",
+            password=os.getenv("INFLUX_PASS"),
+            database="celery",
+            ssl=True,
+            verify_ssl=True,
+        )
         self.data = None
 
     def __del__(self):
