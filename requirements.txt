@@ -1,6 +1,6 @@
 pyrogram==2.0.106
 tgcrypto==1.2.5
-yt-dlp==2023.11.16
+yt-dlp==2023.12.30
 APScheduler==3.10.4
 beautifultable==1.1.0
 ffmpeg-python==0.2.0
