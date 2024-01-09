@@ -183,7 +183,7 @@ class Detector:
 
     def connection_reset_detector(self):
         text = "Send exception: ConnectionResetError Connection lost"
-        if text in self.logs:
+        if self.logs.count(text) >= 5:
             logging.critical("connection lost: %s ", self.func_name())
             return True
 

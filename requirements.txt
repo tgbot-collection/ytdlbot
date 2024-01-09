@@ -23,7 +23,7 @@ youtube-search-python==1.6.6
 token-bucket==0.3.0
 coloredlogs==15.0.1
 tronpy==0.4.0
-mnemonic==0.20
+mnemonic==0.21
 qrcode==7.4.2
 blinker==1.7.0
 flask===3.0.0
