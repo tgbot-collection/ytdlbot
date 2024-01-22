@@ -38,7 +38,7 @@ If you need more downloads, you can buy download tokens.
 9. celery worker distribution - faster than before.
 10. subscriptions to YouTube Channels
 11. cache mechanism - download once for the same video.
-12. instagram posts
+12. instagram posts(only available for my bot)
 13. 4 GiB file size support with Telegram Premium
 
 > If you download files larger than 2 GiB, you agreed that this file will be uploaded by me. I know who you are and what
