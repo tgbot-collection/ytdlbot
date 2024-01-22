@@ -8,7 +8,7 @@ PyMySQL==1.1.0
 celery==5.3.6
 filetype==1.2.0
 flower==2.0.1
-psutil==5.9.7
+psutil==5.9.8
 influxdb==5.3.1
 beautifulsoup4==4.12.2
 fakeredis==2.20.1
