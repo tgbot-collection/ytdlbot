@@ -26,4 +26,4 @@ tronpy==0.4.0
 mnemonic==0.21
 qrcode==7.4.2
 blinker==1.7.0
-flask===3.0.0
+flask===3.0.2
