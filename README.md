@@ -40,6 +40,7 @@ If you need more downloads, you can buy download tokens.
 11. cache mechanism - download once for the same video.
 12. instagram posts(only available for my bot)
 13. 4 GiB file size support with Telegram Premium
+14. History and inline mode support
 
 > If you download files larger than 2 GiB, you agreed that this file will be uploaded by me. I know who you are and what
 > you download.
@@ -285,6 +286,8 @@ unsub - Unsubscribe from YouTube Channel
 sub_count - Check subscription status, owner only.
 uncache - Delete cache for this link, owner only.
 purge - Delete all tasks, owner only.
+show_history - Show download history
+clear_history - Clear download history
 ```
 
 # Test data

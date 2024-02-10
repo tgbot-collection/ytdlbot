@@ -226,6 +226,24 @@ def sub_count_handler(client: Client, message: types.Message):
             client.send_document(chat_id, f)
 
 
+@app.on_message(filters.command(["show_history"]))
+def show_history(client: Client, message: types.Message):
+    chat_id = message.chat.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    data = MySQL().show_history(chat_id)
+    if data:
+        client.send_message(chat_id, data, disable_web_page_preview=True)
+    else:
+        client.send_message(chat_id, "No history found.")
+
+
+@app.on_message(filters.command(["clear_history"]))
+def clear_history(client: Client, message: types.Message):
+    chat_id = message.chat.id
+    MySQL().clear_history(chat_id)
+    message.reply_text("History cleared.", quote=True)
+
+
 @app.on_message(filters.command(["direct"]))
 def direct_handler(client: Client, message: types.Message):
     redis = Redis()
@@ -249,9 +267,9 @@ def settings_handler(client: Client, message: types.Message):
     payment = Payment()
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     data = MySQL().get_user_settings(chat_id)
-    set_mode = data[-1]
+    set_mode = data[3]
     text = {"Local": "Celery", "Celery": "Local"}.get(set_mode, "Local")
-    mode_text = f"Download mode: **{set_mode}**"
+    mode_text = f"Download mode: **{set_mode}**\nHistory record: {data[4]}"
     if message.chat.username == OWNER or payment.get_pay_token(chat_id):
         extra = [types.InlineKeyboardButton(f"Change download mode to {text}", callback_data=text)]
     else:
@@ -268,6 +286,9 @@ def settings_handler(client: Client, message: types.Message):
                 types.InlineKeyboardButton("High Quality", callback_data="high"),
                 types.InlineKeyboardButton("Medium Quality", callback_data="medium"),
                 types.InlineKeyboardButton("Low Quality", callback_data="low"),
+            ],
+            [
+                types.InlineKeyboardButton("Toggle History", callback_data=f"history-{data[4]}"),
             ],
             extra,
         ]
@@ -503,6 +524,35 @@ def download_resolution_callback(client: Client, callback_query: types.CallbackQ
     logging.info("Setting %s file type to %s", chat_id, data)
     MySQL().set_user_settings(chat_id, "resolution", data)
     callback_query.answer(f"Your default download quality was set to {callback_query.data}")
+
+
+@app.on_callback_query(filters.regex(r"history.*"))
+def set_history_callback(client: Client, callback_query: types.CallbackQuery):
+    chat_id = callback_query.message.chat.id
+    data = callback_query.data.split("-")[-1]
+
+    r = "OFF" if data == "ON" else "ON"
+    logging.info("Setting %s file type to %s", chat_id, data)
+    MySQL().set_user_settings(chat_id, "history", r)
+    callback_query.answer("History setting updated.")
+
+
+@app.on_inline_query()
+def inline_query(client: Client, inline_query: types.InlineQuery):
+    kw = inline_query.query
+    user_id = inline_query.from_user.id
+    data = MySQL().search_history(user_id, kw)
+    if data:
+        results = [
+            types.InlineQueryResultArticle(
+                id=str(i),
+                title=item[1],
+                description=item[2],
+                input_message_content=types.InputTextMessageContent(item[1]),
+            )
+            for i, item in enumerate(data)
+        ]
+        client.answer_inline_query(inline_query.id, results)
 
 
 @app.on_callback_query(filters.regex(r"convert"))

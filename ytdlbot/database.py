@@ -225,6 +225,7 @@ class MySQL:
         resolution varchar(128) null,
         method     varchar(64)  null,
         mode varchar(32) default 'Celery' null,
+        history varchar(10) default 'OFF' null,
         constraint settings_pk
             primary key (user_id)
     );
@@ -252,6 +253,14 @@ class MySQL:
         is_valid boolean default 1 null
     ) CHARSET=utf8mb4;
     """
+    history_sql = """
+    create table if not exists history
+    (
+        user_id bigint null,
+        link varchar(256) null,
+        title varchar(512) null
+    ) CHARSET=utf8mb4;
+    """
 
     def __init__(self):
         try:
@@ -273,6 +282,7 @@ class MySQL:
         self.cur.execute(self.settings_sql)
         self.cur.execute(self.channel_sql)
         self.cur.execute(self.subscribe_sql)
+        self.cur.execute(self.history_sql)
         self.con.commit()
 
     def __del__(self):
@@ -282,7 +292,7 @@ class MySQL:
         self.cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
         data = self.cur.fetchone()
         if data is None:
-            return 100, "high", "video", "Celery"
+            return 100, "high", "video", "Celery", "OFF"
         return data
 
     def set_user_settings(self, user_id: int, field: str, value: str):
@@ -297,10 +307,30 @@ class MySQL:
             if field == "method":
                 method = value
                 resolution = "high"
-            cur.execute("INSERT INTO settings VALUES (%s,%s,%s,%s)", (user_id, resolution, method, "Celery"))
+            cur.execute("INSERT INTO settings VALUES (%s,%s,%s,%s,%s)", (user_id, resolution, method, "Celery", "OFF"))
         else:
             cur.execute(f"UPDATE settings SET {field} =%s WHERE user_id = %s", (value, user_id))
         self.con.commit()
+
+    def show_history(self, user_id: int):
+        self.cur.execute("SELECT link,title FROM history WHERE user_id = %s", (user_id,))
+        data = self.cur.fetchall()
+        return "\n".join([f"{i[0]} {i[1]}" for i in data])
+
+    def clear_history(self, user_id: int):
+        self.cur.execute("DELETE FROM history WHERE user_id = %s", (user_id,))
+        self.con.commit()
+
+    def add_history(self, user_id: int, link: str, title: str):
+        self.cur.execute("INSERT INTO history VALUES (%s,%s,%s)", (user_id, link, title))
+        self.con.commit()
+
+    def search_history(self, user_id: int, kw: str):
+        self.cur.execute("SELECT * FROM history WHERE user_id = %s AND title like %s", (user_id, f"%{kw}%"))
+        data = self.cur.fetchall()
+        if data:
+            return data
+        return None
 
 
 class InfluxDB:

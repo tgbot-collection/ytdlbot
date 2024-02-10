@@ -46,7 +46,7 @@ from config import (
     FileTooBig,
 )
 from constant import BotText
-from database import Redis
+from database import Redis, MySQL
 from downloader import edit_text, tqdm_progress, upload_hook, ytdl_download
 from limit import Payment
 from utils import (
@@ -295,6 +295,10 @@ def ytdl_normal_download(client: Client, bot_msg: types.Message | typing.Any, ur
     logging.info("Download complete.")
     client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_DOCUMENT)
     bot_msg.edit_text("Download complete. Sending now...")
+    data = MySQL().get_user_settings(chat_id)
+    if data[4] == "ON":
+        logging.info("Adding to history...")
+        MySQL().add_history(chat_id, url, pathlib.Path(video_paths[0]).name)
     try:
         upload_processor(client, bot_msg, url, video_paths)
     except pyrogram.errors.Flood as e:
