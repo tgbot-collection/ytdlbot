@@ -11,7 +11,7 @@ flower==2.0.1
 psutil==5.9.8
 influxdb==5.3.1
 beautifulsoup4==4.12.3
-fakeredis==2.21.0
+fakeredis==2.21.1
 supervisor==4.2.5
 tgbot-ping==1.0.7
 redis==5.0.1
