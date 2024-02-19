@@ -179,7 +179,7 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
             redis.update_metrics("cache_hit")
             return
         redis.update_metrics("cache_miss")
-        mode = mode or payment.get_user_settings(chat_id)[-1]
+        mode = mode or payment.get_user_settings(chat_id)[3]
         if ENABLE_CELERY and mode in [None, "Celery"]:
             # in celery mode, producer has lost control of this task.
             ytdl_download_task.delay(chat_id, bot_msg.id, url)
