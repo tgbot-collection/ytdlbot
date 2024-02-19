@@ -58,9 +58,7 @@ from utils import (
     sizeof_fmt,
 )
 
-customize_logger(
-    ["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"]
-)
+customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
 apply_log_formatter()
 bot_text = BotText()
 logging.getLogger("apscheduler.executors.default").propagate = False
@@ -118,20 +116,13 @@ def ytdl_download_task(chat_id: int, message_id: int, url: str):
         if markup:
             bot_msg.edit_text(f"{e}\n\n{bot_text.premium_warning}", reply_markup=markup)
         else:
-            bot_msg.edit_text(
-                f"{e}\nBig file download is not available now. Please /buy or try again later "
-            )
+            bot_msg.edit_text(f"{e}\nBig file download is not available now. Please /buy or try again later ")
     except Exception:
         error_msg = traceback.format_exc().split("yt_dlp.utils.DownloadError: ERROR: ")
         if len(error_msg) > 1:
-            bot_msg.edit_text(
-                f"Download failed!❌\n\n`{error_msg[-1]}", disable_web_page_preview=True
-            )
+            bot_msg.edit_text(f"Download failed!❌\n\n`{error_msg[-1]}", disable_web_page_preview=True)
         else:
-            bot_msg.edit_text(
-                f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`",
-                disable_web_page_preview=True,
-            )
+            bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
     logging.info("YouTube celery tasks ended.")
 
 
@@ -165,13 +156,7 @@ def get_unique_clink(original_url: str, user_id: int):
 
 def forward_video(client, bot_msg: types.Message | Any, url: str, cached_fid: str):
     res_msg = upload_processor(client, bot_msg, url, cached_fid)
-    obj = (
-        res_msg.document
-        or res_msg.video
-        or res_msg.audio
-        or res_msg.animation
-        or res_msg.photo
-    )
+    obj = res_msg.document or res_msg.video or res_msg.audio or res_msg.animation or res_msg.photo
 
     caption, _ = gen_cap(bot_msg, url, obj)
     res_msg.edit_text(caption, reply_markup=gen_video_markup())
@@ -207,26 +192,17 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
         if markup:
             bot_msg.edit_text(f"{e}\n\n{bot_text.premium_warning}", reply_markup=markup)
         else:
-            bot_msg.edit_text(
-                f"{e}\nBig file download is not available now. Please /buy or try again later "
-            )
+            bot_msg.edit_text(f"{e}\nBig file download is not available now. Please /buy or try again later ")
     except Exception as e:
         logging.error("Failed to download %s, error: %s", url, e)
         error_msg = traceback.format_exc().split("yt_dlp.utils.DownloadError: ERROR: ")
         if len(error_msg) > 1:
-            bot_msg.edit_text(
-                f"Download failed!❌\n\n`{error_msg[-1]}", disable_web_page_preview=True
-            )
+            bot_msg.edit_text(f"Download failed!❌\n\n`{error_msg[-1]}", disable_web_page_preview=True)
         else:
-            bot_msg.edit_text(
-                f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`",
-                disable_web_page_preview=True,
-            )
+            bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
 
 
-def direct_download_entrance(
-    client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str
-):
+def direct_download_entrance(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
     if ENABLE_CELERY:
         direct_normal_download(client, bot_msg, url)
         # direct_download_task.delay(bot_msg.chat.id, bot_msg.id, url)
@@ -241,9 +217,7 @@ def audio_entrance(client: Client, bot_msg: types.Message):
         normal_audio(client, bot_msg)
 
 
-def direct_normal_download(
-    client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str
-):
+def direct_normal_download(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
     chat_id = bot_msg.chat.id
     headers = {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.3987.149 Safari/537.36"
@@ -254,15 +228,11 @@ def direct_normal_download(
     try:
         req = requests.get(url, headers=headers, stream=True)
         length = int(req.headers.get("content-length"))
-        filename = re.findall("filename=(.+)", req.headers.get("content-disposition"))[
-            0
-        ]
+        filename = re.findall("filename=(.+)", req.headers.get("content-disposition"))[0]
     except TypeError:
         filename = getattr(req, "url", "").rsplit("/")[-1]
     except Exception as e:
-        bot_msg.edit_text(
-            f"Download failed!❌\n\n```{e}```", disable_web_page_preview=True
-        )
+        bot_msg.edit_text(f"Download failed!❌\n\n```{e}```", disable_web_page_preview=True)
         return
 
     if not filename:
@@ -292,9 +262,7 @@ def direct_normal_download(
         bot_msg.edit_text("Download success!✅")
 
 
-def normal_audio(
-    client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine]
-):
+def normal_audio(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine]):
     chat_id = bot_msg.chat.id
     # fn = getattr(bot_msg.video, "file_name", None) or getattr(bot_msg.document, "file_name", None)
     status_msg: typing.Union[types.Message, typing.Coroutine] = bot_msg.reply_text(
@@ -370,9 +338,7 @@ def generate_input_media(file_paths: list, cap: str) -> list:
     return input_media
 
 
-def upload_processor(
-    client: Client, bot_msg: types.Message, url: str, vp_or_fid: str | list
-):
+def upload_processor(client: Client, bot_msg: types.Message, url: str, vp_or_fid: str | list):
     redis = Redis()
     # raise pyrogram.errors.exceptions.FloodWait(13)
     # if is str, it's a file id; else it's a list of paths
@@ -382,9 +348,7 @@ def upload_processor(
     if isinstance(vp_or_fid, list) and len(vp_or_fid) > 1:
         # just generate the first for simplicity, send as media group(2-20)
         cap, meta = gen_cap(bot_msg, url, vp_or_fid[0])
-        res_msg: list["types.Message"] | Any = client.send_media_group(
-            chat_id, generate_input_media(vp_or_fid, cap)
-        )
+        res_msg: list["types.Message"] | Any = client.send_media_group(chat_id, generate_input_media(vp_or_fid, cap))
         # TODO no cache for now
         return res_msg[0]
     elif isinstance(vp_or_fid, list) and len(vp_or_fid) == 1:
@@ -473,13 +437,7 @@ def upload_processor(
                 )
 
     unique = get_unique_clink(url, bot_msg.chat.id)
-    obj = (
-        res_msg.document
-        or res_msg.video
-        or res_msg.audio
-        or res_msg.animation
-        or res_msg.photo
-    )
+    obj = res_msg.document or res_msg.video or res_msg.audio or res_msg.animation or res_msg.photo
     redis.add_send_cache(unique, getattr(obj, "file_id", None))
     redis.update_metrics("video_success")
     if ARCHIVE_ID and isinstance(vp_or_fid, pathlib.Path):
@@ -492,11 +450,7 @@ def gen_cap(bm, url, video_path):
     chat_id = bm.chat.id
     user = bm.chat
     try:
-        user_info = "@{}({})-{}".format(
-            user.username or "N/A",
-            user.first_name or "" + user.last_name or "",
-            user.id,
-        )
+        user_info = "@{}({})-{}".format(user.username or "N/A", user.first_name or "" + user.last_name or "", user.id)
     except Exception:
         user_info = ""
 
@@ -506,9 +460,7 @@ def gen_cap(bm, url, video_path):
         file_size = sizeof_fmt(os.stat(video_path).st_size)
     else:
         file_name = getattr(video_path, "file_name", "")
-        file_size = sizeof_fmt(
-            getattr(video_path, "file_size", (2 << 2) + ((2 << 2) + 1) + (2 << 5))
-        )
+        file_size = sizeof_fmt(getattr(video_path, "file_size", (2 << 2) + ((2 << 2) + 1) + (2 << 5)))
         meta = dict(
             width=getattr(video_path, "width", 0),
             height=getattr(video_path, "height", 0),
@@ -580,16 +532,7 @@ def run_celery():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     worker_name = os.getenv("WORKER_NAME", "")
-    argv = [
-        "-A",
-        "tasks",
-        "worker",
-        "--loglevel=info",
-        "--pool=threads",
-        f"--concurrency={WORKERS}",
-        "-n",
-        worker_name,
-    ]
+    argv = ["-A", "tasks", "worker", "--loglevel=info", "--pool=threads", f"--concurrency={WORKERS}", "-n", worker_name]
     app.worker_main(argv)
 
 
