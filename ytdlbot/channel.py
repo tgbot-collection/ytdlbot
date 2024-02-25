@@ -66,7 +66,7 @@ class Channel(Payment):
         html_doc = requests.get(url, headers=headers, cookies=cookie, timeout=5).text
         soup = BeautifulSoup(html_doc, "html.parser")
         for prop in props:
-            element = soup.find("link", rel=prop)
+            element = soup.find(lambda tag: tag.name == "link" and tag.get("rel") == ["prop"])
             try:
                 href = element["href"]
                 if href not in ["null", "", None, "https://consent.youtube.com/m"]:
