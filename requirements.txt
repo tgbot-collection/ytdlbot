@@ -1,6 +1,6 @@
 pyrogram==2.0.106
 tgcrypto==1.2.5
-yt-dlp==2023.12.30
+git+https://github.com/yt-dlp/yt-dlp@413d3675804599bc8fe419c19e36490fd8f0b30f
 APScheduler==3.10.4
 beautifultable==1.1.0
 ffmpeg-python==0.2.0
@@ -14,7 +14,7 @@ beautifulsoup4==4.12.3
 fakeredis==2.21.1
 supervisor==4.2.5
 tgbot-ping==1.0.7
-redis==5.0.1
+redis==5.0.2
 requests==2.31.0
 tqdm==4.66.2
 requests-toolbelt==1.0.0
