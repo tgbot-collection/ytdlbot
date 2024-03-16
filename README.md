@@ -49,8 +49,8 @@ If you need more downloads, you can buy download tokens.
 14. History and inline mode support
 
 > [!NOTE]
-> **For users of [official bot](https://t.me/benny_ytdlbot)**
-> If you download files larger than 2 GiB, you agreed that this file will be uploaded by me.
+> **For users of [official bot](https://t.me/benny_ytdlbot)**\
+> If you download files larger than 2 GiB, you agreed that this file will be uploaded by me.\
 > I know who you are and what you download.
 
 # Screenshots
