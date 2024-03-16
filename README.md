@@ -2,9 +2,9 @@
 
 [![docker image](https://github.com/tgbot-collection/ytdlbot/actions/workflows/builder.yaml/badge.svg)](https://github.com/tgbot-collection/ytdlbot/actions/workflows/builder.yaml)
 
-YouTube Download Bot🚀🎬⬇️
+**YouTube Download Bot🚀🎬⬇️**
 
-This Telegram bot allows you to download videos from YouTube and other supported websites, including Instagram!
+This Telegram bot allows you to download videos from YouTube and [other supported websites](#supported-websites).
 
 # Usage
 
@@ -12,8 +12,14 @@ This Telegram bot allows you to download videos from YouTube and other supported
 
 Join Telegram Channel https://t.me/+OGRC8tp9-U9mZDZl for updates.
 
-Send link directly to the bot. Any
-Websites [supported by yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md) will work too.
+Just send a link directly to the bot.
+
+# Supported websites
+
+* YouTube 😅
+* Any websites [supported by yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
+* Instagram (Videos, Photos, Reels, IGTV & carousel)
+* Pixeldrain
 
 # Limitations of my bot
 
@@ -42,8 +48,10 @@ If you need more downloads, you can buy download tokens.
 13. 4 GiB file size support with Telegram Premium
 14. History and inline mode support
 
-> If you download files larger than 2 GiB, you agreed that this file will be uploaded by me. I know who you are and what
-> you download.
+> [!NOTE]
+> **For users of [official bot](https://t.me/benny_ytdlbot)**
+> If you download files larger than 2 GiB, you agreed that this file will be uploaded by me.
+> I know who you are and what you download.
 
 # Screenshots
 
