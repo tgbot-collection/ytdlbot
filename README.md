@@ -21,16 +21,6 @@ Just send a link directly to the bot.
 * Instagram (Videos, Photos, Reels, IGTV & carousel)
 * Pixeldrain
 
-# Limitations of my bot
-
-Due to limitations on servers and bandwidth, there are some restrictions on this free service.
-
-* Each user is limited to 10 free downloads per 24-hour period
-* Maximum of three subscriptions allowed for YouTube channels.
-* Files bigger than 2 GiB will require at least 1 download token.
-
-If you need more downloads, you can buy download tokens.
-
 # Features
 
 1. fast download and upload.
@@ -49,9 +39,20 @@ If you need more downloads, you can buy download tokens.
 14. History and inline mode support
 
 > [!NOTE]
-> **For users of [official bot](https://t.me/benny_ytdlbot)**\
-> If you download files larger than 2 GiB, you agreed that this file will be uploaded by me.\
-> I know who you are and what you download.
+> **For users of [my official bot](https://t.me/benny_ytdlbot)**\
+> Files larger than 2 GiB will be automatically uploaded by me(My Premium Account). By utilizing our service for such downloads, you consent to this process. \
+> That means I know who you are and what you download. \
+> Rest assured that we handle your personal information with the utmost care.
+>
+> ## Limitations
+> Due to limitations on servers and bandwidth, there are some restrictions on this free service.
+> * Each user is limited to 10 free downloads per 24-hour period
+> * Maximum of three subscriptions allowed for YouTube channels.
+> * Files bigger than 2 GiB will require at least 1 download token.
+>
+> If you need more downloads, you can buy download tokens.
+>
+> **Thank you for using the [official bot](https://t.me/benny_ytdlbot).**
 
 # Screenshots
 
