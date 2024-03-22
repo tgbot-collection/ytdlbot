@@ -27,6 +27,8 @@ import yt_dlp as ytdl
 from pyrogram import types
 from tqdm import tqdm
 
+from sp_downloader import sp_dl
+
 from config import (
     AUDIO_FORMAT,
     ENABLE_ARIA2,
@@ -220,7 +222,7 @@ def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> list:
             None,
         ]
     adjust_formats(chat_id, url, formats, hijack)
-    if download_instagram(url, tempdir):
+    if sp_dl(url, tempdir):
         return list(pathlib.Path(tempdir).glob("*"))
 
     address = ["::", "0.0.0.0"] if IPv6 else [None]
@@ -303,19 +305,3 @@ def split_large_video(video_paths: list):
 
     if split and original_video:
         return [i for i in pathlib.Path(original_video).parent.glob("*")]
-
-
-def download_instagram(url: str, tempdir: str):
-    if not url.startswith("https://www.instagram.com"):
-        return False
-
-    resp = requests.get(f"http://192.168.6.1:15000/?url={url}").json()
-    if url_results := resp.get("data"):
-        for link in url_results:
-            content = requests.get(link, stream=True).content
-            ext = filetype.guess_extension(content)
-            save_path = pathlib.Path(tempdir, f"{id(link)}.{ext}")
-            with open(save_path, "wb") as f:
-                f.write(content)
-
-        return True
