@@ -5,27 +5,23 @@
 # 3/16/24 16:32
 #
 
-__author__ = "Benny <benny.think@gmail.com>, SanujaNS <sanujas@sanuja.biz>"
+__author__ = "SanujaNS <sanujas@sanuja.biz>"
 
-import pathlib
 import logging
-import traceback
+import pathlib
 import re
-import requests
-from tqdm import tqdm
-import json
-from bs4 import BeautifulSoup
-from urllib.parse import parse_qs, urlparse
+import traceback
+from urllib.parse import urlparse
+
 import filetype
+import requests
 import yt_dlp as ytdl
 
 from config import (
     IPv6,
 )
 
-user_agent = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.128 Safari/537.36"
-)
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.128 Safari/537.36"
 
 
 def sp_dl(url: str, tempdir: str):
@@ -90,16 +86,16 @@ def instagram(url: str, tempdir: str):
 
         return True
 
+
 def pixeldrain(url: str, tempdir: str):
-    user_page_url_regex = r'https://pixeldrain.com/u/(\w+)'
+    user_page_url_regex = r"https://pixeldrain.com/u/(\w+)"
     match = re.match(user_page_url_regex, url)
     if match:
-        url = 'https://pixeldrain.com/api/file/{}?download'.format(match.group(1))
-        sp_ytdl_download(url, tempdir)
+        url = "https://pixeldrain.com/api/file/{}?download".format(match.group(1))
+        return sp_ytdl_download(url, tempdir)
     else:
         return url
-    
-    return True
+
 
 def xasiat(url: str, tempdir: str):
     return False
