@@ -1,4 +1,4 @@
-pyrogram==2.0.106
+git+https://github.com/KurimuzonAkuma/pyrogram
 tgcrypto==1.2.5
 yt-dlp==2024.03.10
 APScheduler==3.10.4
