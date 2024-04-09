@@ -23,8 +23,9 @@ from utils import get_func_queue
 
 class BotText:
     start = """
-    Welcome to YouTube Download bot. Type /help for more information. 
-    **I am shutting down this bot because it doesn't work on celery mode.**
+    Welcome to YouTube Download bot. Type /help for more information. Recommend to use EU Bot
+    EU🇪🇺: @benny_2ytdlbot
+    SG🇸🇬：@benny_ytdlbot
 
     Join https://t.me/+OGRC8tp9-U9mZDZl for updates."""
 

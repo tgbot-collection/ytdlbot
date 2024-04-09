@@ -6,13 +6,14 @@
 
 This Telegram bot allows you to download videos from YouTube and [other supported websites](#supported-websites).
 
-**Celery mode won't work and I don't know why. So I am shutting down this bot**
+**Celery mode won't work and I don't know why. So I may shutting down this bot soon.**
 
 # Usage
 
-[https://t.me/benny_ytdlbot](https://t.me/benny_ytdlbot)
+* EU(recommended): [https://t.me/benny_2ytdlbot](https://t.me/benny_2ytdlbot)
+* Asia:[https://t.me/benny_ytdlbot](https://t.me/benny_ytdlbot)
 
-Join Telegram Channel https://t.me/+OGRC8tp9-U9mZDZl for updates.
+* Join Telegram Channel https://t.me/+OGRC8tp9-U9mZDZl for updates.
 
 Just send a link directly to the bot.
 
