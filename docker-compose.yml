@@ -35,22 +35,6 @@ services:
       - redis
     volumes:
       - ./data/vnstat/:/var/lib/vnstat/
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
-
-  flower:
-    image: bennythink/ytdlbot
-    env_file:
-      - env/ytdl.env
-    restart: unless-stopped
-    command: [ "/usr/local/bin/celery",
-               "-A", "flower_tasks", "flower",
-               "--basic_auth=benny:123456",
-               "--address=0.0.0.0", "--persistent","--purge_offline_workers=3600" ]
-    volumes:
-      - ./data/flower:/ytdlbot/ytdlbot/flower
-    ports:
-      - "127.0.0.1:15555:5555"
 
   premium:
     image: bennythink/ytdlbot

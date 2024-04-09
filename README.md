@@ -6,6 +6,8 @@
 
 This Telegram bot allows you to download videos from YouTube and [other supported websites](#supported-websites).
 
+**Celery mode won't work and I don't know why. So I am shutting down this bot**
+
 # Usage
 
 [https://t.me/benny_ytdlbot](https://t.me/benny_ytdlbot)
@@ -31,7 +33,7 @@ Just send a link directly to the bot.
 6. payment support: afdian, buy me a coffee, Telegram Payment and Tron(TRX)
 7. different video resolutions
 8. sending as file or streaming as video
-9. celery worker distribution - faster than before.
+9. celery worker distribution - faster than before. **NOT WORKING**
 10. subscriptions to YouTube Channels
 11. cache mechanism - download once for the same video.
 12. instagram posts(only available for my bot)
@@ -64,7 +66,7 @@ Just send a link directly to the bot.
 
 ![](assets/instagram.png)
 
-## celery
+## celery **NOT WORKING**
 
 ![](assets/2.jpeg)
 
@@ -157,7 +159,7 @@ vim env/ytdl.env
 
 You can configure all the following environment variables:
 
-* WORKERS: workers count for celery
+* WORKERS: workers count for celery **NOT WORKING**
 * PYRO_WORKERS: number of workers for pyrogram, default is 100
 * APP_ID: **REQUIRED**, get it from https://core.telegram.org/
 * APP_HASH: **REQUIRED**
@@ -168,8 +170,8 @@ You can configure all the following environment variables:
 * OWNER: owner username
 * AUTHORIZED_USER: only authorized users can use the bot
 * REQUIRED_MEMBERSHIP: group or channel username, user must join this group to use the bot
-* ENABLE_CELERY: celery mode, default: disable
-* BROKER: celery broker, should be redis://redis:6379/0
+* ENABLE_CELERY: celery mode, default: disable **NOT WORKING**
+* BROKER: celery broker, should be redis://redis:6379/0 **NOT WORKING**
 * MYSQL_HOST:MySQL host
 * MYSQL_USER: MySQL username
 * MYSQL_PASS: MySQL password
@@ -210,6 +212,7 @@ mysql -u root -p
 ### 3.2.2 Setup flower db in `ytdlbot/ytdlbot/data`
 
 Required if you enable celery and want to monitor the workers.
+**NOT WORKING**
 
 ```shell
 {} ~ python3
@@ -253,6 +256,7 @@ docker-compose up -d mysql redis ytdl
 
 ### 4.3 Celery worker mode
 
+**NOT WORKING**
 Firstly, set `ENABLE_CELERY` to true. And then, on one machine:
 
 ```shell
