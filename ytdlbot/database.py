@@ -25,7 +25,7 @@ import requests
 from beautifultable import BeautifulTable
 from influxdb import InfluxDBClient
 
-from config import IS_BACKUP_BOT, MYSQL_HOST, MYSQL_PASS, MYSQL_USER, REDIS
+from config import MYSQL_HOST, MYSQL_PASS, MYSQL_USER, REDIS
 
 init_con = sqlite3.connect(":memory:", check_same_thread=False)
 
@@ -71,7 +71,7 @@ class Cursor:
 
 class Redis:
     def __init__(self):
-        db = 1 if IS_BACKUP_BOT else 0
+        db = 1
         try:
             self.r = redis.StrictRedis(host=REDIS, db=db, decode_responses=True)
             self.r.ping()

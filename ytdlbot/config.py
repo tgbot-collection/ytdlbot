@@ -37,12 +37,8 @@ AUTHORIZED_USER: str = os.getenv("AUTHORIZED_USER", "")
 REQUIRED_MEMBERSHIP: str = os.getenv("REQUIRED_MEMBERSHIP", "")
 
 # celery related
-IS_BACKUP_BOT = os.getenv("IS_BACKUP_BOT")
 ENABLE_CELERY = os.getenv("ENABLE_CELERY", False)
-if IS_BACKUP_BOT:
-    BROKER = os.getenv("BROKER", f"redis://{REDIS}:6379/1")
-else:
-    BROKER = os.getenv("BROKER", f"redis://{REDIS}:6379/0")
+BROKER = os.getenv("BROKER", f"redis://{REDIS}:6379/1")
 
 MYSQL_HOST = os.getenv("MYSQL_HOST", "mysql")
 MYSQL_USER = os.getenv("MYSQL_USER", "root")
