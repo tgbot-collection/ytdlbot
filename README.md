@@ -23,6 +23,7 @@ Just send a link directly to the bot.
 * Any websites [supported by yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
 * Instagram (Videos, Photos, Reels, IGTV & carousel)
 * Pixeldrain
+* KrakenFiles
 
 # Features
 
@@ -305,6 +306,7 @@ clear_history - Clear download history
 ```
 
 # Test data
+<details><summary>Tap to expand</summary>
 
 ## Test video
 
@@ -326,6 +328,17 @@ https://twitter.com/BennyThinks/status/1475836588542341124
 * reels: https://www.instagram.com/p/C0ozGsjtY0W/
 * image carousel: https://www.instagram.com/p/C0ozPQ5o536/
 * video and image carousel: https://www.instagram.com/p/C0ozhsVo-m8/
+
+## Test Pixeldrain
+
+https://pixeldrain.com/u/765ijw9i
+
+## Test KrakenFiles
+
+https://krakenfiles.com/view/oqmSTF0T5t/file.html
+
+</details>
+</br>
 
 # Donation
 

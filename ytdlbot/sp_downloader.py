@@ -27,21 +27,16 @@ user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 def sp_dl(url: str, tempdir: str):
     """Specific link downloader"""
     domain = urlparse(url).hostname
-    if not any(
-        x in domain
-        for x in [
-            "www.instagram.com",
-            "pixeldrain.com",
-            "mediafire.com",
-        ]
-    ):
-        return False
-    if "www.instagram.com" in domain:
-        return instagram(url, tempdir)
-    elif "pixeldrain.com" in domain:
-        return pixeldrain(url, tempdir)
-    elif "www.xasiat.com" in domain:
-        return xasiat(url, tempdir)
+    domain_to_function = {
+        "www.instagram.com": instagram,
+        "pixeldrain.com": pixeldrain,
+        "krakenfiles.com": krakenfiles,
+    }
+    for domain_key, function in domain_to_function.items():
+        if domain_key in domain:
+            return function(url, tempdir)
+    
+    return False
 
 
 def sp_ytdl_download(url: str, tempdir: str):
@@ -97,5 +92,26 @@ def pixeldrain(url: str, tempdir: str):
         return url
 
 
-def xasiat(url: str, tempdir: str):
-    return False
+def krakenfiles(url: str, tempdir: str):
+    resp = requests.get(url)
+    html = resp.content
+    soup = BeautifulSoup(html, 'html.parser')
+    link_parts = []
+    token_parts = []
+    for form_tag in soup.find_all('form'):
+        action = form_tag.get('action')
+        if action and 'krakenfiles.com' in action:
+            link_parts.append(action)
+        input_tag = form_tag.find('input', {'name': 'token'})
+        if input_tag:
+            value = input_tag.get('value')
+            token_parts.append(value)
+    for link_part, token_part in zip(link_parts, token_parts):
+        link = f'https:{link_part}'
+        data = {
+            'token': token_part
+        }
+        response = requests.post(link, data=data)
+        json_data = response.json()
+        url = json_data['url']
+    return sp_ytdl_download(url, tempdir)
