@@ -5,7 +5,7 @@ APScheduler==3.10.4
 beautifultable==1.1.0
 ffmpeg-python==0.2.0
 PyMySQL==1.1.0
-celery==5.3.6
+celery==5.4.0
 filetype==1.2.0
 flower==2.0.1
 psutil==5.9.8
