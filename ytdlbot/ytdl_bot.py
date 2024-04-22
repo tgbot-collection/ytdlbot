@@ -306,8 +306,6 @@ def buy_handler(client: Client, message: types.Message):
     # process as chat.id, not from_user.id
     chat_id = message.chat.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    message.reply_text("Not available now.")
-    return
     # currency USD
     token_count = message.text.replace("/buy", "").strip()
     if token_count.isdigit():
