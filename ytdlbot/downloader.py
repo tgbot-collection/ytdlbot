@@ -27,8 +27,6 @@ import yt_dlp as ytdl
 from pyrogram import types
 from tqdm import tqdm
 
-from sp_downloader import sp_dl
-
 from config import (
     AUDIO_FORMAT,
     ENABLE_ARIA2,
@@ -222,9 +220,6 @@ def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> list:
             None,
         ]
     adjust_formats(chat_id, url, formats, hijack)
-    if sp_dl(url, tempdir):
-        return list(pathlib.Path(tempdir).glob("*"))
-
     address = ["::", "0.0.0.0"] if IPv6 else [None]
     error = None
     video_paths = None

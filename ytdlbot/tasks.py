@@ -48,6 +48,7 @@ from config import (
 from constant import BotText
 from database import Redis, MySQL
 from downloader import edit_text, tqdm_progress, upload_hook, ytdl_download
+from sp_downloader import sp_dl
 from limit import Payment
 from utils import (
     apply_log_formatter,
@@ -210,6 +211,38 @@ def direct_download_entrance(client: Client, bot_msg: typing.Union[types.Message
         direct_normal_download(client, bot_msg, url)
 
 
+def spdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mode=None):
+    payment = Payment()
+    redis = Redis()
+    chat_id = bot_msg.chat.id
+    unique = get_unique_clink(url, chat_id)
+    cached_fid = redis.get_send_cache(unique)
+    
+    try:
+        if cached_fid:
+            forward_video(client, bot_msg, url, cached_fid)
+            redis.update_metrics("cache_hit")
+            return
+        redis.update_metrics("cache_miss")
+        mode = mode or payment.get_user_settings(chat_id)[3]
+        spdl_normal_download(client, bot_msg, url)
+    except FileTooBig as e:
+        logging.warning("Seeking for help from premium user...")
+        # this is only for normal node. Celery node will need to do it in celery tasks
+        markup = premium_button(chat_id)
+        if markup:
+            bot_msg.edit_text(f"{e}\n\n{bot_text.premium_warning}", reply_markup=markup)
+        else:
+            bot_msg.edit_text(f"{e}\nBig file download is not available now. Please /buy or try again later ")
+    except ValueError as e:
+        logging.error("Invalid URL provided: %s", e)
+        bot_msg.edit_text(f"Download failed!❌\n\n{e}", disable_web_page_preview=True)
+    except Exception as e:
+        logging.error("Failed to download %s, error: %s", url, e)
+        error_msg = "Sorry, Something went wrong."
+        bot_msg.edit_text(f"Download failed!❌\n\n`{error_msg}", disable_web_page_preview=True)
+
+
 def audio_entrance(client: Client, bot_msg: types.Message):
     if ENABLE_CELERY:
         audio_task.delay(bot_msg.chat.id, bot_msg.id)
@@ -314,6 +347,39 @@ def ytdl_normal_download(client: Client, bot_msg: types.Message | typing.Any, ur
     bot_msg.edit_text("Download success!✅")
 
     # setup rclone environment var to back up the downloaded file
+    if RCLONE_PATH:
+        for item in os.listdir(temp_dir.name):
+            logging.info("Copying %s to %s", item, RCLONE_PATH)
+            shutil.copy(os.path.join(temp_dir.name, item), RCLONE_PATH)
+    temp_dir.cleanup()
+
+
+def spdl_normal_download(client: Client, bot_msg: types.Message | typing.Any, url: str):
+    chat_id = bot_msg.chat.id
+    temp_dir = tempfile.TemporaryDirectory(prefix="spdl-", dir=TMPFILE_PATH)
+
+    video_paths = sp_dl(url, temp_dir.name, bot_msg)
+    logging.info("Download complete.")
+    client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_DOCUMENT)
+    bot_msg.edit_text("Download complete. Sending now...")
+    data = MySQL().get_user_settings(chat_id)
+    if data[4] == "ON":
+        logging.info("Adding to history...")
+        MySQL().add_history(chat_id, url, pathlib.Path(video_paths[0]).name)
+    try:
+        upload_processor(client, bot_msg, url, video_paths)
+    except pyrogram.errors.Flood as e:
+        logging.critical("FloodWait from Telegram: %s", e)
+        client.send_message(
+            chat_id,
+            f"I'm being rate limited by Telegram. Your video will come after {e} seconds. Please wait patiently.",
+        )
+        client.send_message(OWNER, f"CRITICAL INFO: {e}")
+        time.sleep(e.value)
+        upload_processor(client, bot_msg, url, video_paths)
+
+    bot_msg.edit_text("Download success!✅")
+
     if RCLONE_PATH:
         for item in os.listdir(temp_dir.name):
             logging.info("Copying %s to %s", item, RCLONE_PATH)

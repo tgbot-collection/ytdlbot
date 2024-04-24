@@ -21,6 +21,7 @@ import uuid
 import coloredlogs
 import ffmpeg
 import psutil
+from http.cookiejar import MozillaCookieJar
 
 from config import TMPFILE_PATH
 from flower_tasks import app
@@ -217,6 +218,12 @@ def clean_tempfile():
     for item in pathlib.Path(TMPFILE_PATH or tempfile.gettempdir()).glob("ytdl-*"):
         if time.time() - item.stat().st_ctime > 3600:
             shutil.rmtree(item, ignore_errors=True)
+
+
+def parse_cookie_file(cookiefile):
+    jar = MozillaCookieJar(cookiefile)
+    jar.load()
+    return {cookie.name: cookie.value for cookie in jar}
 
 
 if __name__ == "__main__":
