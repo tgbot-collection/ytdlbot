@@ -219,9 +219,14 @@ def terabox(url: str, tempdir: str, bm, **kwargs):
     req2 = session.get('https://www.terabox.app/share/list', params=params)
     response_data2 = req2.json()
     file_name = response_data2['list'][0]['server_filename']
-    direct_link_response = session.head(response_data2['list'][0]['dlink'])
-    direct_link_response_headers = direct_link_response.headers
-    direct_link = direct_link_response_headers['Location']
-    url = direct_link
+    sizebytes = int(response_data2['list'][0]['size'])
+    if sizebytes > 40 * 1024 * 1024:
+        direct_link = response_data2['list'][0]['dlink']
+        url = direct_link
+    else:
+        direct_link_response = session.head(response_data2['list'][0]['dlink'])
+        direct_link_response_headers = direct_link_response.headers
+        direct_link = direct_link_response_headers['Location']
+        url = direct_link
     
     return sp_ytdl_download(url, tempdir, bm, filename=file_name, **kwargs)

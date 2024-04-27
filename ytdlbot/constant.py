@@ -30,7 +30,7 @@ class BotText:
     Join https://t.me/+OGRC8tp9-U9mZDZl for updates."""
 
     help = """
-1. For YouTube and any websites supported by yt-dlp, just send the link and we will the video download and send it to you.
+1. For YouTube and any websites supported by yt-dlp, just send the link and we will download and send it to you.
 
 2. For specific links use `/spdl {URL}`. More info at https://github.com/SanujaNS/ytdlbot-telegram#supported-websites 
 
