@@ -220,9 +220,9 @@ def terabox(url: str, tempdir: str, bm, **kwargs):
     response_data2 = req2.json()
     file_name = response_data2['list'][0]['server_filename']
     sizebytes = int(response_data2['list'][0]['size'])
-    if sizebytes > 40 * 1024 * 1024:
+    if sizebytes > 48 * 1024 * 1024:
         direct_link = response_data2['list'][0]['dlink']
-        url = direct_link
+        url = direct_link.replace('d.terabox.app', 'd3.terabox.app')
     else:
         direct_link_response = session.head(response_data2['list'][0]['dlink'])
         direct_link_response_headers = direct_link_response.headers
