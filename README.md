@@ -21,9 +21,13 @@ Just send a link directly to the bot.
 
 * YouTube 😅
 * Any websites [supported by yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
-* Instagram (Videos, Photos, Reels, IGTV & carousel)
-* Pixeldrain
-* KrakenFiles
+
+  ### Specific link downloader (Use /spdl for these links)
+    * Instagram (Videos, Photos, Reels, IGTV & carousel)
+    * Pixeldrain
+    * KrakenFiles
+    * Terabox (file/~~folders~~) (you need to add cookies txt in ytdlbot folder with name) 
+    [terabox.txt](https://github.com/ytdl-org/youtube-dl#how-do-i-pass-cookies-to-youtube-dl).
 
 # Features
 
@@ -292,6 +296,7 @@ start - Let's start
 about - What's this bot?
 ping - Bot running status
 help - Help
+spdl - Use to download specific link downloader links
 ytdl - Download video in group
 settings - Set your preference
 buy - Buy token
@@ -336,6 +341,10 @@ https://pixeldrain.com/u/765ijw9i
 ## Test KrakenFiles
 
 https://krakenfiles.com/view/oqmSTF0T5t/file.html
+
+## Test TeraBox
+
+https://terabox.com/s/1mpgNshrZVl6KuH717Hs23Q
 
 </details>
 </br>

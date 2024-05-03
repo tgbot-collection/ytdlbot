@@ -56,6 +56,7 @@ from tasks import (
     hot_patch,
     purge_tasks,
     ytdl_download_entrance,
+    spdl_download_entrance,
 )
 from utils import auto_restart, clean_tempfile, customize_logger, get_revision
 
@@ -258,6 +259,22 @@ def direct_handler(client: Client, message: types.Message):
     bot_msg = message.reply_text("Request received.", quote=True)
     redis.update_metrics("direct_request")
     direct_download_entrance(client, bot_msg, url)
+
+@app.on_message(filters.command(["spdl"]))
+def spdl_handler(client: Client, message: types.Message):
+    redis = Redis()
+    chat_id = message.from_user.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    url = re.sub(r"/spdl\s*", "", message.text)
+    logging.info("spdl start %s", url)
+    if not re.findall(r"^https?://", url.lower()):
+        redis.update_metrics("bad_request")
+        message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
+        return
+
+    bot_msg = message.reply_text("Request received.", quote=True)
+    redis.update_metrics("direct_request")
+    spdl_download_entrance(client, bot_msg, url)
 
 
 @app.on_message(filters.command(["settings"]))
