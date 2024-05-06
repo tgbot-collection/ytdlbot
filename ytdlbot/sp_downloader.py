@@ -118,11 +118,19 @@ def instagram(url: str, tempdir: str, bm, **kwargs):
     video_paths = []
     if url_results := resp.get("data"):
         for link in url_results:
-            content = requests.get(link, stream=True).content
+            req = requests.get(link, stream=True)
+            length = int(req.headers.get("content-length"))
+            content = req.content
             ext = filetype.guess_extension(content)
             save_path = pathlib.Path(tempdir, f"{id(link)}.{ext}")
-            with open(save_path, "wb") as f:
-                f.write(content)
+            chunk_size = 4096
+            downloaded = 0
+            for chunk in req.iter_content(chunk_size):
+                text = tqdm_progress("Downloading...", length, downloaded)
+                edit_text(bm, text)
+                with open(save_path, "ab") as fp:
+                    fp.write(chunk)
+                downloaded += len(chunk)
             video_paths.append(save_path)
             
     return video_paths
