@@ -39,7 +39,7 @@ from downloader import (
     upload_hook,
 )
 from limit import Payment
-from utils import sizeof_fmt, parse_cookie_file
+from utils import sizeof_fmt, parse_cookie_file, extract_code_from_instagram_url
 
 
 def sp_dl(url: str, tempdir: str, bm, **kwargs) -> list:
@@ -115,6 +115,8 @@ def sp_ytdl_download(url: str, tempdir: str, bm, filename=None, **kwargs) -> lis
 
 def instagram(url: str, tempdir: str, bm, **kwargs):
     resp = requests.get(f"http://192.168.6.1:15000/?url={url}").json()
+    code = extract_code_from_instagram_url(url)
+    counter = 1
     video_paths = []
     if url_results := resp.get("data"):
         for link in url_results:
@@ -122,17 +124,19 @@ def instagram(url: str, tempdir: str, bm, **kwargs):
             length = int(req.headers.get("content-length"))
             content = req.content
             ext = filetype.guess_extension(content)
-            save_path = pathlib.Path(tempdir, f"{id(link)}.{ext}")
+            filename = f"{code}_{counter}.{ext}"
+            save_path = pathlib.Path(tempdir, filename)
             chunk_size = 4096
             downloaded = 0
             for chunk in req.iter_content(chunk_size):
-                text = tqdm_progress("Downloading...", length, downloaded)
+                text = tqdm_progress(f"Downloading: {filename}", length, downloaded)
                 edit_text(bm, text)
                 with open(save_path, "ab") as fp:
                     fp.write(chunk)
                 downloaded += len(chunk)
             video_paths.append(save_path)
-            
+            counter += 1
+
     return video_paths
 
 
