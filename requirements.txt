@@ -4,7 +4,7 @@ yt-dlp==2024.04.9
 APScheduler==3.10.4
 beautifultable==1.1.0
 ffmpeg-python==0.2.0
-PyMySQL==1.1.0
+PyMySQL==1.1.1
 celery==5.4.0
 filetype==1.2.0
 flower==2.0.1
