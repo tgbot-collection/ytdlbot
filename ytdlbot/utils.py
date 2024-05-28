@@ -17,6 +17,7 @@ import subprocess
 import tempfile
 import time
 import uuid
+import re
 
 import coloredlogs
 import ffmpeg
@@ -224,6 +225,21 @@ def parse_cookie_file(cookiefile):
     jar = MozillaCookieJar(cookiefile)
     jar.load()
     return {cookie.name: cookie.value for cookie in jar}
+
+
+def extract_code_from_instagram_url(url):
+    # Regular expression patterns
+    patterns = [
+        r"/p/([a-zA-Z0-9_-]+)/",   # Posts
+        r"/reel/([a-zA-Z0-9_-]+)/" # Reels
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    
+    return None
 
 
 if __name__ == "__main__":
