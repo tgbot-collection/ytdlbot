@@ -14,7 +14,7 @@ beautifulsoup4==4.12.3
 fakeredis==2.22.0
 supervisor==4.2.5
 tgbot-ping==1.0.7
-redis==5.0.4
+redis==5.0.6
 requests==2.31.0
 tqdm==4.66.4
 requests-toolbelt==1.0.0
