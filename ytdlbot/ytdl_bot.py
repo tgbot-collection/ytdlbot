@@ -11,6 +11,7 @@ import contextlib
 import json
 import logging
 import os
+import threading
 import random
 import re
 import tempfile
@@ -204,8 +205,31 @@ def ping_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.chat.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    message_sent = False
+    def send_message_and_measure_ping():
+        start_time = int(round(time.time() * 1000))
+        reply = client.send_message(chat_id, "Starting Ping...")
+        end_time = int(round(time.time() * 1000))
+        ping_time = int(round(end_time - start_time))
+        message_sent = True
+        if message_sent:
+            message.reply_text(f"Ping: {ping_time:.2f} ms", quote=True)
+        time.sleep(0.5)
+        client.edit_message_text(chat_id=reply.chat.id, message_id=reply.id, text="Ping Calculation Complete.")
+        time.sleep(1)
+        client.delete_messages(chat_id=reply.chat.id, message_ids=reply.id)
+            
+    thread = threading.Thread(target=send_message_and_measure_ping)
+    thread.start()
+
+
+@app.on_message(filters.command(["stats"]))
+def stats_handler(client: Client, message: types.Message):
+    redis = Redis()
+    chat_id = message.chat.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     if os.uname().sysname == "Darwin" or ".heroku" in os.getenv("PYTHONHOME", ""):
-        bot_info = "ping unavailable."
+        bot_info = "Stats Unavailable."
     else:
         bot_info = get_runtime("ytdlbot_ytdl_1", "YouTube-dl")
     if message.chat.username == OWNER:
