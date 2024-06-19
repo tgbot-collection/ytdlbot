@@ -294,18 +294,19 @@ refer guide here [kubernetes](k8s.md)
 ```
 start - Let's start
 about - What's this bot?
-ping - Bot running status
 help - Help
 spdl - Use to download specific link downloader links
 ytdl - Download video in group
+direct - Download file directly
 settings - Set your preference
 buy - Buy token
-direct - Download file directly
 sub - Subscribe to YouTube Channel
 unsub - Unsubscribe from YouTube Channel
 sub_count - Check subscription status, owner only.
 uncache - Delete cache for this link, owner only.
 purge - Delete all tasks, owner only.
+ping - Ping the Bot
+stats - Bot running status
 show_history - Show download history
 clear_history - Clear download history
 ```
