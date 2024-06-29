@@ -189,17 +189,11 @@ def can_convert_mp4(video_path, uid):
     return True
 
 
-def ytdl_download(url: str, tempdir: str, bm, custom_filename=None, **kwargs) -> list:
+def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> list:
     payment = Payment()
     chat_id = bm.chat.id
     hijack = kwargs.get("hijack")
-
-    output = None
-    if custom_filename:
-        output = pathlib.Path(tempdir, custom_filename).as_posix()
-    else:
-        output = pathlib.Path(tempdir, "%(title).70s.%(ext)s").as_posix()
-    
+    output = pathlib.Path(tempdir, "%(title).70s.%(ext)s").as_posix()
     ydl_opts = {
         "progress_hooks": [lambda d: download_hook(d, bm)],
         "outtmpl": output,
