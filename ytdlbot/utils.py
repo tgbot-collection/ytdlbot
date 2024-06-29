@@ -242,5 +242,12 @@ def extract_code_from_instagram_url(url):
     return None
 
 
+def shorten_url(url, CAPTION_URL_LENGTH_LIMIT):
+  #Shortens a URL by cutting it to a specified length.
+  shortened_url = url[:CAPTION_URL_LENGTH_LIMIT - 3] + "..."
+
+  return shortened_url
+
+
 if __name__ == "__main__":
     auto_restart()
