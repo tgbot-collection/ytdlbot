@@ -202,7 +202,6 @@ def purge_handler(client: Client, message: types.Message):
 
 @app.on_message(filters.command(["ping"]))
 def ping_handler(client: Client, message: types.Message):
-    redis = Redis()
     chat_id = message.chat.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     message_sent = False

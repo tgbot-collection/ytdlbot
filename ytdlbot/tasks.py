@@ -44,6 +44,7 @@ from config import (
     TMPFILE_PATH,
     WORKERS,
     FileTooBig,
+    CAPTION_URL_LENGTH_LIMIT,
 )
 from constant import BotText
 from database import Redis, MySQL
@@ -57,6 +58,7 @@ from utils import (
     get_metadata,
     get_revision,
     sizeof_fmt,
+    shorten_url,
 )
 
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
@@ -544,8 +546,18 @@ def gen_cap(bm, url, video_path):
         worker = f"Downloaded by  {worker_name}"
     else:
         worker = ""
+    # Shorten the URL if necessary
+    try:
+        if len(url) > CAPTION_URL_LENGTH_LIMIT:
+            url_for_cap = shorten_url(url, CAPTION_URL_LENGTH_LIMIT)
+        else:
+            url_for_cap = url
+    except Exception as e:
+        logging.warning(f"Error shortening URL: {e}")
+        url_for_cap = url
+    
     cap = (
-        f"{user_info}\n{file_name}\n\n{url}\n\nInfo: {meta['width']}x{meta['height']} {file_size}\t"
+        f"{user_info}\n{file_name}\n\n{url_for_cap}\n\nInfo: {meta['width']}x{meta['height']} {file_size}\t"
         f"{meta['duration']}s\n{remain}\n{worker}\n{bot_text.custom_text}"
     )
     return cap, meta
