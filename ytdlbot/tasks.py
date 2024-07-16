@@ -315,62 +315,56 @@ def leech_normal_download(client: Client, bot_msg: typing.Union[types.Message, t
     temp_dir = tempfile.TemporaryDirectory(prefix="leech_dl-", dir=TMPFILE_PATH)
     tempdir = temp_dir.name
     UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-    headers = {
-        "user-agent": UA
-    }
     response = None
     video_paths = None
-
-    # Get filename without downloading
-    try:
-        response = requests.head(url, headers=headers)
-    except Exception as e:
-        bot_msg.edit_text(f"Download failed!❌\n\n```{e}```", disable_web_page_preview=True)
-        return
-    filename = extract_filename(response)
-
     # Download process using aria2c
     try:
         bot_msg.edit_text(f"Download Starting...", disable_web_page_preview=True)
-        time.sleep(0.5)
         # Command to download the link using aria2c
         command = [
             "aria2c",
             "-U",
             UA,
             "--max-tries=5",
+            "--console-log-level=warn",
             "-d",
             tempdir,
-            "-o",
-            filename,
             url,
         ]
         # Run the command using subprocess.Popen
         process = subprocess.Popen(command, bufsize=0, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         line = ""
-        while process.poll() is None:
-            while not line.startswith("[#"):
-                line = process.stdout.readline().decode("utf-8")
-                
-            bot_msg.edit_text(f"Downloading... \n\n`{line}`", disable_web_page_preview=True)
-            time.sleep(0.5)
+        max_iterations = 100  # Set a reasonable maximum number of iterations
+        iteration = 0
+
+        while process.poll() is None and iteration < max_iterations:
+            line = process.stdout.readline().decode("utf-8")
+            if line.startswith("[#"):
+                line = line.strip()
+                bot_msg.edit_text(f"Downloading... \n\n`{line}`", disable_web_page_preview=True)
+                break
+            iteration += 1
+        
+        if iteration >= max_iterations:
+            bot_msg.edit_text("Something went wrong. Please try again.", disable_web_page_preview=True)
     except Exception as e:
         bot_msg.edit_text(f"Download failed!❌\n\n`{e}`", disable_web_page_preview=True)
         return
-            
+    # Get filename and extension correctly after download
+    filepath = list(pathlib.Path(tempdir).glob("*"))
+    file_path_obj = filepath[0]
+    path_obj = pathlib.Path(file_path_obj)
+    filename = path_obj.name
     logging.info("Downloaded file %s", filename)
     bot_msg.edit_text(f"Download Complete", disable_web_page_preview=True)
-    # Get filename and extension correctly after download
-    filepath = f"{tempdir}/{filename}"
-    file_path_obj = pathlib.Path(filepath)
-    ext = filetype.guess_extension(file_path_obj.open("rb"))
+    ext = filetype.guess_extension(file_path_obj)
     # Rename file if it doesn't have extension
-    if not filename.endswith(ext):
-        new_filename = f"{tempdir}/{filename}.{ext}"
-        os.rename(filepath, new_filename)
+    if ext is not None:
+        if not filename.endswith(ext):
+            new_filename = f"{tempdir}/{filename}.{ext}"
+            os.rename(file_path_obj, new_filename)
     # Get file path of the downloaded file to upload
     video_paths = list(pathlib.Path(tempdir).glob("*"))
-    # Upload process
     client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_DOCUMENT)
     upload_processor(client, bot_msg, url, video_paths)
     bot_msg.edit_text("Download success!✅")
