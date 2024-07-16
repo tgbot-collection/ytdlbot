@@ -22,6 +22,7 @@ import re
 import coloredlogs
 import ffmpeg
 import psutil
+from urllib.parse import quote_plus
 from http.cookiejar import MozillaCookieJar
 
 from config import TMPFILE_PATH
@@ -247,6 +248,22 @@ def shorten_url(url, CAPTION_URL_LENGTH_LIMIT):
   shortened_url = url[:CAPTION_URL_LENGTH_LIMIT - 3] + "..."
 
   return shortened_url
+
+
+def extract_filename(response):
+    try:
+        content_disposition = response.headers.get("content-disposition")
+        if content_disposition:
+            filename = re.findall("filename=(.+)", content_disposition)[0]
+            return filename
+    except (TypeError, IndexError):
+        pass  # Handle potential exceptions during extraction
+
+    # Fallback if Content-Disposition header is missing
+    filename = response.url.rsplit("/")[-1]
+    if not filename:
+        filename = quote_plus(response.url)
+    return filename
 
 
 if __name__ == "__main__":

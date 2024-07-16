@@ -46,6 +46,7 @@ from config import (
     REQUIRED_MEMBERSHIP,
     TOKEN_PRICE,
     TRX_SIGNAL,
+    ENABLE_ARIA2,
 )
 from constant import BotText
 from database import InfluxDB, MySQL, Redis
@@ -54,6 +55,7 @@ from tasks import app as celery_app
 from tasks import (
     audio_entrance,
     direct_download_entrance,
+    leech_download_entrance,
     hot_patch,
     purge_tasks,
     ytdl_download_entrance,
@@ -267,6 +269,23 @@ def clear_history(client: Client, message: types.Message):
     message.reply_text("History cleared.", quote=True)
 
 
+@app.on_message(filters.command(["spdl"]))
+def spdl_handler(client: Client, message: types.Message):
+    redis = Redis()
+    chat_id = message.from_user.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    url = re.sub(r"/spdl\s*", "", message.text)
+    logging.info("spdl start %s", url)
+    if not re.findall(r"^https?://", url.lower()):
+        redis.update_metrics("bad_request")
+        message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
+        return
+
+    bot_msg = message.reply_text("Request received.", quote=True)
+    redis.update_metrics("spdl_request")
+    spdl_download_entrance(client, bot_msg, url)
+
+
 @app.on_message(filters.command(["direct"]))
 def direct_handler(client: Client, message: types.Message):
     redis = Redis()
@@ -283,21 +302,25 @@ def direct_handler(client: Client, message: types.Message):
     redis.update_metrics("direct_request")
     direct_download_entrance(client, bot_msg, url)
 
-@app.on_message(filters.command(["spdl"]))
-def spdl_handler(client: Client, message: types.Message):
+
+@app.on_message(filters.command(["leech"]))
+def leech_handler(client: Client, message: types.Message):
+    if not ENABLE_ARIA2:
+        message.reply_text("Aria2 Not Enabled.", quote=True)
+        return
     redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    url = re.sub(r"/spdl\s*", "", message.text)
-    logging.info("spdl start %s", url)
+    url = re.sub(r"/leech\s*", "", message.text)
+    logging.info("leech using aria2 start %s", url)
     if not re.findall(r"^https?://", url.lower()):
         redis.update_metrics("bad_request")
-        message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
+        message.reply_text("Send me a correct LINK.", quote=True)
         return
 
     bot_msg = message.reply_text("Request received.", quote=True)
-    redis.update_metrics("direct_request")
-    spdl_download_entrance(client, bot_msg, url)
+    redis.update_metrics("leech_request")
+    leech_download_entrance(client, bot_msg, url)
 
 
 @app.on_message(filters.command(["settings"]))
