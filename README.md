@@ -45,6 +45,7 @@ Just send a link directly to the bot.
 12. instagram posts(only available for my bot)
 13. 4 GiB file size support with Telegram Premium
 14. History and inline mode support
+15. Supports multiple download engines (yt-dlp, aria2, requests).
 
 > [!NOTE]
 > **For users of [my official bot](https://t.me/benny_ytdlbot)**\
@@ -297,7 +298,8 @@ about - What's this bot?
 help - Help
 spdl - Use to download specific link downloader links
 ytdl - Download video in group
-direct - Download file directly
+leech - Download file using aria2
+direct - Download file using requests
 settings - Set your preference
 buy - Buy token
 sub - Subscribe to YouTube Channel
