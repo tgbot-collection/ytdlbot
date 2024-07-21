@@ -298,6 +298,12 @@ def direct_normal_download(client: Client, bot_msg: typing.Union[types.Message, 
             downloaded += len(chunk)
         logging.info("Downloaded file %s", filename)
         st_size = os.stat(filepath).st_size
+        ext = filetype.guess_extension(filepath)
+        # Rename file if it doesn't have extension
+        if ext is not None and not filepath.endswith(ext):
+            new_filename = f"{filepath}.{ext}"
+            os.rename(filepath, new_filename)
+            filepath = new_filename
 
         client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_DOCUMENT)
         client.send_document(
@@ -359,10 +365,9 @@ def leech_normal_download(client: Client, bot_msg: typing.Union[types.Message, t
     bot_msg.edit_text(f"Download Complete", disable_web_page_preview=True)
     ext = filetype.guess_extension(file_path_obj)
     # Rename file if it doesn't have extension
-    if ext is not None:
-        if not filename.endswith(ext):
-            new_filename = f"{tempdir}/{filename}.{ext}"
-            os.rename(file_path_obj, new_filename)
+    if ext is not None and not filename.endswith(ext):
+        new_filename = f"{tempdir}/{filename}.{ext}"
+        os.rename(file_path_obj, new_filename)
     # Get file path of the downloaded file to upload
     video_paths = list(pathlib.Path(tempdir).glob("*"))
     client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_DOCUMENT)
