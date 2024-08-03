@@ -12,18 +12,18 @@ import inspect as pyinspect
 import logging
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import tempfile
 import time
 import uuid
-import re
+from http.cookiejar import MozillaCookieJar
+from urllib.parse import quote_plus
 
 import coloredlogs
 import ffmpeg
 import psutil
-from urllib.parse import quote_plus
-from http.cookiejar import MozillaCookieJar
 
 from config import TMPFILE_PATH
 from flower_tasks import app
@@ -76,6 +76,9 @@ def adjust_formats(user_id: int, url: str, formats: list, hijack=None):
 
     if settings[2] == "audio":
         formats.insert(0, "bestaudio[ext=m4a]")
+
+    if settings[2] == "document":
+        formats.clear()
 
 
 def get_metadata(video_path):
@@ -230,24 +233,21 @@ def parse_cookie_file(cookiefile):
 
 def extract_code_from_instagram_url(url):
     # Regular expression patterns
-    patterns = [
-        r"/p/([a-zA-Z0-9_-]+)/",   # Posts
-        r"/reel/([a-zA-Z0-9_-]+)/" # Reels
-    ]
-    
+    patterns = [r"/p/([a-zA-Z0-9_-]+)/", r"/reel/([a-zA-Z0-9_-]+)/"]  # Posts  # Reels
+
     for pattern in patterns:
         match = re.search(pattern, url)
         if match:
             return match.group(1)
-    
+
     return None
 
 
 def shorten_url(url, CAPTION_URL_LENGTH_LIMIT):
-  #Shortens a URL by cutting it to a specified length.
-  shortened_url = url[:CAPTION_URL_LENGTH_LIMIT - 3] + "..."
+    # Shortens a URL by cutting it to a specified length.
+    shortened_url = url[: CAPTION_URL_LENGTH_LIMIT - 3] + "..."
 
-  return shortened_url
+    return shortened_url
 
 
 def extract_filename(response):
