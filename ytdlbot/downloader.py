@@ -114,12 +114,6 @@ def remove_bash_color(text):
 
 
 def download_hook(d: dict, bot_msg):
-    # since we're using celery, server location may be located in different region.
-    # Therefore, we can't trigger the hook very often.
-    # the key is user_id + download_link
-    original_url = d["info_dict"]["original_url"]
-    key = f"{bot_msg.chat.id}-{original_url}"
-
     if d["status"] == "downloading":
         downloaded = d.get("downloaded_bytes", 0)
         total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
@@ -136,6 +130,7 @@ def download_hook(d: dict, bot_msg):
         speed = remove_bash_color(d.get("_speed_str", "N/A"))
         eta = remove_bash_color(d.get("_eta_str", d.get("eta")))
         text = tqdm_progress("Downloading...", total, downloaded, speed, eta)
+        # debounce in here
         edit_text(bot_msg, text)
 
 
