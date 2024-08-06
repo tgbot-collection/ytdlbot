@@ -78,7 +78,7 @@ def adjust_formats(user_id: int, url: str, formats: list, hijack=None):
         formats.insert(0, "bestaudio[ext=m4a]")
 
     if settings[2] == "document":
-        formats.clear()
+        formats.insert(0, None)
 
 
 def get_metadata(video_path):
