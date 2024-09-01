@@ -214,12 +214,12 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
             bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
 
 
-def direct_download_entrance(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
+def direct_download_entrance(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str, custom_filename):
     if ENABLE_CELERY:
-        direct_normal_download(client, bot_msg, url)
+        direct_normal_download(client, bot_msg, url, custom_filename)
         # direct_download_task.delay(bot_msg.chat.id, bot_msg.id, url)
     else:
-        direct_normal_download(client, bot_msg, url)
+        direct_normal_download(client, bot_msg, url, custom_filename)
 
 
 def leech_download_entrance(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
@@ -269,7 +269,7 @@ def audio_entrance(client: Client, bot_msg: types.Message):
         normal_audio(client, bot_msg)
 
 
-def direct_normal_download(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
+def direct_normal_download(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str, custom_filename):
     chat_id = bot_msg.chat.id
     headers = {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
@@ -284,7 +284,10 @@ def direct_normal_download(client: Client, bot_msg: typing.Union[types.Message, 
         bot_msg.edit_text(f"Download failed!❌\n\n```{e}```", disable_web_page_preview=True)
         return
 
-    filename = extract_filename(req)
+    if custom_filename:
+        filename = custom_filename
+    else:
+        filename = extract_filename(req)
 
     with tempfile.TemporaryDirectory(prefix="ytdl-", dir=TMPFILE_PATH) as f:
         filepath = f"{f}/{filename}"

@@ -298,9 +298,12 @@ def direct_handler(client: Client, message: types.Message):
         message.reply_text("Send me a DIRECT LINK.", quote=True)
         return
 
+    url_parts = url.split(" -n ", maxsplit=1)
+    url = url_parts[0].strip()  # Assuming space after -n
+    custom_filename = url_parts[1].strip() if len(url_parts) > 1 else None
     bot_msg = message.reply_text("Request received.", quote=True)
     redis.update_metrics("direct_request")
-    direct_download_entrance(client, bot_msg, url)
+    direct_download_entrance(client, bot_msg, url, custom_filename)
 
 
 @app.on_message(filters.command(["leech"]))
