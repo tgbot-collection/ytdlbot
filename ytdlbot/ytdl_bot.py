@@ -61,7 +61,13 @@ from tasks import (
     ytdl_download_entrance,
     spdl_download_entrance,
 )
-from utils import auto_restart, clean_tempfile, customize_logger, get_revision
+from utils import (
+    auto_restart,
+    clean_tempfile,
+    customize_logger,
+    get_revision,
+    extract_url_and_name
+)
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
@@ -219,7 +225,7 @@ def ping_handler(client: Client, message: types.Message):
         client.edit_message_text(chat_id=reply.chat.id, message_id=reply.id, text="Ping Calculation Complete.")
         time.sleep(1)
         client.delete_messages(chat_id=reply.chat.id, message_ids=reply.id)
-            
+
     thread = threading.Thread(target=send_message_and_measure_ping)
     thread.start()
 
@@ -457,9 +463,10 @@ def spdl_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    url = re.sub(r"/spdl\s*", "", message.text)
+    message_text = message.text  
+    url, new_name = extract_url_and_name(message_text)
     logging.info("spdl start %s", url)
-    if not re.findall(r"^https?://", url.lower()):
+    if url is None or not re.findall(r"^https?://", url.lower()):
         redis.update_metrics("bad_request")
         message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
         return
@@ -474,19 +481,17 @@ def direct_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    url = re.sub(r"/direct\s*", "", message.text)
+    message_text = message.text  
+    url, new_name = extract_url_and_name(message_text)
     logging.info("direct start %s", url)
-    if not re.findall(r"^https?://", url.lower()):
+    if url is None or not re.findall(r"^https?://", url.lower()):
         redis.update_metrics("bad_request")
         message.reply_text("Send me a DIRECT LINK.", quote=True)
         return
 
-    url_parts = url.split(" -n ", maxsplit=1)
-    url = url_parts[0].strip()  # Assuming space after -n
-    custom_filename = url_parts[1].strip() if len(url_parts) > 1 else None
     bot_msg = message.reply_text("Request received.", quote=True)
     redis.update_metrics("direct_request")
-    direct_download_entrance(client, bot_msg, url, custom_filename)
+    direct_download_entrance(client, bot_msg, url, new_name)
 
 
 @app.on_message(filters.command(["leech"]))
@@ -497,9 +502,10 @@ def leech_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    url = re.sub(r"/leech\s*", "", message.text)
+    message_text = message.text  
+    url, new_name = extract_url_and_name(message_text)
     logging.info("leech using aria2 start %s", url)
-    if not re.findall(r"^https?://", url.lower()):
+    if url is None or not re.findall(r"^https?://", url.lower()):
         redis.update_metrics("bad_request")
         message.reply_text("Send me a correct LINK.", quote=True)
         return
@@ -514,13 +520,10 @@ def ytdl_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    url_match = re.search(r"(/ytdl\s*@?\w+)?\s*(https?://\S+)", message.text)
-    if url_match:
-        url = url_match.group(2)
-    else:
-        message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
+    message_text = message.text  
+    url, new_name = extract_url_and_name(message_text)
     logging.info("ytdl start %s", url)
-    if not re.findall(r"^https?://", url.lower()):
+    if url is None or not re.findall(r"^https?://", url.lower()):
         redis.update_metrics("bad_request")
         message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
         return
