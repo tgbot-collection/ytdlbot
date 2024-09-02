@@ -269,63 +269,6 @@ def clear_history(client: Client, message: types.Message):
     message.reply_text("History cleared.", quote=True)
 
 
-@app.on_message(filters.command(["spdl"]))
-def spdl_handler(client: Client, message: types.Message):
-    redis = Redis()
-    chat_id = message.from_user.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    url = re.sub(r"/spdl\s*", "", message.text)
-    logging.info("spdl start %s", url)
-    if not re.findall(r"^https?://", url.lower()):
-        redis.update_metrics("bad_request")
-        message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
-        return
-
-    bot_msg = message.reply_text("Request received.", quote=True)
-    redis.update_metrics("spdl_request")
-    spdl_download_entrance(client, bot_msg, url)
-
-
-@app.on_message(filters.command(["direct"]))
-def direct_handler(client: Client, message: types.Message):
-    redis = Redis()
-    chat_id = message.from_user.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    url = re.sub(r"/direct\s*", "", message.text)
-    logging.info("direct start %s", url)
-    if not re.findall(r"^https?://", url.lower()):
-        redis.update_metrics("bad_request")
-        message.reply_text("Send me a DIRECT LINK.", quote=True)
-        return
-
-    url_parts = url.split(" -n ", maxsplit=1)
-    url = url_parts[0].strip()  # Assuming space after -n
-    custom_filename = url_parts[1].strip() if len(url_parts) > 1 else None
-    bot_msg = message.reply_text("Request received.", quote=True)
-    redis.update_metrics("direct_request")
-    direct_download_entrance(client, bot_msg, url, custom_filename)
-
-
-@app.on_message(filters.command(["leech"]))
-def leech_handler(client: Client, message: types.Message):
-    if not ENABLE_ARIA2:
-        message.reply_text("Aria2 Not Enabled.", quote=True)
-        return
-    redis = Redis()
-    chat_id = message.from_user.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    url = re.sub(r"/leech\s*", "", message.text)
-    logging.info("leech using aria2 start %s", url)
-    if not re.findall(r"^https?://", url.lower()):
-        redis.update_metrics("bad_request")
-        message.reply_text("Send me a correct LINK.", quote=True)
-        return
-
-    bot_msg = message.reply_text("Request received.", quote=True)
-    redis.update_metrics("leech_request")
-    leech_download_entrance(client, bot_msg, url)
-
-
 @app.on_message(filters.command(["settings"]))
 def settings_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
@@ -509,6 +452,84 @@ def search_ytb(kw: str):
     return text
 
 
+@app.on_message(filters.command(["spdl"]))
+def spdl_handler(client: Client, message: types.Message):
+    redis = Redis()
+    chat_id = message.from_user.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    url = re.sub(r"/spdl\s*", "", message.text)
+    logging.info("spdl start %s", url)
+    if not re.findall(r"^https?://", url.lower()):
+        redis.update_metrics("bad_request")
+        message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
+        return
+
+    bot_msg = message.reply_text("Request received.", quote=True)
+    redis.update_metrics("spdl_request")
+    spdl_download_entrance(client, bot_msg, url)
+
+
+@app.on_message(filters.command(["direct"]))
+def direct_handler(client: Client, message: types.Message):
+    redis = Redis()
+    chat_id = message.from_user.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    url = re.sub(r"/direct\s*", "", message.text)
+    logging.info("direct start %s", url)
+    if not re.findall(r"^https?://", url.lower()):
+        redis.update_metrics("bad_request")
+        message.reply_text("Send me a DIRECT LINK.", quote=True)
+        return
+
+    url_parts = url.split(" -n ", maxsplit=1)
+    url = url_parts[0].strip()  # Assuming space after -n
+    custom_filename = url_parts[1].strip() if len(url_parts) > 1 else None
+    bot_msg = message.reply_text("Request received.", quote=True)
+    redis.update_metrics("direct_request")
+    direct_download_entrance(client, bot_msg, url, custom_filename)
+
+
+@app.on_message(filters.command(["leech"]))
+def leech_handler(client: Client, message: types.Message):
+    if not ENABLE_ARIA2:
+        message.reply_text("Aria2 Not Enabled.", quote=True)
+        return
+    redis = Redis()
+    chat_id = message.from_user.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    url = re.sub(r"/leech\s*", "", message.text)
+    logging.info("leech using aria2 start %s", url)
+    if not re.findall(r"^https?://", url.lower()):
+        redis.update_metrics("bad_request")
+        message.reply_text("Send me a correct LINK.", quote=True)
+        return
+
+    bot_msg = message.reply_text("Request received.", quote=True)
+    redis.update_metrics("leech_request")
+    leech_download_entrance(client, bot_msg, url)
+
+
+@app.on_message(filters.command(["ytdl"]))
+def ytdl_handler(client: Client, message: types.Message):
+    redis = Redis()
+    chat_id = message.from_user.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    url_match = re.search(r"(/ytdl\s*@?\w+)?\s*(https?://\S+)", message.text)
+    if url_match:
+        url = url_match.group(2)
+    else:
+        message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
+    logging.info("ytdl start %s", url)
+    if not re.findall(r"^https?://", url.lower()):
+        redis.update_metrics("bad_request")
+        message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
+        return
+
+    bot_msg = message.reply_text("Request received.", quote=True)
+    redis.update_metrics("ytdl_request")
+    ytdl_download_entrance(client, bot_msg, url)
+
+
 @app.on_message(filters.incoming & (filters.text | filters.document))
 @private_use
 def download_handler(client: Client, message: types.Message):
@@ -524,7 +545,7 @@ def download_handler(client: Client, message: types.Message):
             contents = open(tf.name, "r").read()  # don't know why
         urls = contents.split()
     else:
-        urls = [re.sub(r"/ytdl\s*", "", message.text)]
+        urls = [message.text]
         logging.info("start %s", urls)
 
     for url in urls:
