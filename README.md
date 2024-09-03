@@ -116,7 +116,7 @@ To deploy this bot, follow these steps:
    * Use export APP_ID=111 APP_HASH=111 TOKEN=123
 5. Finally, run the bot with
    * ```Python
-     python ytdl_bot.py
+     python ytdlbot/ytdl_bot.py
      ```
 
 ## Docker
