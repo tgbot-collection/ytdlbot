@@ -266,5 +266,22 @@ def extract_filename(response):
     return filename
 
 
+def extract_url_and_name(message_text):
+    # Regular expression to match the URL
+    url_pattern = r'(https?://[^\s]+)'
+    # Regular expression to match the new name after '-n'
+    name_pattern = r'-n\s+([^\s]+)'
+
+    # Find the URL in the message_text
+    url_match = re.search(url_pattern, message_text)
+    url = url_match.group(0) if url_match else None
+
+    # Find the new name in the message_text
+    name_match = re.search(name_pattern, message_text)
+    new_name = name_match.group(1) if name_match else None
+
+    return url, new_name
+
+
 if __name__ == "__main__":
     auto_restart()
