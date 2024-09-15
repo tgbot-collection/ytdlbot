@@ -11,6 +11,7 @@ import contextlib
 import json
 import logging
 import os
+import psutil
 import threading
 import random
 import re
@@ -62,6 +63,8 @@ from tasks import (
     spdl_download_entrance,
 )
 from utils import (
+    sizeof_fmt,
+    timeof_fmt,
     auto_restart,
     clean_tempfile,
     customize_logger,
@@ -232,18 +235,52 @@ def ping_handler(client: Client, message: types.Message):
 
 @app.on_message(filters.command(["stats"]))
 def stats_handler(client: Client, message: types.Message):
-    redis = Redis()
     chat_id = message.chat.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    if os.uname().sysname == "Darwin" or ".heroku" in os.getenv("PYTHONHOME", ""):
-        bot_info = "Stats Unavailable."
-    else:
-        bot_info = get_runtime("ytdlbot_ytdl_1", "YouTube-dl")
+    cpu_usage = psutil.cpu_percent()
+    total, used, free, disk = psutil.disk_usage("/")
+    swap = psutil.swap_memory()
+    memory = psutil.virtual_memory()
+    boot_time = psutil.boot_time()
+
+    owner_stats = (
+        "\n\n⌬─────「 Stats 」─────⌬\n\n"
+        f"<b>╭🖥️ **CPU Usage »**</b>  __{cpu_usage}%__\n"
+        f"<b>├💾 **RAM Usage »**</b>  __{memory.percent}%__\n"
+        f"<b>╰🗃️ **DISK Usage »**</b>  __{disk}%__\n\n"
+        f"<b>╭📤Upload:</b> {sizeof_fmt(psutil.net_io_counters().bytes_sent)}\n"
+        f"<b>╰📥Download:</b> {sizeof_fmt(psutil.net_io_counters().bytes_recv)}\n\n\n"
+        f"<b>Memory Total:</b> {sizeof_fmt(memory.total)}\n"
+        f"<b>Memory Free:</b> {sizeof_fmt(memory.available)}\n"
+        f"<b>Memory Used:</b> {sizeof_fmt(memory.used)}\n"
+        f"<b>SWAP Total:</b> {sizeof_fmt(swap.total)} | <b>SWAP Usage:</b> {swap.percent}%\n\n"
+        f"<b>Total Disk Space:</b> {sizeof_fmt(total)}\n"
+        f"<b>Used:</b> {sizeof_fmt(used)} | <b>Free:</b> {sizeof_fmt(free)}\n\n"
+        f"<b>Physical Cores:</b> {psutil.cpu_count(logical=False)}\n"
+        f"<b>Total Cores:</b> {psutil.cpu_count(logical=True)}\n\n"
+        f"<b>🤖Bot Uptime:</b> {timeof_fmt(time.time() - botStartTime)}\n"
+        f"<b>⏲️OS Uptime:</b> {timeof_fmt(time.time() - boot_time)}\n"
+    )
+
+    user_stats = (
+        "\n\n⌬─────「 Stats 」─────⌬\n\n"
+        f"<b>╭🖥️ **CPU Usage »**</b>  __{cpu_usage}%__\n"
+        f"<b>├💾 **RAM Usage »**</b>  __{memory.percent}%__\n"
+        f"<b>╰🗃️ **DISK Usage »**</b>  __{disk}%__\n\n"
+        f"<b>╭📤Upload:</b> {sizeof_fmt(psutil.net_io_counters().bytes_sent)}\n"
+        f"<b>╰📥Download:</b> {sizeof_fmt(psutil.net_io_counters().bytes_recv)}\n\n\n"
+        f"<b>Memory Total:</b> {sizeof_fmt(memory.total)}\n"
+        f"<b>Memory Free:</b> {sizeof_fmt(memory.available)}\n"
+        f"<b>Memory Used:</b> {sizeof_fmt(memory.used)}\n"
+        f"<b>Total Disk Space:</b> {sizeof_fmt(total)}\n"
+        f"<b>Used:</b> {sizeof_fmt(used)} | <b>Free:</b> {sizeof_fmt(free)}\n\n"
+        f"<b>🤖Bot Uptime:</b> {timeof_fmt(time.time() - botStartTime)}\n"
+    )
+
     if message.chat.username == OWNER:
-        stats = BotText.ping_worker()[:1000]
-        client.send_document(chat_id, redis.generate_file(), caption=f"{bot_info}\n\n{stats}")
+        message.reply_text(owner_stats, quote=True)
     else:
-        client.send_message(chat_id, f"{bot_info.split('CPU')[0]}")
+        message.reply_text(user_stats, quote=True)
 
 
 @app.on_message(filters.command(["sub_count"]))
@@ -709,6 +746,7 @@ def trx_notify(_, **kwargs):
 
 
 if __name__ == "__main__":
+    botStartTime = time.time()
     MySQL()
     TRX_SIGNAL.connect(trx_notify)
     scheduler = BackgroundScheduler(timezone="Europe/London")

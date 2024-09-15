@@ -52,6 +52,16 @@ def sizeof_fmt(num: int, suffix="B"):
     return "%.1f%s%s" % (num, "Yi", suffix)
 
 
+def timeof_fmt(seconds: int):
+    periods = [("d", 86400), ("h", 3600), ("m", 60), ("s", 1)]
+    result = ""
+    for period_name, period_seconds in periods:
+        if seconds >= period_seconds:
+            period_value, seconds = divmod(seconds, period_seconds)
+            result += f"{int(period_value)}{period_name}"
+    return result
+
+
 def is_youtube(url: str):
     if url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/"):
         return True
