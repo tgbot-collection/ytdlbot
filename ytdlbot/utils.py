@@ -230,9 +230,13 @@ def auto_restart():
 
 
 def clean_tempfile():
-    for item in pathlib.Path(TMPFILE_PATH or tempfile.gettempdir()).glob("ytdl-*"):
-        if time.time() - item.stat().st_ctime > 3600:
-            shutil.rmtree(item, ignore_errors=True)
+    patterns = ["ytdl*", "spdl*", "leech*", "direct*"]
+    temp_path = pathlib.Path(TMPFILE_PATH or tempfile.gettempdir())
+    
+    for pattern in patterns:
+        for item in temp_path.glob(pattern):
+            if time.time() - item.stat().st_ctime > 3600:
+                shutil.rmtree(item, ignore_errors=True)
 
 
 def parse_cookie_file(cookiefile):
