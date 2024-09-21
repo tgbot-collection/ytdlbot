@@ -36,7 +36,7 @@ from config import (
     FileTooBig,
     IPv6,
 )
-from limit import Payment
+from payment import Payment
 from utils import adjust_formats, apply_log_formatter, current_time, sizeof_fmt
 
 apply_log_formatter()

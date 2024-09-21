@@ -10,17 +10,17 @@ __author__ = "Benny <benny.think@gmail.com>"
 import contextlib
 import json
 import logging
-import os
-import psutil
-import threading
 import random
 import re
 import tempfile
+import threading
 import time
 import traceback
+import typing
 from io import BytesIO
 from typing import Any
 
+import psutil
 import pyrogram.errors
 import qrcode
 import yt_dlp
@@ -29,14 +29,10 @@ from pyrogram import Client, enums, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.raw import functions
 from pyrogram.raw import types as raw_types
-from tgbot_ping import get_runtime
-from youtubesearchpython import VideosSearch
 
 from channel import Channel
-from client_init import create_app
 from config import (
     AUTHORIZED_USER,
-    ENABLE_CELERY,
     ENABLE_FFMPEG,
     ENABLE_VIP,
     M3U8_SUPPORT,
@@ -50,27 +46,24 @@ from config import (
     ENABLE_ARIA2,
 )
 from constant import BotText
-from database import InfluxDB, MySQL, Redis
-from limit import Payment, TronTrx
-from tasks import app as celery_app
+from database import MySQL, Redis
+from payment import Payment, TronTrx
 from tasks import (
     audio_entrance,
     direct_download_entrance,
     leech_download_entrance,
-    hot_patch,
-    purge_tasks,
     ytdl_download_entrance,
     spdl_download_entrance,
 )
 from utils import (
     sizeof_fmt,
     timeof_fmt,
-    auto_restart,
     clean_tempfile,
     customize_logger,
     get_revision,
-    extract_url_and_name
+    extract_url_and_name,
 )
+from ytdlbot.client_init import create_app
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
@@ -78,6 +71,7 @@ logging.getLogger("apscheduler.executors.default").propagate = False
 
 app = create_app("main")
 channel = Channel()
+payment = Payment()
 
 
 def private_use(func):
@@ -122,13 +116,9 @@ def private_use(func):
 
 @app.on_message(filters.command(["start"]))
 def start_handler(client: Client, message: types.Message):
-    payment = Payment()
     from_id = message.from_user.id
     logging.info("%s welcome to youtube-dl bot!", message.from_user.id)
     client.send_chat_action(from_id, enums.ChatAction.TYPING)
-    is_old_user = payment.check_old_user(from_id)
-    if is_old_user:
-        info = ""
     if ENABLE_VIP:
         free_token, pay_token, reset = payment.get_token(from_id)
         info = f"Free token: {free_token}, Pay token: {pay_token}, Reset: {reset}"
@@ -184,17 +174,6 @@ def unsubscribe_handler(client: Client, message: types.Message):
     client.send_message(chat_id, text, disable_web_page_preview=True)
 
 
-@app.on_message(filters.command(["patch"]))
-def patch_handler(client: Client, message: types.Message):
-    username = message.from_user.username
-    chat_id = message.chat.id
-    if username == OWNER:
-        celery_app.control.broadcast("hot_patch")
-        client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-        client.send_message(chat_id, "Oorah!")
-        hot_patch()
-
-
 @app.on_message(filters.command(["uncache"]))
 def uncache_handler(client: Client, message: types.Message):
     username = message.from_user.username
@@ -204,21 +183,15 @@ def uncache_handler(client: Client, message: types.Message):
         message.reply_text(f"{count} cache(s) deleted.", quote=True)
 
 
-@app.on_message(filters.command(["purge"]))
-def purge_handler(client: Client, message: types.Message):
-    username = message.from_user.username
-    if username == OWNER:
-        message.reply_text(purge_tasks(), quote=True)
-
-
 @app.on_message(filters.command(["ping"]))
 def ping_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    message_sent = False
+
     def send_message_and_measure_ping():
         start_time = int(round(time.time() * 1000))
-        reply = client.send_message(chat_id, "Starting Ping...")
+        reply: types.Message | typing.Any = client.send_message(chat_id, "Starting Ping...")
+
         end_time = int(round(time.time() * 1000))
         ping_time = int(round(end_time - start_time))
         message_sent = True
@@ -315,16 +288,8 @@ def clear_history(client: Client, message: types.Message):
 @app.on_message(filters.command(["settings"]))
 def settings_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
-    payment = Payment()
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     data = MySQL().get_user_settings(chat_id)
-    set_mode = data[3]
-    text = {"Local": "Celery", "Celery": "Local"}.get(set_mode, "Local")
-    mode_text = f"Download mode: **{set_mode}**\nHistory record: {data[4]}"
-    if message.chat.username == OWNER or payment.get_pay_token(chat_id):
-        extra = [types.InlineKeyboardButton(f"Change download mode to {text}", callback_data=text)]
-    else:
-        extra = []
 
     markup = types.InlineKeyboardMarkup(
         [
@@ -341,16 +306,10 @@ def settings_handler(client: Client, message: types.Message):
             [
                 types.InlineKeyboardButton("Toggle History", callback_data=f"history-{data[4]}"),
             ],
-            extra,
         ]
     )
 
-    try:
-        client.send_message(chat_id, BotText.settings.format(data[1], data[2]) + mode_text, reply_markup=markup)
-    except:
-        client.send_message(
-            chat_id, BotText.settings.format(data[1] + ".", data[2] + ".") + mode_text, reply_markup=markup
-        )
+    client.send_message(chat_id, BotText.settings.format(data[1], data[2]), reply_markup=markup)
 
 
 @app.on_message(filters.command(["buy"]))
@@ -424,16 +383,6 @@ def bot_payment_btn_calback(client: Client, callback_query: types.CallbackQuery)
     )
 
 
-@app.on_message(filters.command(["redeem"]))
-def redeem_handler(client: Client, message: types.Message):
-    payment = Payment()
-    chat_id = message.chat.id
-    text = message.text.strip()
-    unique = text.replace("/redeem", "").strip()
-    msg = payment.verify_payment(chat_id, unique)
-    message.reply_text(msg, quote=True)
-
-
 @app.on_message(filters.user(PREMIUM_USER) & filters.incoming & filters.caption)
 def premium_forward(client: Client, message: types.Message):
     media = message.video or message.audio or message.document
@@ -483,24 +432,12 @@ def link_checker(url: str) -> str:
             return "Live stream links are disabled. Please download it after the stream ends."
 
 
-def search_ytb(kw: str):
-    videos_search = VideosSearch(kw, limit=10)
-    text = ""
-    results = videos_search.result()["result"]
-    for item in results:
-        title = item.get("title")
-        link = item.get("link")
-        index = results.index(item) + 1
-        text += f"{index}. {title}\n{link}\n\n"
-    return text
-
-
 @app.on_message(filters.command(["spdl"]))
 def spdl_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    message_text = message.text  
+    message_text = message.text
     url, new_name = extract_url_and_name(message_text)
     logging.info("spdl start %s", url)
     if url is None or not re.findall(r"^https?://", url.lower()):
@@ -518,7 +455,7 @@ def direct_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    message_text = message.text  
+    message_text = message.text
     url, new_name = extract_url_and_name(message_text)
     logging.info("direct start %s", url)
     if url is None or not re.findall(r"^https?://", url.lower()):
@@ -539,7 +476,7 @@ def leech_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    message_text = message.text  
+    message_text = message.text
     url, new_name = extract_url_and_name(message_text)
     logging.info("leech using aria2 start %s", url)
     if url is None or not re.findall(r"^https?://", url.lower()):
@@ -557,7 +494,7 @@ def ytdl_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    message_text = message.text  
+    message_text = message.text
     url, new_name = extract_url_and_name(message_text)
     logging.info("ytdl start %s", url)
     if url is None or not re.findall(r"^https?://", url.lower()):
@@ -574,7 +511,6 @@ def ytdl_handler(client: Client, message: types.Message):
 @private_use
 def download_handler(client: Client, message: types.Message):
     redis = Redis()
-    payment = Payment()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     redis.user_count(chat_id)
@@ -592,8 +528,7 @@ def download_handler(client: Client, message: types.Message):
         # check url
         if not re.findall(r"^https?://", url.lower()):
             redis.update_metrics("bad_request")
-            text = search_ytb(url)
-            message.reply_text(text, quote=True, disable_web_page_preview=True)
+            message.reply_text("not an url", quote=True, disable_web_page_preview=True)
             return
 
         if text := link_checker(url):
@@ -602,7 +537,7 @@ def download_handler(client: Client, message: types.Message):
             return
 
         # old user is not limited by token
-        if ENABLE_VIP and not payment.check_old_user(chat_id):
+        if ENABLE_VIP:
             free, pay, reset = payment.get_token(chat_id)
             if free + pay <= 0:
                 message.reply_text(f"You don't have enough token. Please wait until {reset} or /buy .", quote=True)
@@ -721,7 +656,6 @@ def periodic_sub_check():
 
 @app.on_raw_update()
 def raw_update(client: Client, update, users, chats):
-    payment = Payment()
     action = getattr(getattr(update, "message", None), "action", None)
     if update.QUALNAME == "types.UpdateBotPrecheckoutQuery":
         client.invoke(
@@ -750,10 +684,8 @@ if __name__ == "__main__":
     MySQL()
     TRX_SIGNAL.connect(trx_notify)
     scheduler = BackgroundScheduler(timezone="Europe/London")
-    scheduler.add_job(auto_restart, "interval", seconds=600)
     scheduler.add_job(clean_tempfile, "interval", seconds=120)
     scheduler.add_job(Redis().reset_today, "cron", hour=0, minute=0)
-    scheduler.add_job(InfluxDB().collect_data, "interval", seconds=120)
     # scheduler.add_job(TronTrx().check_payment, "interval", seconds=60, max_instances=1)
     #  default quota allocation of 10,000 units per day
     # scheduler.add_job(periodic_sub_check, "interval", seconds=3600)
@@ -764,7 +696,7 @@ if __name__ == "__main__":
  ▌  ▌ ▌ ▌ ▌  ▌  ▌ ▌ ▌ ▌ ▛▀  ▌ ▌ ▌ ▌ ▐▐▐  ▌ ▌ ▐  ▌ ▌ ▞▀▌ ▌ ▌
  ▘  ▝▀  ▝▀▘  ▘  ▝▀▘ ▀▀  ▝▀▘ ▀▀  ▝▀   ▘▘  ▘ ▘  ▘ ▝▀  ▝▀▘ ▝▀▘
 
-By @BennyThink, VIP mode: {ENABLE_VIP}, Celery Mode: {ENABLE_CELERY}
+By @BennyThink, VIP mode: {ENABLE_VIP} 
 Version: {get_revision()}
     """
     print(banner)

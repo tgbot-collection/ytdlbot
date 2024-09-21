@@ -7,13 +7,9 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
-import base64
-import contextlib
-import datetime
 import logging
 import os
 import re
-import sqlite3
 import subprocess
 import time
 from io import BytesIO
@@ -21,52 +17,9 @@ from io import BytesIO
 import fakeredis
 import pymysql
 import redis
-import requests
 from beautifultable import BeautifulTable
-from influxdb import InfluxDBClient
 
 from config import MYSQL_HOST, MYSQL_PASS, MYSQL_USER, REDIS
-
-init_con = sqlite3.connect(":memory:", check_same_thread=False)
-
-
-class FakeMySQL:
-    @staticmethod
-    def cursor() -> "Cursor":
-        return Cursor()
-
-    def commit(self):
-        pass
-
-    def close(self):
-        pass
-
-    def ping(self, reconnect):
-        pass
-
-
-class Cursor:
-    def __init__(self):
-        self.con = init_con
-        self.cur = self.con.cursor()
-
-    def execute(self, *args, **kwargs):
-        sql = self.sub(args[0])
-        new_args = (sql,) + args[1:]
-        with contextlib.suppress(sqlite3.OperationalError):
-            return self.cur.execute(*new_args, **kwargs)
-
-    def fetchall(self):
-        return self.cur.fetchall()
-
-    def fetchone(self):
-        return self.cur.fetchone()
-
-    @staticmethod
-    def sub(sql):
-        sql = re.sub(r"CHARSET.*|charset.*", "", sql, re.IGNORECASE)
-        sql = sql.replace("%s", "?")
-        return sql
 
 
 class Redis:
@@ -206,7 +159,7 @@ class Redis:
 
 
 class MySQL:
-    vip_sql = """
+    payment_sql = """
     CREATE TABLE if not exists `payment`
     (
         `user_id`        bigint NOT NULL,
@@ -263,14 +216,7 @@ class MySQL:
     """
 
     def __init__(self):
-        try:
-            self.con = pymysql.connect(
-                host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl", charset="utf8mb4"
-            )
-            self.con.ping(reconnect=True)
-        except Exception:
-            logging.warning("MySQL connection failed, using fake mysql instead.")
-            self.con = FakeMySQL()
+        self.con = pymysql.connect(host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl", charset="utf8mb4")
 
         self.con.ping(reconnect=True)
         self.cur = self.con.cursor()
@@ -278,7 +224,7 @@ class MySQL:
         super().__init__()
 
     def init_db(self):
-        self.cur.execute(self.vip_sql)
+        self.cur.execute(self.payment_sql)
         self.cur.execute(self.settings_sql)
         self.cur.execute(self.channel_sql)
         self.cur.execute(self.subscribe_sql)
@@ -331,88 +277,3 @@ class MySQL:
         if data:
             return data
         return None
-
-
-class InfluxDB:
-    def __init__(self):
-        self.client = InfluxDBClient(
-            host=os.getenv("INFLUX_HOST"),
-            path=os.getenv("INFLUX_PATH"),
-            port=443,
-            username="nova",
-            password=os.getenv("INFLUX_PASS"),
-            database="celery",
-            ssl=True,
-            verify_ssl=True,
-        )
-        self.data = None
-
-    def __del__(self):
-        self.client.close()
-
-    @staticmethod
-    def get_worker_data() -> dict:
-        username = os.getenv("FLOWER_USERNAME", "benny")
-        password = os.getenv("FLOWER_PASSWORD", "123456abc")
-        token = base64.b64encode(f"{username}:{password}".encode()).decode()
-        headers = {"Authorization": f"Basic {token}"}
-        r = requests.get("https://celery.dmesg.app/workers?json=1", headers=headers)
-        if r.status_code != 200:
-            return dict(data=[])
-        return r.json()
-
-    def extract_dashboard_data(self):
-        self.data = self.get_worker_data()
-        json_body = []
-        for worker in self.data["data"]:
-            load1, load5, load15 = worker["loadavg"]
-            t = {
-                "measurement": "tasks",
-                "tags": {
-                    "hostname": worker["hostname"],
-                },
-                "time": datetime.datetime.utcnow(),
-                "fields": {
-                    "task-received": worker.get("task-received", 0),
-                    "task-started": worker.get("task-started", 0),
-                    "task-succeeded": worker.get("task-succeeded", 0),
-                    "task-failed": worker.get("task-failed", 0),
-                    "active": worker.get("active", 0),
-                    "status": worker.get("status", False),
-                    "load1": load1,
-                    "load5": load5,
-                    "load15": load15,
-                },
-            }
-            json_body.append(t)
-        return json_body
-
-    def __fill_worker_data(self):
-        json_body = self.extract_dashboard_data()
-        self.client.write_points(json_body)
-
-    def __fill_overall_data(self):
-        active = sum([i["active"] for i in self.data["data"]])
-        json_body = [{"measurement": "active", "time": datetime.datetime.utcnow(), "fields": {"active": active}}]
-        self.client.write_points(json_body)
-
-    def __fill_redis_metrics(self):
-        json_body = [{"measurement": "metrics", "time": datetime.datetime.utcnow(), "fields": {}}]
-        r = Redis().r
-        hash_keys = r.hgetall("metrics")
-        for key, value in hash_keys.items():
-            if re.findall(r"^today", key):
-                json_body[0]["fields"][key] = int(value)
-
-        self.client.write_points(json_body)
-
-    def collect_data(self):
-        if os.getenv("INFLUX_HOST") is None:
-            return
-
-        with contextlib.suppress(Exception):
-            self.data = self.get_worker_data()
-            self.__fill_worker_data()
-            self.__fill_overall_data()
-            self.__fill_redis_metrics()
-            logging.debug("InfluxDB data was collected.")

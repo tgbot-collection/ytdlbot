@@ -7,7 +7,6 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
-import asyncio
 import logging
 import os
 import pathlib
@@ -15,59 +14,47 @@ import re
 import shutil
 import subprocess
 import tempfile
-import threading
 import time
 import traceback
 import typing
 from typing import Any
-from urllib.parse import quote_plus
 
 import filetype
-import psutil
 import pyrogram.errors
 import requests
-from apscheduler.schedulers.background import BackgroundScheduler
-from celery import Celery
-from celery.worker.control import Panel
-from pyrogram import Client, enums, idle, types
+from pyrogram import Client, enums, types
 
 from channel import Channel
-from client_init import create_app
 from config import (
     ARCHIVE_ID,
-    BROKER,
-    ENABLE_CELERY,
     ENABLE_VIP,
     OWNER,
     RATE_LIMIT,
     RCLONE_PATH,
     TMPFILE_PATH,
-    WORKERS,
     FileTooBig,
     CAPTION_URL_LENGTH_LIMIT,
 )
 from constant import BotText
 from database import Redis, MySQL
 from downloader import edit_text, tqdm_progress, upload_hook, ytdl_download
+from payment import Payment
 from sp_downloader import sp_dl
-from limit import Payment
 from utils import (
     apply_log_formatter,
-    auto_restart,
     customize_logger,
     get_metadata,
-    get_revision,
     sizeof_fmt,
     shorten_url,
     extract_filename,
 )
+from ytdlbot.client_init import create_app
 
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
 apply_log_formatter()
 bot_text = BotText()
 logging.getLogger("apscheduler.executors.default").propagate = False
 
-app = Celery("tasks", broker=BROKER)
 bot = create_app("tasks")
 channel = Channel()
 
@@ -126,7 +113,9 @@ def ytdl_download_task(chat_id: int, message_id: int, url: str):
         if len(error_msg) > 1:
             bot_msg.edit_text(f"Download failed!❌\n\n`{error_msg[-1]}", disable_web_page_preview=True)
         else:
-            bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
+            bot_msg.edit_text(
+                f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True
+            )
     logging.info("YouTube celery tasks ended.")
 
 
@@ -211,10 +200,14 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
         if len(error_msg) > 1:
             bot_msg.edit_text(f"Download failed!❌\n\n`{error_msg[-1]}", disable_web_page_preview=True)
         else:
-            bot_msg.edit_text(f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True)
+            bot_msg.edit_text(
+                f"Download failed!❌\n\n`{traceback.format_exc()[-2000:]}`", disable_web_page_preview=True
+            )
 
 
-def direct_download_entrance(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str, new_name):
+def direct_download_entrance(
+        client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str, new_name
+):
     if ENABLE_CELERY:
         direct_normal_download(client, bot_msg, url, new_name)
         # direct_download_task.delay(bot_msg.chat.id, bot_msg.id, url)
@@ -236,7 +229,7 @@ def spdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
     chat_id = bot_msg.chat.id
     unique = get_unique_clink(url, chat_id)
     cached_fid = redis.get_send_cache(unique)
-    
+
     try:
         if cached_fid:
             forward_video(client, bot_msg, url, cached_fid)
@@ -353,7 +346,7 @@ def leech_normal_download(client: Client, bot_msg: typing.Union[types.Message, t
                 bot_msg.edit_text(f"Downloading... \n\n`{line}`", disable_web_page_preview=True)
                 break
             iteration += 1
-        
+
         if iteration >= max_iterations:
             bot_msg.edit_text("Something went wrong. Please try again.", disable_web_page_preview=True)
     except Exception as e:
@@ -636,7 +629,7 @@ def gen_cap(bm, url, video_path):
     except Exception as e:
         logging.warning(f"Error shortening URL: {e}")
         url_for_cap = url
-    
+
     cap = (
         f"{user_info}\n{file_name}\n\n{url_for_cap}\n\nInfo: {meta['width']}x{meta['height']} {file_size}\t"
         f"{meta['duration']}s\n{remain}\n{worker}\n{bot_text.custom_text}"
@@ -655,54 +648,3 @@ def gen_video_markup():
         ]
     )
     return markup
-
-
-@Panel.register
-def ping_revision(*args):
-    return get_revision()
-
-
-@Panel.register
-def hot_patch(*args):
-    app_path = pathlib.Path().cwd().parent
-    logging.info("Hot patching on path %s...", app_path)
-
-    pip_install = "pip install -r requirements.txt"
-    unset = "git config --unset http.https://github.com/.extraheader"
-    pull_unshallow = "git pull origin --unshallow"
-    pull = "git pull"
-
-    subprocess.call(unset, shell=True, cwd=app_path)
-    if subprocess.call(pull_unshallow, shell=True, cwd=app_path) != 0:
-        logging.info("Already unshallow, pulling now...")
-        subprocess.call(pull, shell=True, cwd=app_path)
-
-    logging.info("Code is updated, applying hot patch now...")
-    subprocess.call(pip_install, shell=True, cwd=app_path)
-    psutil.Process().kill()
-
-
-def purge_tasks():
-    count = app.control.purge()
-    return f"purged {count} tasks."
-
-
-def run_celery():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    worker_name = os.getenv("WORKER_NAME", "")
-    argv = ["-A", "tasks", "worker", "--loglevel=info", "--pool=threads", f"--concurrency={WORKERS}", "-n", worker_name]
-    app.worker_main(argv)
-
-
-if __name__ == "__main__":
-    print("Bootstrapping Celery worker now.....")
-    time.sleep(5)
-    threading.Thread(target=run_celery, daemon=True).start()
-
-    scheduler = BackgroundScheduler(timezone="Europe/London")
-    scheduler.add_job(auto_restart, "interval", seconds=900)
-    scheduler.start()
-
-    idle()
-    bot.stop()

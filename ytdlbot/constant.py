@@ -10,15 +10,10 @@ __author__ = "Benny <benny.think@gmail.com>"
 import os
 
 from config import (
-    AFD_LINK,
-    COFFEE_LINK,
-    ENABLE_CELERY,
     FREE_DOWNLOAD,
     REQUIRED_MEMBERSHIP,
     TOKEN_PRICE,
 )
-from database import InfluxDB
-from utils import get_func_queue
 
 
 class BotText:
@@ -49,9 +44,7 @@ class BotText:
 
 3. Refunds are possible, contact me if you need that @BennyThink
 
-4. Download for paid user will be automatically changed to Local mode to avoid queuing.
-
-5. Paid user can download files larger than 2GB.
+4. Paid user can download files larger than 2GB.
 
 **Price:**
 valid permanently
@@ -61,15 +54,11 @@ valid permanently
 
 **Payment options:**
 Pay any amount you want. For example you can send 20 TRX for {TOKEN_PRICE * 2} tokens.
-1. AFDIAN(AliPay, WeChat Pay and PayPal): {AFD_LINK}
-2. Buy me a coffee: {COFFEE_LINK}
-3. Telegram Bot Payment(Stripe), please click Bot Payment button.
+1. Telegram Bot Payment(Stripe), please click Bot Payment button.
 4. TRON(TRX), please click TRON(TRX) button.
 
 **After payment:**
-1. Afdian: attach order number with /redeem command (e.g., `/redeem 123456`).
-2. Buy Me a Coffee: attach email with /redeem command (e.g., `/redeem 123@x.com`). **Use different email each time.**
-3. Telegram Payment & Tron(TRX): automatically activated within 60s. Check /start to see your balance.
+1. Telegram Payment & Tron(TRX): automatically activated within 60s. Check /start to see your balance.
 
 Want to buy more token with Telegram payment? Let's say 100? Here you go! `/buy 123`
     """
@@ -100,33 +89,4 @@ Sending format: **{1}**
 
     @staticmethod
     def get_receive_link_text() -> str:
-        reserved = get_func_queue("reserved")
-        if ENABLE_CELERY and reserved:
-            text = f"Your tasks was added to the reserved queue {reserved}. Processing...\n\n"
-        else:
-            text = "Your task was added to active queue.\nProcessing...\n\n"
-
-        return text
-
-    @staticmethod
-    def ping_worker() -> str:
-        from tasks import app as celery_app
-
-        workers = InfluxDB().extract_dashboard_data()
-        # [{'celery@BennyのMBP': 'abc'}, {'celery@BennyのMBP': 'abc'}]
-        response = celery_app.control.broadcast("ping_revision", reply=True)
-        revision = {}
-        for item in response:
-            revision.update(item)
-
-        text = ""
-        for worker in workers:
-            fields = worker["fields"]
-            hostname = worker["tags"]["hostname"]
-            status = {True: "✅"}.get(fields["status"], "❌")
-            active = fields["active"]
-            load = "{},{},{}".format(fields["load1"], fields["load5"], fields["load15"])
-            rev = revision.get(hostname, "")
-            text += f"{status}{hostname} **{active}** {load} {rev}\n"
-
-        return text
+        return "Your task was added to active queue.\nProcessing...\n\n"

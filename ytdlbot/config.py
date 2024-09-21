@@ -12,8 +12,7 @@ import os
 from blinker import signal
 
 # general settings
-WORKERS: int = int(os.getenv("WORKERS", 10))
-PYRO_WORKERS: int = int(os.getenv("PYRO_WORKERS", 100))
+WORKERS: int = int(os.getenv("WORKERS", 100))
 APP_ID: int = int(os.getenv("APP_ID", 198214))
 APP_HASH = os.getenv("APP_HASH", "1234b90")
 TOKEN = os.getenv("TOKEN", "1234")
@@ -29,9 +28,6 @@ AUTHORIZED_USER: str = os.getenv("AUTHORIZED_USER", "")
 # You need to add the bot to this group/channel as admin
 REQUIRED_MEMBERSHIP: str = os.getenv("REQUIRED_MEMBERSHIP", "")
 
-# celery related
-ENABLE_CELERY = os.getenv("ENABLE_CELERY", False)
-BROKER = os.getenv("BROKER", f"redis://{REDIS}:6379/1")
 
 MYSQL_HOST = os.getenv("MYSQL_HOST", "mysql")
 MYSQL_USER = os.getenv("MYSQL_USER", "root")
@@ -49,13 +45,8 @@ ENABLE_ARIA2 = os.getenv("ENABLE_ARIA2", False)
 RCLONE_PATH = os.getenv("RCLONE")
 
 # payment settings
-AFD_LINK = os.getenv("AFD_LINK", "https://afdian.net/@BennyThink")
-COFFEE_LINK = os.getenv("COFFEE_LINK", "https://www.buymeacoffee.com/bennythink")
-COFFEE_TOKEN = os.getenv("COFFEE_TOKEN")
-AFD_TOKEN = os.getenv("AFD_TOKEN")
-AFD_USER_ID = os.getenv("AFD_USER_ID")
 PROVIDER_TOKEN = os.getenv("PROVIDER_TOKEN") or "1234"
-FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 10)
+FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 5)
 EXPIRE = 24 * 3600
 TOKEN_PRICE = os.getenv("BUY_UNIT", 20)  # one USD=20 credits
 TRONGRID_KEY = os.getenv("TRONGRID_KEY", "").split(",")
@@ -70,6 +61,7 @@ PREMIUM_USER = int(os.getenv("PREMIUM_USER", "0"))
 TG_PREMIUM_MAX_SIZE = 4000 * 1024 * 1024
 TG_NORMAL_MAX_SIZE = 2000 * 1024 * 1024
 CAPTION_URL_LENGTH_LIMIT = 150
+
 IPv6 = os.getenv("IPv6", False)
 RATE_LIMIT = os.getenv("RATE_LIMIT", 120)
 # This will set the value for the tmpfile path(download path). If not, will return None and use system’s default path.

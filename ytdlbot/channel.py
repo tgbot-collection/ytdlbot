@@ -9,7 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from config import ENABLE_VIP
-from limit import Payment
+from payment import Payment
 
 
 class Channel(Payment):

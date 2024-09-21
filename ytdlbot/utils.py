@@ -8,7 +8,6 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import contextlib
-import inspect as pyinspect
 import logging
 import os
 import pathlib
@@ -23,12 +22,8 @@ from urllib.parse import quote_plus
 
 import coloredlogs
 import ffmpeg
-import psutil
 
 from config import TMPFILE_PATH
-from flower_tasks import app
-
-inspect = app.control.inspect()
 
 
 def apply_log_formatter():
@@ -52,7 +47,7 @@ def sizeof_fmt(num: int, suffix="B"):
     return "%.1f%s%s" % (num, "Yi", suffix)
 
 
-def timeof_fmt(seconds: int):
+def timeof_fmt(seconds: int | float):
     periods = [("d", 86400), ("h", 3600), ("m", 60), ("s", 1)]
     result = ""
     for period_name, period_seconds in periods:
@@ -120,17 +115,6 @@ def get_revision():
     return "unknown"
 
 
-def get_func_queue(func) -> int:
-    try:
-        count = 0
-        data = getattr(inspect, func)() or {}
-        for _, task in data.items():
-            count += len(task)
-        return count
-    except Exception:
-        return 0
-
-
 def tail_log(f, lines=1, _buffer=4098):
     """Tail a file and get X lines from the end"""
     # placeholder for the lines found
@@ -164,75 +148,10 @@ def tail_log(f, lines=1, _buffer=4098):
     return lines_found[-lines:]
 
 
-class Detector:
-    def __init__(self, logs: str):
-        self.logs = logs
-
-    @staticmethod
-    def func_name():
-        with contextlib.suppress(Exception):
-            return pyinspect.stack()[1][3]
-        return "N/A"
-
-    def auth_key_detector(self):
-        text = "Server sent transport error: 404 (auth key not found)"
-        if self.logs.count(text) >= 3:
-            logging.critical("auth key not found: %s", self.func_name())
-            os.unlink("*.session")
-            return True
-
-    def updates_too_long_detector(self):
-        # If you're seeing this, that means you have logged more than 10 device
-        # and the earliest account was kicked out. Restart the program could get you back in.
-        indicators = [
-            "types.UpdatesTooLong",
-            "Got shutdown from remote",
-            "Code is updated",
-            "OSError: Connection lost",
-            "[Errno -3] Try again",
-            "MISCONF",
-        ]
-        for indicator in indicators:
-            if indicator in self.logs:
-                logging.critical("kick out crash: %s", self.func_name())
-                return True
-        logging.debug("No crash detected.")
-
-    def next_salt_detector(self):
-        text = "Next salt in"
-        if self.logs.count(text) >= 5:
-            logging.critical("Next salt crash: %s", self.func_name())
-            return True
-
-    def connection_reset_detector(self):
-        text = "Send exception: ConnectionResetError Connection lost"
-        if self.logs.count(text) >= 5:
-            logging.critical("connection lost: %s ", self.func_name())
-            return True
-
-
-def auto_restart():
-    log_path = "/var/log/ytdl.log"
-    if not os.path.exists(log_path):
-        return
-    with open(log_path) as f:
-        logs = "".join(tail_log(f, lines=10))
-
-    det = Detector(logs)
-    method_list = [getattr(det, func) for func in dir(det) if func.endswith("_detector")]
-    for method in method_list:
-        if method():
-            logging.critical("%s bye bye world!☠️", method)
-            for item in pathlib.Path(TMPFILE_PATH or tempfile.gettempdir()).glob("ytdl-*"):
-                shutil.rmtree(item, ignore_errors=True)
-            time.sleep(5)
-            psutil.Process().kill()
-
-
 def clean_tempfile():
     patterns = ["ytdl*", "spdl*", "leech*", "direct*"]
     temp_path = pathlib.Path(TMPFILE_PATH or tempfile.gettempdir())
-    
+
     for pattern in patterns:
         for item in temp_path.glob(pattern):
             if time.time() - item.stat().st_ctime > 3600:
@@ -282,9 +201,9 @@ def extract_filename(response):
 
 def extract_url_and_name(message_text):
     # Regular expression to match the URL
-    url_pattern = r'(https?://[^\s]+)'
+    url_pattern = r"(https?://[^\s]+)"
     # Regular expression to match the new name after '-n'
-    name_pattern = r'-n\s+([^\s]+)'
+    name_pattern = r"-n\s+([^\s]+)"
 
     # Find the URL in the message_text
     url_match = re.search(url_pattern, message_text)
@@ -295,7 +214,3 @@ def extract_url_and_name(message_text):
     new_name = name_match.group(1) if name_match else None
 
     return url, new_name
-
-
-if __name__ == "__main__":
-    auto_restart()

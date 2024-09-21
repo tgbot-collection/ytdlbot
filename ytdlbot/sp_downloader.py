@@ -7,39 +7,29 @@
 
 __author__ = "SanujaNS <sanujas@sanuja.biz>"
 
-import functools
-import os
-import json
 import logging
+import os
 import pathlib
 import re
 import traceback
 from urllib.parse import urlparse, parse_qs
 
-from pyrogram import types
-from tqdm import tqdm
 import filetype
 import requests
-from bs4 import BeautifulSoup
 import yt_dlp as ytdl
+from bs4 import BeautifulSoup
 
 from config import (
-    PREMIUM_USER,
-    TG_NORMAL_MAX_SIZE,
-    TG_PREMIUM_MAX_SIZE,
     FileTooBig,
     IPv6,
 )
 from downloader import (
     edit_text,
-    remove_bash_color,
-    ProgressBar,
     tqdm_progress,
     download_hook,
-    upload_hook,
 )
-from limit import Payment
-from utils import sizeof_fmt, parse_cookie_file, extract_code_from_instagram_url
+from payment import Payment
+from utils import parse_cookie_file, extract_code_from_instagram_url
 
 
 def sp_dl(url: str, tempdir: str, bm, **kwargs) -> list:
@@ -71,8 +61,6 @@ def sp_dl(url: str, tempdir: str, bm, **kwargs) -> list:
         return terabox(url, tempdir, bm, **kwargs)
     else:
         raise ValueError(f"Invalid URL: No specific link function found for {url}")
-    
-    return []
 
 
 def sp_ytdl_download(url: str, tempdir: str, bm, filename=None, **kwargs) -> list:
@@ -102,7 +90,7 @@ def sp_ytdl_download(url: str, tempdir: str, bm, filename=None, **kwargs) -> lis
             video_paths = list(pathlib.Path(tempdir).glob("*"))
             break
         except FileTooBig as e:
-                raise e
+            raise e
         except Exception:
             error = traceback.format_exc()
             logging.error("Download failed for %s - %s", url)
@@ -166,9 +154,7 @@ def krakenfiles(url: str, tempdir: str, bm, **kwargs):
             token_parts.append(value)
     for link_part, token_part in zip(link_parts, token_parts):
         link = f"https:{link_part}"
-        data = {
-            "token": token_part
-        }
+        data = {"token": token_part}
         response = requests.post(link, data=data)
         json_data = response.json()
         url = json_data["url"]
@@ -178,10 +164,11 @@ def krakenfiles(url: str, tempdir: str, bm, **kwargs):
 def find_between(s, start, end):
     return (s.split(start))[1].split(end)[0]
 
+
 def terabox(url: str, tempdir: str, bm, **kwargs):
     cookies_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "terabox.txt")
     cookies = parse_cookie_file(cookies_file)
-    
+
     headers = {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         "Accept-Encoding": "gzip, deflate, br",
@@ -199,7 +186,7 @@ def terabox(url: str, tempdir: str, bm, **kwargs):
         "sec-ch-ua-mobile": "?0",
         "sec-ch-ua-platform": "'Windows'",
     }
-    
+
     session = requests.Session()
     session.headers.update(headers)
     session.cookies.update(cookies)
@@ -211,7 +198,7 @@ def terabox(url: str, tempdir: str, bm, **kwargs):
     js_token = find_between(respo, "fn%28%22", "%22%29")
     logid = find_between(respo, "dp-logid=", "&")
     bdstoken = find_between(respo, 'bdstoken":"', '"')
-    
+
     params = {
         "app_id": "250528",
         "web": "1",
@@ -227,7 +214,7 @@ def terabox(url: str, tempdir: str, bm, **kwargs):
         "shorturl": surl,
         "root": "1,",
     }
-    
+
     req2 = session.get("https://www.terabox.app/share/list", params=params)
     response_data2 = req2.json()
     file_name = response_data2["list"][0]["server_filename"]
@@ -240,5 +227,5 @@ def terabox(url: str, tempdir: str, bm, **kwargs):
         direct_link_response_headers = direct_link_response.headers
         direct_link = direct_link_response_headers["Location"]
         url = direct_link
-    
+
     return sp_ytdl_download(url, tempdir, bm, filename=file_name, **kwargs)
