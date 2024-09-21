@@ -52,6 +52,16 @@ def sizeof_fmt(num: int, suffix="B"):
     return "%.1f%s%s" % (num, "Yi", suffix)
 
 
+def timeof_fmt(seconds: int):
+    periods = [("d", 86400), ("h", 3600), ("m", 60), ("s", 1)]
+    result = ""
+    for period_name, period_seconds in periods:
+        if seconds >= period_seconds:
+            period_value, seconds = divmod(seconds, period_seconds)
+            result += f"{int(period_value)}{period_name}"
+    return result
+
+
 def is_youtube(url: str):
     if url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/"):
         return True
@@ -220,9 +230,13 @@ def auto_restart():
 
 
 def clean_tempfile():
-    for item in pathlib.Path(TMPFILE_PATH or tempfile.gettempdir()).glob("ytdl-*"):
-        if time.time() - item.stat().st_ctime > 3600:
-            shutil.rmtree(item, ignore_errors=True)
+    patterns = ["ytdl*", "spdl*", "leech*", "direct*"]
+    temp_path = pathlib.Path(TMPFILE_PATH or tempfile.gettempdir())
+    
+    for pattern in patterns:
+        for item in temp_path.glob(pattern):
+            if time.time() - item.stat().st_ctime > 3600:
+                shutil.rmtree(item, ignore_errors=True)
 
 
 def parse_cookie_file(cookiefile):
