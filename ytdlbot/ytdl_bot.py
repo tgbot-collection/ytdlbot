@@ -10,17 +10,16 @@ __author__ = "Benny <benny.think@gmail.com>"
 import contextlib
 import json
 import logging
-import os
-import psutil
-import threading
 import random
 import re
 import tempfile
+import threading
 import time
 import traceback
 from io import BytesIO
 from typing import Any
 
+import psutil
 import pyrogram.errors
 import qrcode
 import yt_dlp
@@ -29,7 +28,6 @@ from pyrogram import Client, enums, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.raw import functions
 from pyrogram.raw import types as raw_types
-from tgbot_ping import get_runtime
 from youtubesearchpython import VideosSearch
 
 from channel import Channel
@@ -69,7 +67,7 @@ from utils import (
     clean_tempfile,
     customize_logger,
     get_revision,
-    extract_url_and_name
+    extract_url_and_name,
 )
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
@@ -216,6 +214,7 @@ def ping_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     message_sent = False
+
     def send_message_and_measure_ping():
         start_time = int(round(time.time() * 1000))
         reply = client.send_message(chat_id, "Starting Ping...")
@@ -355,6 +354,8 @@ def settings_handler(client: Client, message: types.Message):
 
 @app.on_message(filters.command(["buy"]))
 def buy_handler(client: Client, message: types.Message):
+    return client.send_message(message.chat.id, "This feature will comback soon...")
+
     # process as chat.id, not from_user.id
     chat_id = message.chat.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
@@ -500,7 +501,7 @@ def spdl_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    message_text = message.text  
+    message_text = message.text
     url, new_name = extract_url_and_name(message_text)
     logging.info("spdl start %s", url)
     if url is None or not re.findall(r"^https?://", url.lower()):
@@ -518,7 +519,7 @@ def direct_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    message_text = message.text  
+    message_text = message.text
     url, new_name = extract_url_and_name(message_text)
     logging.info("direct start %s", url)
     if url is None or not re.findall(r"^https?://", url.lower()):
@@ -539,7 +540,7 @@ def leech_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    message_text = message.text  
+    message_text = message.text
     url, new_name = extract_url_and_name(message_text)
     logging.info("leech using aria2 start %s", url)
     if url is None or not re.findall(r"^https?://", url.lower()):
@@ -557,7 +558,7 @@ def ytdl_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    message_text = message.text  
+    message_text = message.text
     url, new_name = extract_url_and_name(message_text)
     logging.info("ytdl start %s", url)
     if url is None or not re.findall(r"^https?://", url.lower()):
