@@ -1,6 +1,6 @@
 git+https://github.com/KurimuzonAkuma/pyrogram
 tgcrypto==1.2.5
-yt-dlp==2024.10.7
+yt-dlp==2024.10.22
 APScheduler==3.10.4
 beautifultable==1.1.0
 ffmpeg-python==0.2.0
