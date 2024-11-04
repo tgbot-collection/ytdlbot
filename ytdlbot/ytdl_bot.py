@@ -22,7 +22,6 @@ from typing import Any
 
 import psutil
 import pyrogram.errors
-import qrcode
 import yt_dlp
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, enums, filters, types
@@ -42,12 +41,10 @@ from config import (
     PROVIDER_TOKEN,
     REQUIRED_MEMBERSHIP,
     TOKEN_PRICE,
-    TRX_SIGNAL,
     ENABLE_ARIA2,
 )
 from constant import BotText
 from database import MySQL, Redis
-from payment import Payment, TronTrx
 from tasks import (
     audio_entrance,
     direct_download_entrance,
@@ -71,7 +68,6 @@ logging.getLogger("apscheduler.executors.default").propagate = False
 
 app = create_app("main")
 channel = Channel()
-payment = Payment()
 
 
 def private_use(func):
@@ -310,42 +306,6 @@ def settings_handler(client: Client, message: types.Message):
     )
 
     client.send_message(chat_id, BotText.settings.format(data[1], data[2]), reply_markup=markup)
-
-
-@app.on_message(filters.command(["buy"]))
-def buy_handler(client: Client, message: types.Message):
-    # process as chat.id, not from_user.id
-    chat_id = message.chat.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    # currency USD
-    token_count = message.text.replace("/buy", "").strip()
-    if token_count.isdigit():
-        price = int(int(token_count) / TOKEN_PRICE * 100)
-    else:
-        price = 100
-
-    markup = types.InlineKeyboardMarkup(
-        [
-            [
-                types.InlineKeyboardButton("Bot Payments", callback_data=f"bot-payments-{price}"),
-                types.InlineKeyboardButton("TRON(TRX)", callback_data="tron-trx"),
-            ],
-        ]
-    )
-    client.send_message(chat_id, BotText.buy, disable_web_page_preview=True, reply_markup=markup)
-
-
-@app.on_callback_query(filters.regex(r"tron-trx"))
-def tronpayment_btn_calback(client: Client, callback_query: types.CallbackQuery):
-    callback_query.answer("Generating QR code...")
-    chat_id = callback_query.message.chat.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-
-    addr = TronTrx().get_payment_address(chat_id)
-    with BytesIO() as bio:
-        qr = qrcode.make(addr)
-        qr.save(bio)
-        client.send_photo(chat_id, bio, caption=f"Send any amount of TRX to `{addr}`")
 
 
 @app.on_callback_query(filters.regex(r"premium.*"))
@@ -681,14 +641,9 @@ def trx_notify(_, **kwargs):
 
 if __name__ == "__main__":
     botStartTime = time.time()
-    MySQL()
-    TRX_SIGNAL.connect(trx_notify)
     scheduler = BackgroundScheduler(timezone="Europe/London")
     scheduler.add_job(clean_tempfile, "interval", seconds=120)
     scheduler.add_job(Redis().reset_today, "cron", hour=0, minute=0)
-    # scheduler.add_job(TronTrx().check_payment, "interval", seconds=60, max_instances=1)
-    #  default quota allocation of 10,000 units per day
-    # scheduler.add_job(periodic_sub_check, "interval", seconds=3600)
     scheduler.start()
     banner = f"""
 ▌ ▌         ▀▛▘     ▌       ▛▀▖              ▜            ▌

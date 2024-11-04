@@ -9,8 +9,6 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import os
 
-from blinker import signal
-
 # general settings
 WORKERS: int = int(os.getenv("WORKERS", 100))
 APP_ID: int = int(os.getenv("APP_ID", 198214))
@@ -49,10 +47,6 @@ PROVIDER_TOKEN = os.getenv("PROVIDER_TOKEN") or "1234"
 FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 5)
 EXPIRE = 24 * 3600
 TOKEN_PRICE = os.getenv("BUY_UNIT", 20)  # one USD=20 credits
-TRONGRID_KEY = os.getenv("TRONGRID_KEY", "").split(",")
-# the default mnemonic is for nile testnet
-TRON_MNEMONIC = os.getenv("TRON_MNEMONIC", "cram floor today legend service drill pitch leaf car govern harvest soda")
-TRX_SIGNAL = signal("trx_received")
 
 PREMIUM_USER = int(os.getenv("PREMIUM_USER", "0"))
 
@@ -62,7 +56,6 @@ TG_PREMIUM_MAX_SIZE = 4000 * 1024 * 1024
 TG_NORMAL_MAX_SIZE = 2000 * 1024 * 1024
 CAPTION_URL_LENGTH_LIMIT = 150
 
-IPv6 = os.getenv("IPv6", False)
 RATE_LIMIT = os.getenv("RATE_LIMIT", 120)
 # This will set the value for the tmpfile path(download path). If not, will return None and use system’s default path.
 # Please ensure that the directory exists and you have necessary permissions to write to it.

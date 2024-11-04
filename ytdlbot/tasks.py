@@ -29,7 +29,6 @@ from config import (
     ARCHIVE_ID,
     ENABLE_VIP,
     OWNER,
-    RATE_LIMIT,
     RCLONE_PATH,
     TMPFILE_PATH,
     FileTooBig,
@@ -38,7 +37,6 @@ from config import (
 from constant import BotText
 from database import Redis, MySQL
 from downloader import edit_text, tqdm_progress, upload_hook, ytdl_download
-from payment import Payment
 from sp_downloader import sp_dl
 from utils import (
     apply_log_formatter,
@@ -71,7 +69,6 @@ def retrieve_message(chat_id: int, message_id: int) -> types.Message | Any:
 
 def premium_button(user_id):
     redis = Redis()
-    payment = Payment()
     used = redis.r.hget("premium", user_id)
     ban = redis.r.hget("ban", user_id)
     paid_token = payment.get_pay_token(user_id)
@@ -94,7 +91,6 @@ def premium_button(user_id):
     return markup
 
 
-@app.task(rate_limit=f"{RATE_LIMIT}/m")
 def ytdl_download_task(chat_id: int, message_id: int, url: str):
     logging.info("YouTube celery tasks started for %s", url)
     bot_msg = retrieve_message(chat_id, message_id)
@@ -181,11 +177,7 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
             return
         redis.update_metrics("cache_miss")
         mode = mode or payment.get_user_settings(chat_id)[3]
-        if ENABLE_CELERY and mode in [None, "Celery"]:
-            # in celery mode, producer has lost control of this task.
-            ytdl_download_task.delay(chat_id, bot_msg.id, url)
-        else:
-            ytdl_normal_download(client, bot_msg, url)
+        ytdl_normal_download(client, bot_msg, url)
     except FileTooBig as e:
         logging.warning("Seeking for help from premium user...")
         # this is only for normal node. Celery node will need to do it in celery tasks
@@ -206,21 +198,13 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
 
 
 def direct_download_entrance(
-        client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str, new_name
+    client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str, new_name
 ):
-    if ENABLE_CELERY:
-        direct_normal_download(client, bot_msg, url, new_name)
-        # direct_download_task.delay(bot_msg.chat.id, bot_msg.id, url)
-    else:
-        direct_normal_download(client, bot_msg, url, new_name)
+    direct_normal_download(client, bot_msg, url, new_name)
 
 
 def leech_download_entrance(client: Client, bot_msg: typing.Union[types.Message, typing.Coroutine], url: str):
-    if ENABLE_CELERY:
-        leech_normal_download(client, bot_msg, url)
-        # leech_normal_download.delay(bot_msg.chat.id, bot_msg.id, url)
-    else:
-        leech_normal_download(client, bot_msg, url)
+    leech_normal_download(client, bot_msg, url)
 
 
 def spdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mode=None):
