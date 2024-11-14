@@ -470,7 +470,7 @@ def spdl_normal_download(client: Client, bot_msg: types.Message | typing.Any, ur
     temp_dir.cleanup()
 
 
-def generate_input_media(file_paths: list, cap: str) -> list:
+def generate_input_media(file_paths: list, cap: str, entities: list) -> list:
     input_media = []
     for path in file_paths:
         mime = filetype.guess_mime(path)
@@ -483,7 +483,10 @@ def generate_input_media(file_paths: list, cap: str) -> list:
         else:
             input_media.append(pyrogram.types.InputMediaDocument(media=path))
 
+    # Add caption and entities of the first media
     input_media[0].caption = cap
+    input_media[0].caption_entities = entities
+
     return input_media
 
 
@@ -497,7 +500,7 @@ def upload_processor(client: Client, bot_msg: types.Message, url: str, vp_or_fid
     if isinstance(vp_or_fid, list) and len(vp_or_fid) > 1:
         # just generate the first for simplicity, send as media group(2-20)
         cap, entities, meta = gen_cap(bot_msg, url, vp_or_fid[0])
-        res_msg: list["types.Message"] | Any = client.send_media_group(chat_id, generate_input_media(vp_or_fid, cap))
+        res_msg: list["types.Message"] | Any = client.send_media_group(chat_id, generate_input_media(vp_or_fid, cap, entities))
         # TODO no cache for now
         return res_msg[0]
     elif isinstance(vp_or_fid, list) and len(vp_or_fid) == 1:
