@@ -470,7 +470,7 @@ def spdl_normal_download(client: Client, bot_msg: types.Message | typing.Any, ur
     temp_dir.cleanup()
 
 
-def generate_input_media(file_paths: list, cap: str) -> list:
+def generate_input_media(file_paths: list, cap: str, entities: list) -> list:
     input_media = []
     for path in file_paths:
         mime = filetype.guess_mime(path)
@@ -483,7 +483,10 @@ def generate_input_media(file_paths: list, cap: str) -> list:
         else:
             input_media.append(pyrogram.types.InputMediaDocument(media=path))
 
+    # Add caption and entities of the first media
     input_media[0].caption = cap
+    input_media[0].caption_entities = entities
+
     return input_media
 
 
@@ -496,17 +499,17 @@ def upload_processor(client: Client, bot_msg: types.Message, url: str, vp_or_fid
     markup = gen_video_markup()
     if isinstance(vp_or_fid, list) and len(vp_or_fid) > 1:
         # just generate the first for simplicity, send as media group(2-20)
-        cap, meta = gen_cap(bot_msg, url, vp_or_fid[0])
-        res_msg: list["types.Message"] | Any = client.send_media_group(chat_id, generate_input_media(vp_or_fid, cap))
+        cap, entities, meta = gen_cap(bot_msg, url, vp_or_fid[0])
+        res_msg: list["types.Message"] | Any = client.send_media_group(chat_id, generate_input_media(vp_or_fid, cap, entities))
         # TODO no cache for now
         return res_msg[0]
     elif isinstance(vp_or_fid, list) and len(vp_or_fid) == 1:
         # normal download, just contains one file in video_paths
         vp_or_fid = vp_or_fid[0]
-        cap, meta = gen_cap(bot_msg, url, vp_or_fid)
+        cap, entities, meta = gen_cap(bot_msg, url, vp_or_fid)
     else:
         # just a file id as string
-        cap, meta = gen_cap(bot_msg, url, vp_or_fid)
+        cap, entities, meta = gen_cap(bot_msg, url, vp_or_fid)
 
     settings = payment.get_user_settings(chat_id)
     if ARCHIVE_ID and isinstance(vp_or_fid, pathlib.Path):
@@ -520,6 +523,7 @@ def upload_processor(client: Client, bot_msg: types.Message, url: str, vp_or_fid
                 chat_id,
                 vp_or_fid,
                 caption=cap,
+                caption_entities=entities,
                 progress=upload_hook,
                 progress_args=(bot_msg,),
                 reply_markup=markup,
@@ -533,6 +537,7 @@ def upload_processor(client: Client, bot_msg: types.Message, url: str, vp_or_fid
                 vp_or_fid,
                 supports_streaming=True,
                 caption=cap,
+                caption_entities=entities,
                 progress=upload_hook,
                 progress_args=(bot_msg,),
                 reply_markup=markup,
@@ -544,6 +549,7 @@ def upload_processor(client: Client, bot_msg: types.Message, url: str, vp_or_fid
             chat_id,
             vp_or_fid,
             caption=cap,
+            caption_entities=entities,
             progress=upload_hook,
             progress_args=(bot_msg,),
         )
@@ -556,6 +562,7 @@ def upload_processor(client: Client, bot_msg: types.Message, url: str, vp_or_fid
                 vp_or_fid,
                 supports_streaming=True,
                 caption=cap,
+                caption_entities=entities,
                 progress=upload_hook,
                 progress_args=(bot_msg,),
                 reply_markup=markup,
@@ -569,6 +576,7 @@ def upload_processor(client: Client, bot_msg: types.Message, url: str, vp_or_fid
                     chat_id,
                     vp_or_fid,
                     caption=cap,
+                    caption_entities=entities,
                     progress=upload_hook,
                     progress_args=(bot_msg,),
                     reply_markup=markup,
@@ -581,6 +589,7 @@ def upload_processor(client: Client, bot_msg: types.Message, url: str, vp_or_fid
                     chat_id,
                     vp_or_fid,
                     caption=cap,
+                    caption_entities=entities,
                     progress=upload_hook,
                     progress_args=(bot_msg,),
                 )
@@ -641,7 +650,25 @@ def gen_cap(bm, url, video_path):
         f"{user_info}\n{file_name}\n\n{url_for_cap}\n\nInfo: {meta['width']}x{meta['height']} {file_size}\t"
         f"{meta['duration']}s\n{remain}\n{worker}\n{bot_text.custom_text}"
     )
-    return cap, meta
+
+    offset = len(f"{user_info}\n`{file_name}`\n\n")
+
+    entities = [
+        # For the filename
+        types.MessageEntity(
+            type=enums.MessageEntityType.CODE,
+            offset=len(f"{user_info}\n"),
+            length=len(file_name)
+        ),
+        # For the URL
+        types.MessageEntity(
+            type=enums.MessageEntityType.URL,
+            offset=offset,
+            length=len(url_for_cap)
+        )
+    ]
+
+    return cap, entities, meta
 
 
 def gen_video_markup():
