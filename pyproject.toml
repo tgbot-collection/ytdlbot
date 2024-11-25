@@ -1,0 +1,15 @@
+[project]
+name = "ytdlbot"
+version = "1.0.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "Benny", email = "benny.think@gmail.com"},
+]
+dependencies = ["Pyrogram @ git+https://github.com/KurimuzonAkuma/pyrogram@ba49bbff6e37cca6174d0620ef6813960d9d85b6", "tgcrypto>=1.2.5", "yt-dlp>=2024.11.18", "APScheduler>=3.11.0", "ffmpeg-python>=0.2.0", "PyMySQL>=1.1.1", "filetype>=1.2.0", "beautifulsoup4>=4.12.3", "fakeredis>=2.26.1", "redis>=5.2.0", "requests>=2.32.3", "tqdm>=4.67.1", "token-bucket>=0.3.0", "python-dotenv>=1.0.1", "black>=24.10.0"]
+requires-python = ">3.9"
+readme = "README.md"
+license = {text = "Apache2.0"}
+
+
+[tool.pdm]
+distribution = false
