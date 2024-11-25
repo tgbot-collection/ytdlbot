@@ -12,6 +12,7 @@ import os
 import pathlib
 import re
 import subprocess
+import tempfile
 import time
 import traceback
 
@@ -28,9 +29,7 @@ def ytdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
     try:
         if cached_fid:
             forward_video(client, bot_msg, url, cached_fid)
-            redis.update_metrics("cache_hit")
             return
-        redis.update_metrics("cache_miss")
         mode = mode or payment.get_user_settings(chat_id)[3]
         ytdl_normal_download(client, bot_msg, url)
     except FileTooBig as e:
@@ -62,9 +61,7 @@ def spdl_download_entrance(client: Client, bot_msg: types.Message, url: str, mod
     try:
         if cached_fid:
             forward_video(client, bot_msg, url, cached_fid)
-            redis.update_metrics("cache_hit")
             return
-        redis.update_metrics("cache_miss")
         mode = mode or payment.get_user_settings(chat_id)[3]
         spdl_normal_download(client, bot_msg, url)
     except FileTooBig as e:
@@ -159,7 +156,6 @@ def audio_entrance(client: Client, bot_msg: typing.Union[types.Message, typing.C
         for f in filepath:
             client.send_audio(chat_id, f)
         status_msg.edit_text("✅ Conversion complete.")
-        Redis().update_metrics("audio_success")
 
 
 def spdl_normal_download(client: Client, bot_msg: types.Message | typing.Any, url: str):
