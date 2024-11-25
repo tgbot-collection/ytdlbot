@@ -1,14 +1,17 @@
-FROM python:3.12 as builder
-ADD requirements.txt /tmp/
-RUN apt update && apt install -y git && pip3 install --user -r /tmp/requirements.txt && rm /tmp/requirements.txt
+FROM python:3.12-alpine AS pybuilder
+ADD pyproject.toml pdm.lock /build/
+WORKDIR /build
+RUN apk add alpine-sdk python3-dev musl-dev linux-headers
+RUN pip install pdm
+RUN pdm install
 
+FROM python:3.12-alpine AS runner
+WORKDIR /app
+ENV TZ=Europe/Stockholm
 
-FROM python:3.12-slim
-WORKDIR /ytdlbot/ytdlbot
-ENV TZ=Europe/London
+RUN apk update && apk add --no-cache ffmpeg aria2
+COPY --from=pybuilder /build/.venv/lib/ /usr/local/lib/
+COPY ytdlbot /app
+WORKDIR /app
 
-RUN apt update && apt install -y --no-install-recommends --no-install-suggests ffmpeg vnstat git aria2
-COPY --from=builder /root/.local /usr/local
-COPY . /ytdlbot
-
-CMD ["python", "-c" ,"ytdl_bpt.py"]
+CMD ["python" ,"main.py"]

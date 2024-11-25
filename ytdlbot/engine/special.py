@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 # coding: utf-8
 
-# ytdlbot - sp_downloader.py
+# ytdlbot - special.py
 # 3/16/24 16:32
 #
 
@@ -12,24 +12,17 @@ import os
 import pathlib
 import re
 import traceback
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
 import filetype
 import requests
 import yt_dlp as ytdl
 from bs4 import BeautifulSoup
-
-from config import (
-    FileTooBig,
-    IPv6,
-)
-from downloader import (
-    edit_text,
-    tqdm_progress,
-    download_hook,
-)
+from configuration.config import FileTooBig, IPv6
 from payment import Payment
-from utils import parse_cookie_file, extract_code_from_instagram_url
+from ytdlbot.engine.downloader import download_hook, edit_text, tqdm_progress
+
+from utils import extract_code_from_instagram_url, parse_cookie_file
 
 
 def sp_dl(url: str, tempdir: str, bm, **kwargs) -> list:
@@ -132,7 +125,7 @@ def pixeldrain(url: str, tempdir: str, bm, **kwargs):
     user_page_url_regex = r"https://pixeldrain.com/u/(\w+)"
     match = re.match(user_page_url_regex, url)
     if match:
-        url = "https://pixeldrain.com/api/file/{}?download".format(match.group(1))
+        url = "https://pixeldrain.com/api/file/{}?engine".format(match.group(1))
         return sp_ytdl_download(url, tempdir, bm, **kwargs)
     else:
         return url

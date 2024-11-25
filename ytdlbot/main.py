@@ -8,14 +8,11 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import contextlib
-import json
 import logging
-import random
 import re
 import tempfile
 import threading
 import time
-import traceback
 import typing
 from io import BytesIO
 from typing import Any
@@ -24,50 +21,48 @@ import psutil
 import pyrogram.errors
 import yt_dlp
 from apscheduler.schedulers.background import BackgroundScheduler
+from engine.tasks import (
+    audio_entrance,
+    leech_download_entrance,
+    spdl_download_entrance,
+    ytdl_download_entrance,
+)
 from pyrogram import Client, enums, filters, types
-from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.raw import functions
 from pyrogram.raw import types as raw_types
 
-from channel import Channel
 from config import (
+    APP_HASH,
+    APP_ID,
     AUTHORIZED_USER,
+    BOT_TOKEN,
+    ENABLE_ARIA2,
     ENABLE_FFMPEG,
     ENABLE_VIP,
-    M3U8_SUPPORT,
     OWNER,
-    PLAYLIST_SUPPORT,
-    PREMIUM_USER,
     PROVIDER_TOKEN,
-    REQUIRED_MEMBERSHIP,
     TOKEN_PRICE,
-    ENABLE_ARIA2,
+    BotText,
 )
-from constant import BotText
-from database import MySQL, Redis
-from tasks import (
-    audio_entrance,
-    direct_download_entrance,
-    leech_download_entrance,
-    ytdl_download_entrance,
-    spdl_download_entrance,
-)
-from utils import (
-    sizeof_fmt,
-    timeof_fmt,
-    clean_tempfile,
-    customize_logger,
-    get_revision,
-    extract_url_and_name,
-)
-from ytdlbot.client_init import create_app
+from utils import extract_url_and_name, sizeof_fmt, timeof_fmt
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
-customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
 logging.getLogger("apscheduler.executors.default").propagate = False
 
+
+def create_app(name: str, workers: int = 32) -> Client:
+    return Client(
+        name,
+        APP_ID,
+        APP_HASH,
+        bot_token=BOT_TOKEN,
+        workers=workers,
+        # max_concurrent_transmissions=max(1, WORKERS // 2),
+        # https://github.com/pyrogram/pyrogram/issues/1225#issuecomment-1446595489
+    )
+
+
 app = create_app("main")
-channel = Channel()
 
 
 def private_use(func):
@@ -86,24 +81,8 @@ def private_use(func):
             users = []
 
         if users and chat_id and chat_id not in users:
-            message.reply_text(BotText.private, quote=True)
+            message.reply_text("BotText.private", quote=True)
             return
-
-        if REQUIRED_MEMBERSHIP:
-            try:
-                member: types.ChatMember | Any = app.get_chat_member(REQUIRED_MEMBERSHIP, chat_id)
-                if member.status not in [
-                    enums.ChatMemberStatus.ADMINISTRATOR,
-                    enums.ChatMemberStatus.MEMBER,
-                    enums.ChatMemberStatus.OWNER,
-                ]:
-                    raise UserNotParticipant()
-                else:
-                    logging.info("user %s check passed for group/channel %s.", chat_id, REQUIRED_MEMBERSHIP)
-            except UserNotParticipant:
-                logging.warning("user %s is not a member of group/channel %s", chat_id, REQUIRED_MEMBERSHIP)
-                message.reply_text(BotText.membership_require, quote=True)
-                return
 
         return func(client, message)
 
@@ -115,13 +94,7 @@ def start_handler(client: Client, message: types.Message):
     from_id = message.from_user.id
     logging.info("%s welcome to youtube-dl bot!", message.from_user.id)
     client.send_chat_action(from_id, enums.ChatAction.TYPING)
-    if ENABLE_VIP:
-        free_token, pay_token, reset = payment.get_token(from_id)
-        info = f"Free token: {free_token}, Pay token: {pay_token}, Reset: {reset}"
-    else:
-        info = ""
-    text = f"{BotText.start}\n\n{info}\n{BotText.custom_text}"
-    client.send_message(message.chat.id, text, disable_web_page_preview=True)
+    client.send_message(message.chat.id, BotText.start, disable_web_page_preview=True)
 
 
 @app.on_message(filters.command(["help"]))
@@ -136,47 +109,6 @@ def about_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     client.send_message(chat_id, BotText.about)
-
-
-@app.on_message(filters.command(["sub"]))
-def subscribe_handler(client: Client, message: types.Message):
-    chat_id = message.chat.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    if message.text == "/sub":
-        result = channel.get_user_subscription(chat_id)
-    else:
-        link = message.text.split()[1]
-        try:
-            result = channel.subscribe_channel(chat_id, link)
-        except (IndexError, ValueError):
-            result = f"Error: \n{traceback.format_exc()}"
-    client.send_message(chat_id, result or "You have no subscription.", disable_web_page_preview=True)
-
-
-@app.on_message(filters.command(["unsub"]))
-def unsubscribe_handler(client: Client, message: types.Message):
-    chat_id = message.chat.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    text = message.text.split(" ")
-    if len(text) == 1:
-        client.send_message(chat_id, "/unsub channel_id", disable_web_page_preview=True)
-        return
-
-    rows = channel.unsubscribe_channel(chat_id, text[1])
-    if rows:
-        text = f"Unsubscribed from {text[1]}"
-    else:
-        text = "Unable to find the channel."
-    client.send_message(chat_id, text, disable_web_page_preview=True)
-
-
-@app.on_message(filters.command(["uncache"]))
-def uncache_handler(client: Client, message: types.Message):
-    username = message.from_user.username
-    link = message.text.split()[1]
-    if username == OWNER:
-        count = channel.del_cache(link)
-        message.reply_text(f"{count} cache(s) deleted.", quote=True)
 
 
 @app.on_message(filters.command(["ping"]))
@@ -252,40 +184,10 @@ def stats_handler(client: Client, message: types.Message):
         message.reply_text(user_stats, quote=True)
 
 
-@app.on_message(filters.command(["sub_count"]))
-def sub_count_handler(client: Client, message: types.Message):
-    username = message.from_user.username
-    chat_id = message.chat.id
-    if username == OWNER:
-        with BytesIO() as f:
-            f.write(channel.sub_count().encode("u8"))
-            f.name = "subscription count.txt"
-            client.send_document(chat_id, f)
-
-
-@app.on_message(filters.command(["show_history"]))
-def show_history(client: Client, message: types.Message):
-    chat_id = message.chat.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    data = MySQL().show_history(chat_id)
-    if data:
-        client.send_message(chat_id, data, disable_web_page_preview=True)
-    else:
-        client.send_message(chat_id, "No history found.")
-
-
-@app.on_message(filters.command(["clear_history"]))
-def clear_history(client: Client, message: types.Message):
-    chat_id = message.chat.id
-    MySQL().clear_history(chat_id)
-    message.reply_text("History cleared.", quote=True)
-
-
 @app.on_message(filters.command(["settings"]))
 def settings_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    data = MySQL().get_user_settings(chat_id)
 
     markup = types.InlineKeyboardMarkup(
         [
@@ -299,28 +201,10 @@ def settings_handler(client: Client, message: types.Message):
                 types.InlineKeyboardButton("Medium Quality", callback_data="medium"),
                 types.InlineKeyboardButton("Low Quality", callback_data="low"),
             ],
-            [
-                types.InlineKeyboardButton("Toggle History", callback_data=f"history-{data[4]}"),
-            ],
         ]
     )
 
-    client.send_message(chat_id, BotText.settings.format(data[1], data[2]), reply_markup=markup)
-
-
-@app.on_callback_query(filters.regex(r"premium.*"))
-def premium_click(client: Client, callback_query: types.CallbackQuery):
-    data = callback_query.data
-    if data == "premium-yes":
-        callback_query.answer("Seeking premium user...")
-        callback_query.message.edit_text("Please wait patiently...no progress bar will be shown.")
-        replied = callback_query.message.reply_to_message
-        data = {"url": replied.text, "user_id": callback_query.message.chat.id}
-        client.send_message(PREMIUM_USER, json.dumps(data), disable_notification=True, disable_web_page_preview=True)
-    else:
-        callback_query.answer("Cancelled.")
-        original_text = callback_query.message.text
-        callback_query.message.edit_text(original_text.split("\n")[0])
+    client.send_message(chat_id, BotText.settings.format("a", "b"), reply_markup=markup)
 
 
 @app.on_callback_query(filters.regex(r"bot-payments-.*"))
@@ -332,31 +216,15 @@ def bot_payment_btn_calback(client: Client, callback_query: types.CallbackQuery)
     data = callback_query.data
     price = int(data.split("-")[-1])
     payload = f"{chat_id}-buy"
-    invoice = generate_invoice(price, f"Buy {TOKEN_PRICE} download tokens", "Pay by card", payload)
+    invoice = generate_invoice(price, f"Buy {TOKEN_PRICE} engine tokens", "Pay by card", payload)
     app.invoke(
         functions.messages.SendMedia(
             peer=(raw_types.InputPeerUser(user_id=chat_id, access_hash=0)),
             media=invoice,
             random_id=app.rnd_id(),
-            message="Buy more download token",
+            message="Buy more engine token",
         )
     )
-
-
-@app.on_message(filters.user(PREMIUM_USER) & filters.incoming & filters.caption)
-def premium_forward(client: Client, message: types.Message):
-    media = message.video or message.audio or message.document
-    target_user = media.file_name.split(".")[0]
-    client.forward_messages(target_user, message.chat.id, message.id)
-
-
-@app.on_message(filters.command(["ban"]) & filters.user(PREMIUM_USER))
-def ban_handler(client: Client, message: types.Message):
-    replied = message.reply_to_message.text
-    user_id = json.loads(replied).get("user_id")
-    redis = Redis()
-    redis.r.hset("ban", user_id, 1)
-    message.reply_text(f"Done, banned {user_id}.", quote=True)
 
 
 def generate_invoice(amount: int, title: str, description: str, payload: str):
@@ -378,54 +246,31 @@ def link_checker(url: str) -> str:
     if url.startswith("https://www.instagram.com"):
         return ""
     ytdl = yt_dlp.YoutubeDL()
-
-    if not PLAYLIST_SUPPORT and (
-        re.findall(r"^https://www\.youtube\.com/channel/", Channel.extract_canonical_link(url)) or "list" in url
-    ):
+    if re.findall(r"^https://www\.youtube\.com/channel/", url) or "list" in url:
+        # TODO maybe using ytdl.extract_info
         return "Playlist or channel links are disabled."
 
-    if not M3U8_SUPPORT and (re.findall(r"m3u8|\.m3u8|\.m3u$", url.lower())):
-        return "m3u8 links are disabled."
+    if re.findall(r"m3u8|\.m3u8|\.m3u$", url.lower()):
+        return "m3u8 links are not supported."
 
     with contextlib.suppress(yt_dlp.utils.DownloadError):
         if ytdl.extract_info(url, download=False).get("live_status") == "is_live":
-            return "Live stream links are disabled. Please download it after the stream ends."
+            return "Live stream links are disabled. Please engine it after the stream ends."
 
 
 @app.on_message(filters.command(["spdl"]))
 def spdl_handler(client: Client, message: types.Message):
-    redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     message_text = message.text
     url, new_name = extract_url_and_name(message_text)
     logging.info("spdl start %s", url)
     if url is None or not re.findall(r"^https?://", url.lower()):
-        redis.update_metrics("bad_request")
         message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
         return
 
     bot_msg = message.reply_text("Request received.", quote=True)
-    redis.update_metrics("spdl_request")
     spdl_download_entrance(client, bot_msg, url)
-
-
-@app.on_message(filters.command(["direct"]))
-def direct_handler(client: Client, message: types.Message):
-    redis = Redis()
-    chat_id = message.from_user.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    message_text = message.text
-    url, new_name = extract_url_and_name(message_text)
-    logging.info("direct start %s", url)
-    if url is None or not re.findall(r"^https?://", url.lower()):
-        redis.update_metrics("bad_request")
-        message.reply_text("Send me a DIRECT LINK.", quote=True)
-        return
-
-    bot_msg = message.reply_text("Request received.", quote=True)
-    redis.update_metrics("direct_request")
-    direct_download_entrance(client, bot_msg, url, new_name)
 
 
 @app.on_message(filters.command(["leech"]))
@@ -433,47 +278,41 @@ def leech_handler(client: Client, message: types.Message):
     if not ENABLE_ARIA2:
         message.reply_text("Aria2 Not Enabled.", quote=True)
         return
-    redis = Redis()
+
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     message_text = message.text
     url, new_name = extract_url_and_name(message_text)
     logging.info("leech using aria2 start %s", url)
     if url is None or not re.findall(r"^https?://", url.lower()):
-        redis.update_metrics("bad_request")
         message.reply_text("Send me a correct LINK.", quote=True)
         return
 
     bot_msg = message.reply_text("Request received.", quote=True)
-    redis.update_metrics("leech_request")
     leech_download_entrance(client, bot_msg, url)
 
 
 @app.on_message(filters.command(["ytdl"]))
 def ytdl_handler(client: Client, message: types.Message):
-    redis = Redis()
+    # useful for group
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     message_text = message.text
     url, new_name = extract_url_and_name(message_text)
     logging.info("ytdl start %s", url)
     if url is None or not re.findall(r"^https?://", url.lower()):
-        redis.update_metrics("bad_request")
         message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
         return
 
     bot_msg = message.reply_text("Request received.", quote=True)
-    redis.update_metrics("ytdl_request")
     ytdl_download_entrance(client, bot_msg, url)
 
 
 @app.on_message(filters.incoming & (filters.text | filters.document))
 @private_use
 def download_handler(client: Client, message: types.Message):
-    redis = Redis()
     chat_id = message.from_user.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    redis.user_count(chat_id)
     if message.document:
         with tempfile.NamedTemporaryFile(mode="r+") as tf:
             logging.info("Downloading file to %s", tf.name)
@@ -487,35 +326,20 @@ def download_handler(client: Client, message: types.Message):
     for url in urls:
         # check url
         if not re.findall(r"^https?://", url.lower()):
-            redis.update_metrics("bad_request")
             message.reply_text("not an url", quote=True, disable_web_page_preview=True)
             return
 
         if text := link_checker(url):
             message.reply_text(text, quote=True)
-            redis.update_metrics("reject_link_checker")
             return
 
-        # old user is not limited by token
-        if ENABLE_VIP:
-            free, pay, reset = payment.get_token(chat_id)
-            if free + pay <= 0:
-                message.reply_text(f"You don't have enough token. Please wait until {reset} or /buy .", quote=True)
-                redis.update_metrics("reject_token")
-                return
-            else:
-                payment.use_token(chat_id)
-
-        redis.update_metrics("video_request")
-
-        text = BotText.get_receive_link_text()
         try:
             # raise pyrogram.errors.exceptions.FloodWait(10)
-            bot_msg: types.Message | Any = message.reply_text(text, quote=True)
+            bot_msg: types.Message | Any = message.reply_text("Acked", quote=True)
         except pyrogram.errors.Flood as e:
             f = BytesIO()
             f.write(str(e).encode())
-            f.write(b"Your job will be done soon. Just wait! Don't rush.")
+            f.write(b"Your job will be done soon. Just wait!")
             f.name = "Please don't flood me.txt"
             bot_msg = message.reply_document(
                 f, caption=f"Flood wait! Please wait {e} seconds...." f"Your job will start automatically", quote=True
@@ -534,7 +358,6 @@ def send_method_callback(client: Client, callback_query: types.CallbackQuery):
     chat_id = callback_query.message.chat.id
     data = callback_query.data
     logging.info("Setting %s file type to %s", chat_id, data)
-    MySQL().set_user_settings(chat_id, "method", data)
     callback_query.answer(f"Your send type was set to {callback_query.data}")
 
 
@@ -543,75 +366,18 @@ def download_resolution_callback(client: Client, callback_query: types.CallbackQ
     chat_id = callback_query.message.chat.id
     data = callback_query.data
     logging.info("Setting %s file type to %s", chat_id, data)
-    MySQL().set_user_settings(chat_id, "resolution", data)
-    callback_query.answer(f"Your default download quality was set to {callback_query.data}")
-
-
-@app.on_callback_query(filters.regex(r"history.*"))
-def set_history_callback(client: Client, callback_query: types.CallbackQuery):
-    chat_id = callback_query.message.chat.id
-    data = callback_query.data.split("-")[-1]
-
-    r = "OFF" if data == "ON" else "ON"
-    logging.info("Setting %s file type to %s", chat_id, data)
-    MySQL().set_user_settings(chat_id, "history", r)
-    callback_query.answer("History setting updated.")
-
-
-@app.on_inline_query()
-def inline_query(client: Client, inline_query: types.InlineQuery):
-    kw = inline_query.query
-    user_id = inline_query.from_user.id
-    data = MySQL().search_history(user_id, kw)
-    if data:
-        results = [
-            types.InlineQueryResultArticle(
-                id=str(i),
-                title=item[1],
-                description=item[2],
-                input_message_content=types.InputTextMessageContent(item[1]),
-            )
-            for i, item in enumerate(data)
-        ]
-        client.answer_inline_query(inline_query.id, results)
+    callback_query.answer(f"Your default engine quality was set to {callback_query.data}")
 
 
 @app.on_callback_query(filters.regex(r"convert"))
 def audio_callback(client: Client, callback_query: types.CallbackQuery):
-    redis = Redis()
     if not ENABLE_FFMPEG:
         callback_query.answer("Request rejected.")
         callback_query.message.reply_text("Audio conversion is disabled now.")
         return
 
     callback_query.answer(f"Converting to audio...please wait patiently")
-    redis.update_metrics("audio_request")
     audio_entrance(client, callback_query.message)
-
-
-@app.on_callback_query(filters.regex(r"Local|Celery"))
-def owner_local_callback(client: Client, callback_query: types.CallbackQuery):
-    chat_id = callback_query.message.chat.id
-    MySQL().set_user_settings(chat_id, "mode", callback_query.data)
-    callback_query.answer(f"Download mode was changed to {callback_query.data}")
-
-
-def periodic_sub_check():
-    exceptions = pyrogram.errors.exceptions
-    for cid, uids in channel.group_subscriber().items():
-        video_url = channel.has_newer_update(cid)
-        if video_url:
-            logging.info(f"periodic update:{video_url} - {uids}")
-            for uid in uids:
-                try:
-                    app.send_message(uid, f"{video_url} is out. Watch it on YouTube")
-                except (exceptions.bad_request_400.PeerIdInvalid, exceptions.bad_request_400.UserIsBlocked) as e:
-                    logging.warning("User is blocked or deleted. %s", e)
-                    channel.deactivate_user_subscription(uid)
-                except Exception:
-                    logging.error("Unknown error when sending message to user. %s", traceback.format_exc())
-                finally:
-                    time.sleep(random.random() * 3)
 
 
 @app.on_raw_update()
@@ -628,22 +394,13 @@ def raw_update(client: Client, update, users, chats):
         logging.info("Payment received. %s", action)
         uid = update.message.peer_id.user_id
         amount = action.total_amount / 100
-        payment.add_pay_user([uid, amount, action.charge.provider_charge_id, 0, amount * TOKEN_PRICE])
         client.send_message(uid, f"Thank you {uid}. Payment received: {amount} {action.currency}")
-
-
-def trx_notify(_, **kwargs):
-    user_id = kwargs.get("user_id")
-    text = kwargs.get("text")
-    logging.info("Sending trx notification to %s", user_id)
-    app.send_message(user_id, text)
 
 
 if __name__ == "__main__":
     botStartTime = time.time()
     scheduler = BackgroundScheduler(timezone="Europe/London")
-    scheduler.add_job(clean_tempfile, "interval", seconds=120)
-    scheduler.add_job(Redis().reset_today, "cron", hour=0, minute=0)
+    # scheduler.add_job( reset_today, "cron", hour=0, minute=0)
     scheduler.start()
     banner = f"""
 ▌ ▌         ▀▛▘     ▌       ▛▀▖              ▜            ▌
@@ -651,8 +408,7 @@ if __name__ == "__main__":
  ▌  ▌ ▌ ▌ ▌  ▌  ▌ ▌ ▌ ▌ ▛▀  ▌ ▌ ▌ ▌ ▐▐▐  ▌ ▌ ▐  ▌ ▌ ▞▀▌ ▌ ▌
  ▘  ▝▀  ▝▀▘  ▘  ▝▀▘ ▀▀  ▝▀▘ ▀▀  ▝▀   ▘▘  ▘ ▘  ▘ ▝▀  ▝▀▘ ▝▀▘
 
-By @BennyThink, VIP mode: {ENABLE_VIP} 
-Version: {get_revision()}
+By @BennyThink, mode: {ENABLE_VIP} 
     """
     print(banner)
     app.run()

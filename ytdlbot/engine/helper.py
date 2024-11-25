@@ -1,11 +1,7 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python3
 # coding: utf-8
 
-# ytdlbot - downloader.py
-# 8/14/21 16:53
-#
-
-__author__ = "Benny <benny.think@gmail.com>"
+# ytdlbot - helper.py
 
 import functools
 import logging
@@ -15,31 +11,12 @@ import re
 import subprocess
 import threading
 import time
-import traceback
 from io import StringIO
-from unittest.mock import MagicMock
 
-import ffmpeg
 import ffpb
 import filetype
-import yt_dlp as ytdl
 from pyrogram import types
 from tqdm import tqdm
-
-from config import (
-    AUDIO_FORMAT,
-    ENABLE_ARIA2,
-    ENABLE_FFMPEG,
-    PREMIUM_USER,
-    TG_NORMAL_MAX_SIZE,
-    TG_PREMIUM_MAX_SIZE,
-    FileTooBig,
-    IPv6,
-)
-from payment import Payment
-from utils import adjust_formats, apply_log_formatter, current_time, sizeof_fmt
-
-apply_log_formatter()
 
 
 def debounce(wait_seconds):
@@ -113,32 +90,6 @@ def remove_bash_color(text):
     return re.sub(r"\u001b|\[0;94m|\u001b\[0m|\[0;32m|\[0m|\[0;33m", "", text)
 
 
-def download_hook(d: dict, bot_msg):
-    if d["status"] == "downloading":
-        downloaded = d.get("downloaded_bytes", 0)
-        total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
-        if total > TG_PREMIUM_MAX_SIZE:
-            raise Exception(f"There's no way to handle a file of {sizeof_fmt(total)}.")
-        if total > TG_NORMAL_MAX_SIZE:
-            msg = f"Your download file size {sizeof_fmt(total)} is too large for Telegram."
-            if PREMIUM_USER:
-                raise FileTooBig(msg)
-            else:
-                raise Exception(msg)
-
-        # percent = remove_bash_color(d.get("_percent_str", "N/A"))
-        speed = remove_bash_color(d.get("_speed_str", "N/A"))
-        eta = remove_bash_color(d.get("_eta_str", d.get("eta")))
-        text = tqdm_progress("Downloading...", total, downloaded, speed, eta)
-        # debounce in here
-        edit_text(bot_msg, text)
-
-
-def upload_hook(current, total, bot_msg):
-    text = tqdm_progress("Uploading...", total, current)
-    edit_text(bot_msg, text)
-
-
 def convert_to_mp4(video_paths: list, bot_msg):
     default_type = ["video/x-flv", "video/webm"]
     # all_converted = []
@@ -177,78 +128,106 @@ def run_ffmpeg_progressbar(cmd_list: list, bm):
     ffpb.main(cmd_list, tqdm=ProgressBar)
 
 
-def can_convert_mp4(video_path, uid):
-    if not ENABLE_FFMPEG:
-        return False
-    return True
+def gen_video_markup():
+    markup = types.InlineKeyboardMarkup(
+        [
+            [  # First row
+                types.InlineKeyboardButton(  # Generates a callback query when pressed
+                    "convert to audio", callback_data="convert"
+                )
+            ]
+        ]
+    )
+    return markup
 
 
-def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> list:
+def gen_cap(bm, url, video_path):
     payment = Payment()
     chat_id = bm.chat.id
-    hijack = kwargs.get("hijack")
-    output = pathlib.Path(tempdir, "%(title).70s.%(ext)s").as_posix()
-    ydl_opts = {
-        "progress_hooks": [lambda d: download_hook(d, bm)],
-        "outtmpl": output,
-        "restrictfilenames": False,
-        "quiet": True,
-    }
-    if ENABLE_ARIA2:
-        ydl_opts["external_downloader"] = "aria2c"
-        ydl_opts["external_downloader_args"] = [
-            "--min-split-size=1M",
-            "--max-connection-per-server=16",
-            "--max-concurrent-downloads=16",
-            "--split=16",
-        ]
-    if url.startswith("https://drive.google.com"):
-        # Always use the `source` format for Google Drive URLs.
-        formats = ["source"]
+    user = bm.chat
+    try:
+        user_info = "@{}({})-{}".format(user.username or "N/A", user.first_name or "" + user.last_name or "", user.id)
+    except Exception:
+        user_info = ""
+
+    if isinstance(video_path, pathlib.Path):
+        meta = get_metadata(video_path)
+        file_name = video_path.name
+        file_size = sizeof_fmt(os.stat(video_path).st_size)
     else:
-        # Use the default formats for other URLs.
-        formats = [
-            # webm , vp9 and av01 are not streamable on telegram, so we'll extract only mp4
-            "bestvideo[ext=mp4][vcodec!*=av01][vcodec!*=vp09]+bestaudio[ext=m4a]/bestvideo+bestaudio",
-            "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
-            None,
-        ]
-    # This method will alter formats if necessary
-    adjust_formats(chat_id, url, formats, hijack)
-    address = ["::", "0.0.0.0"] if IPv6 else [None]
-    error = None
-    video_paths = None
-    for format_ in formats:
-        ydl_opts["format"] = format_
-        for addr in address:
-            # IPv6 goes first in each format
-            ydl_opts["source_address"] = addr
-            try:
-                logging.info("Downloading for %s with format %s", url, format_)
-                with ytdl.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url])
-                video_paths = list(pathlib.Path(tempdir).glob("*"))
-                break
-            except FileTooBig as e:
-                raise e
-            except Exception:
-                error = traceback.format_exc()
-                logging.error("Download failed for %s - %s, try another way", format_, url)
-        if error is None:
-            break
+        file_name = getattr(video_path, "file_name", "")
+        file_size = sizeof_fmt(getattr(video_path, "file_size", (2 << 2) + ((2 << 2) + 1) + (2 << 5)))
+        meta = dict(
+            width=getattr(video_path, "width", 0),
+            height=getattr(video_path, "height", 0),
+            duration=getattr(video_path, "duration", 0),
+            thumb=getattr(video_path, "thumb", None),
+        )
+    free = payment.get_free_token(chat_id)
+    pay = payment.get_pay_token(chat_id)
+    if ENABLE_VIP:
+        remain = f"Download token count: free {free}, pay {pay}"
+    else:
+        remain = ""
 
-    if not video_paths:
-        raise Exception(error)
+    if worker_name := os.getenv("WORKER_NAME"):
+        worker = f"Downloaded by  {worker_name}"
+    else:
+        worker = ""
+    # Shorten the URL if necessary
+    try:
+        if len(url) > CAPTION_URL_LENGTH_LIMIT:
+            url_for_cap = shorten_url(url, CAPTION_URL_LENGTH_LIMIT)
+        else:
+            url_for_cap = url
+    except Exception as e:
+        logging.warning(f"Error shortening URL: {e}")
+        url_for_cap = url
 
-    # convert format if necessary
-    settings = payment.get_user_settings(chat_id)
-    if settings[2] == "video" or isinstance(settings[2], MagicMock):
-        # only convert if send type is video
-        convert_to_mp4(video_paths, bm)
-    if settings[2] == "audio" or hijack == "bestaudio[ext=m4a]":
-        convert_audio_format(video_paths, bm)
-    # split_large_video(video_paths)
-    return video_paths
+    cap = (
+        f"{user_info}\n{file_name}\n\n{url_for_cap}\n\nInfo: {meta['width']}x{meta['height']} {file_size}\t"
+        f"{meta['duration']}s\n{remain}\n{worker}\n{bot_text.custom_text}"
+    )
+    return cap, meta
+
+
+def generate_input_media(file_paths: list, cap: str) -> list:
+    input_media = []
+    for path in file_paths:
+        mime = filetype.guess_mime(path)
+        if "video" in mime:
+            input_media.append(pyrogram.types.InputMediaVideo(media=path))
+        elif "image" in mime:
+            input_media.append(pyrogram.types.InputMediaPhoto(media=path))
+        elif "audio" in mime:
+            input_media.append(pyrogram.types.InputMediaAudio(media=path))
+        else:
+            input_media.append(pyrogram.types.InputMediaDocument(media=path))
+
+    input_media[0].caption = cap
+    return input_media
+
+
+def download_hook(d: dict, bot_msg):
+    if d["status"] == "downloading":
+        downloaded = d.get("downloaded_bytes", 0)
+        total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
+
+        if total > TG_NORMAL_MAX_SIZE:
+            msg = f"Your download file size {sizeof_fmt(total)} is too large for Telegram."
+            raise Exception(msg)
+
+        # percent = remove_bash_color(d.get("_percent_str", "N/A"))
+        speed = remove_bash_color(d.get("_speed_str", "N/A"))
+        eta = remove_bash_color(d.get("_eta_str", d.get("eta")))
+        text = tqdm_progress("Downloading...", total, downloaded, speed, eta)
+        # debounce in here
+        edit_text(bot_msg, text)
+
+
+def upload_hook(current, total, bot_msg):
+    text = tqdm_progress("Uploading...", total, current)
+    edit_text(bot_msg, text)
 
 
 def convert_audio_format(video_paths: list, bm):

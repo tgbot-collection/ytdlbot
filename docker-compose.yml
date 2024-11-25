@@ -1,13 +1,6 @@
 version: '3.1'
 
 services:
-  socat:
-    image: bennythink/socat
-    restart: always
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    entrypoint: [ "socat", "tcp-listen:2375,fork,reuseaddr","unix-connect:/var/run/docker.sock" ]
-
   redis:
     image: redis:7-alpine
     restart: always
@@ -28,19 +21,7 @@ services:
   ytdl:
     image: bennythink/ytdlbot
     env_file:
-      - env/ytdl.env
+      - .env
     restart: always
     depends_on:
-      - socat
       - redis
-    volumes:
-      - ./data/vnstat/:/var/lib/vnstat/
-
-  premium:
-    image: bennythink/ytdlbot
-    env_file:
-      - env/ytdl.env
-    restart: always
-    volumes:
-      - ./data/premium.session:/ytdlbot/ytdlbot/premium.session
-    command: [ "/usr/local/bin/python",  "/ytdlbot/ytdlbot/premium.py" ]

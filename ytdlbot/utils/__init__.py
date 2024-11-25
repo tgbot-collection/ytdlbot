@@ -1,41 +1,20 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python3
 # coding: utf-8
 
-# ytdlbot - utils.py
-# 9/1/21 22:50
-#
+# ytdlbot - __init__.py.py
 
-__author__ = "Benny <benny.think@gmail.com>"
 
-import contextlib
 import logging
 import pathlib
 import re
 import shutil
-import subprocess
 import tempfile
 import time
 import uuid
 from http.cookiejar import MozillaCookieJar
 from urllib.parse import quote_plus
 
-import coloredlogs
 import ffmpeg
-
-from config import TMPFILE_PATH
-
-
-def apply_log_formatter():
-    coloredlogs.install(
-        level=logging.INFO,
-        fmt="[%(asctime)s %(filename)s:%(lineno)d %(levelname).1s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-
-def customize_logger(logger: list):
-    for log in logger:
-        logging.getLogger(log).setLevel(level=logging.INFO)
 
 
 def sizeof_fmt(num: int, suffix="B"):
@@ -61,28 +40,20 @@ def is_youtube(url: str):
         return True
 
 
-def adjust_formats(user_id: int, url: str, formats: list, hijack=None):
-    from database import MySQL
-
+def adjust_formats(formats):
     # high: best quality 1080P, 2K, 4K, 8K
     # medium: 720P
     # low: 480P
-    if hijack:
-        formats.insert(0, hijack)
-        return
 
     mapping = {"high": [], "medium": [720], "low": [480]}
-    settings = MySQL().get_user_settings(user_id)
-    if settings and is_youtube(url):
-        for m in mapping.get(settings[1], []):
-            formats.insert(0, f"bestvideo[ext=mp4][height={m}]+bestaudio[ext=m4a]")
-            formats.insert(1, f"bestvideo[vcodec^=avc][height={m}]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best")
-
-    if settings[2] == "audio":
-        formats.insert(0, "bestaudio[ext=m4a]")
-
-    if settings[2] == "document":
-        formats.insert(0, None)
+    # formats.insert(0, f"bestvideo[ext=mp4][height={m}]+bestaudio[ext=m4a]")
+    # formats.insert(1, f"bestvideo[vcodec^=avc][height={m}]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best")
+    #
+    # if settings[2] == "audio":
+    #     formats.insert(0, "bestaudio[ext=m4a]")
+    #
+    # if settings[2] == "document":
+    #     formats.insert(0, None)
 
 
 def get_metadata(video_path):
@@ -106,12 +77,6 @@ def get_metadata(video_path):
 
 def current_time(ts=None):
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
-
-
-def get_revision():
-    with contextlib.suppress(subprocess.SubprocessError):
-        return subprocess.check_output("git -C ../ rev-parse --short HEAD".split()).decode("u8").replace("\n", "")
-    return "unknown"
 
 
 def clean_tempfile():

@@ -8,9 +8,7 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 
-class Text:
-    def init(self):
-        pass
+class BotText:
 
     start = """
     Welcome to YouTube Download bot. Type /help for more information.
@@ -20,7 +18,7 @@ class Text:
     Join https://t.me/+OGRC8tp9-U9mZDZl for updates."""
 
     help = """
-1. For YouTube and any websites supported by yt-dlp, just send the link and we will download and send it to you.
+1. For YouTube and any websites supported by yt-dlp, just send the link and we will engine and send it to you.
 
 2. For specific links use `/spdl {URL}`. More info at https://github.com/SanujaNS/ytdlbot-telegram#supported-websites 
 
@@ -43,8 +41,3 @@ Your current settings:
 Video quality: %s
 Sending type: %s
 """
-
-
-class BotText(Text):
-    def init(self):
-        return Text()
