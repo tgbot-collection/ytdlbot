@@ -7,25 +7,17 @@
 
 __author__ = "SanujaNS <sanujas@sanuja.biz>"
 
-import logging
 import os
-import pathlib
 import re
-import traceback
 from urllib.parse import parse_qs, urlparse
 
-import filetype
 import requests
-import yt_dlp as ytdl
 from bs4 import BeautifulSoup
-from configuration.config import FileTooBig, IPv6
-from payment import Payment
-from ytdlbot.engine.downloader import download_hook, edit_text, tqdm_progress
 
-from utils import extract_code_from_instagram_url, parse_cookie_file
+from utils import parse_cookie_file
 
 
-def sp_dl(url: str, tempdir: str, bm, **kwargs) -> list:
+def special_download_entrance(url: str, tempdir: str, bm, **kwargs) -> list:
     """Specific link downloader"""
     domain = urlparse(url).hostname
     if "youtube.com" in domain or "youtu.be" in domain:
@@ -54,71 +46,6 @@ def sp_dl(url: str, tempdir: str, bm, **kwargs) -> list:
         return terabox(url, tempdir, bm, **kwargs)
     else:
         raise ValueError(f"Invalid URL: No specific link function found for {url}")
-
-
-def sp_ytdl_download(url: str, tempdir: str, bm, filename=None, **kwargs) -> list:
-    payment = Payment()
-    chat_id = bm.chat.id
-    if filename:
-        output = pathlib.Path(tempdir, filename).as_posix()
-    else:
-        output = pathlib.Path(tempdir, "%(title).70s.%(ext)s").as_posix()
-    ydl_opts = {
-        "progress_hooks": [lambda d: download_hook(d, bm)],
-        "outtmpl": output,
-        "restrictfilenames": False,
-        "quiet": True,
-        "format": None,
-    }
-
-    address = ["::", "0.0.0.0"] if IPv6 else [None]
-    error = None
-    video_paths = None
-    for addr in address:
-        ydl_opts["source_address"] = addr
-        try:
-            logging.info("Downloading %s", url)
-            with ytdl.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-            video_paths = list(pathlib.Path(tempdir).glob("*"))
-            break
-        except FileTooBig as e:
-            raise e
-        except Exception:
-            error = traceback.format_exc()
-            logging.error("Download failed for %s - %s", url)
-
-    if not video_paths:
-        raise Exception(error)
-
-    return video_paths
-
-
-def instagram(url: str, tempdir: str, bm, **kwargs):
-    resp = requests.get(f"http://192.168.6.1:15000/?url={url}").json()
-    code = extract_code_from_instagram_url(url)
-    counter = 1
-    video_paths = []
-    if url_results := resp.get("data"):
-        for link in url_results:
-            req = requests.get(link, stream=True)
-            length = int(req.headers.get("content-length"))
-            content = req.content
-            ext = filetype.guess_extension(content)
-            filename = f"{code}_{counter}.{ext}"
-            save_path = pathlib.Path(tempdir, filename)
-            chunk_size = 4096
-            downloaded = 0
-            for chunk in req.iter_content(chunk_size):
-                text = tqdm_progress(f"Downloading: {filename}", length, downloaded)
-                edit_text(bm, text)
-                with open(save_path, "ab") as fp:
-                    fp.write(chunk)
-                downloaded += len(chunk)
-            video_paths.append(save_path)
-            counter += 1
-
-    return video_paths
 
 
 def pixeldrain(url: str, tempdir: str, bm, **kwargs):

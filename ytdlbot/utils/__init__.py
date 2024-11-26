@@ -95,18 +95,6 @@ def parse_cookie_file(cookiefile):
     return {cookie.name: cookie.value for cookie in jar}
 
 
-def extract_code_from_instagram_url(url):
-    # Regular expression patterns
-    patterns = [r"/p/([a-zA-Z0-9_-]+)/", r"/reel/([a-zA-Z0-9_-]+)/"]  # Posts  # Reels
-
-    for pattern in patterns:
-        match = re.search(pattern, url)
-        if match:
-            return match.group(1)
-
-    return None
-
-
 def shorten_url(url, CAPTION_URL_LENGTH_LIMIT):
     # Shortens a URL by cutting it to a specified length.
     shortened_url = url[: CAPTION_URL_LENGTH_LIMIT - 3] + "..."

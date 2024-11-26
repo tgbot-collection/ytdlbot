@@ -7,6 +7,10 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
+import typing
+
+from pyrogram import Client, types
+
 
 class BotText:
 
@@ -41,3 +45,8 @@ Your current settings:
 Video quality: %s
 Sending type: %s
 """
+
+
+class Types:
+    Message = typing.Union[types.Message, typing.Coroutine]
+    Client = Client

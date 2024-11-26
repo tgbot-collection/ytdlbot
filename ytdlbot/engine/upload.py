@@ -2,9 +2,12 @@
 # coding: utf-8
 
 # ytdlbot - upload.py
+import logging
+
+from config import Types
 
 
-def forward_video(client, bot_msg: types.Message | Any, url: str, cached_fid: str):
+def forward_video(client, bot_msg: Types.Message, url: str, cached_fid: str):
     res_msg = upload_processor(client, bot_msg, url, cached_fid)
     obj = res_msg.document or res_msg.video or res_msg.audio or res_msg.animation or res_msg.photo
 
@@ -14,17 +17,15 @@ def forward_video(client, bot_msg: types.Message | Any, url: str, cached_fid: st
     return True
 
 
-def upload_processor(client: Client, bot_msg: types.Message, url: str, vp_or_fid: str | list):
-    redis = Redis()
+def upload_processor(client: Types.Client, bot_msg: Types.Message, url: str, vp_or_fid: str | list):
     # raise pyrogram.errors.exceptions.FloodWait(13)
     # if is str, it's a file id; else it's a list of paths
-    payment = Payment()
     chat_id = bot_msg.chat.id
     markup = gen_video_markup()
     if isinstance(vp_or_fid, list) and len(vp_or_fid) > 1:
         # just generate the first for simplicity, send as media group(2-20)
         cap, meta = gen_cap(bot_msg, url, vp_or_fid[0])
-        res_msg: list["types.Message"] | Any = client.send_media_group(chat_id, generate_input_media(vp_or_fid, cap))
+        res_msg: list[Types.Message] = client.send_media_group(chat_id, generate_input_media(vp_or_fid, cap))
         # TODO no cache for now
         return res_msg[0]
     elif isinstance(vp_or_fid, list) and len(vp_or_fid) == 1:
@@ -36,8 +37,6 @@ def upload_processor(client: Client, bot_msg: types.Message, url: str, vp_or_fid
         cap, meta = gen_cap(bot_msg, url, vp_or_fid)
 
     settings = payment.get_user_settings(chat_id)
-    if ARCHIVE_ID and isinstance(vp_or_fid, pathlib.Path):
-        chat_id = ARCHIVE_ID
 
     if settings[2] == "document":
         logging.info("Sending as document")

@@ -4,6 +4,8 @@
 # ytdlbot - model.py
 
 
+from contextlib import contextmanager
+
 from sqlalchemy import Column, Enum, Float, ForeignKey, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -57,13 +59,28 @@ def create_session():
         pool_recycle=1800,
     )
     Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    return session
+    return sessionmaker(bind=engine)
+
+
+SessionFactory = create_session()
+
+
+@contextmanager
+def session_manager():
+    s = SessionFactory()
+    try:
+        yield s
+        s.commit()
+    except Exception as e:
+        s.rollback()
+        raise
+    finally:
+        s.close()
 
 
 def get_user_settings():
-    session = create_session()
+    with session_manager() as session:
+        pass
 
 
 def set_user_settings():

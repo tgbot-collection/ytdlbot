@@ -21,12 +21,6 @@ import psutil
 import pyrogram.errors
 import yt_dlp
 from apscheduler.schedulers.background import BackgroundScheduler
-from engine.tasks import (
-    audio_entrance,
-    leech_download_entrance,
-    spdl_download_entrance,
-    ytdl_download_entrance,
-)
 from pyrogram import Client, enums, filters, types
 from pyrogram.raw import functions
 from pyrogram.raw import types as raw_types
