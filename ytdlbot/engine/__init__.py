@@ -3,7 +3,19 @@
 
 # ytdlbot - __init__.py.py
 
-from audio import audio_convert_entrance, audio_download_entrance
-from direct import direct_download_entrance
-from special import special_download_entrance
-from video import video_download_entrance
+from urllib.parse import urlparse
+
+
+def special_download_entrance(url: str, tempdir: str, bm, **kwargs) -> list:
+    """Specific link downloader"""
+    domain = urlparse(url).hostname
+    if "youtube.com" in domain or "youtu.be" in domain:
+        raise ValueError("ERROR: This is ytdl bot for Youtube links just send the link.")
+    elif "www.instagram.com" in domain:
+        return instagram(url, tempdir, bm, **kwargs)
+    elif "pixeldrain.com" in domain:
+        return pixeldrain(url, tempdir, bm, **kwargs)
+    elif "krakenfiles.com" in domain:
+        return krakenfiles(url, tempdir, bm, **kwargs)
+    else:
+        raise ValueError(f"Invalid URL: No specific link function found for {url}")

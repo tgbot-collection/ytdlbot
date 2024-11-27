@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 # coding: utf-8
-
-# ytdlbot - model.py
-
-
+import math
+import os
 from contextlib import contextmanager
+from typing import Literal
 
 from sqlalchemy import Column, Enum, Float, ForeignKey, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
+
+# ytdlbot - model.py
+
 
 Base = declarative_base()
 
@@ -31,8 +33,8 @@ class Setting(Base):
     __tablename__ = "settings"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    resolution = Column(String(50), nullable=False)
-    method = Column(Enum("video", "document"), nullable=False)
+    download = Column(Enum("high", "medium", "low", "audio", "custom"), nullable=False)
+    upload = Column(Enum("video", "audio", "document"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     user = relationship("User", back_populates="settings")
@@ -78,18 +80,38 @@ def session_manager():
         s.close()
 
 
-def get_user_settings():
+def get_download_settings(uid) -> Literal["high", "medium", "low", "audio", "custom"]:
     with session_manager() as session:
-        pass
+        return "custom"
 
 
-def set_user_settings():
+def get_upload_settings(uid) -> Literal["video", "audio", "document"]:
+    with session_manager() as session:
+        return "video"
+
+
+def set_user_settings(uid: int, key: str, value: str):
+    # set download or upload settings
     pass
 
 
-def update_free_usage():
+def get_free_quota(uid: int):
     pass
 
 
-def update_paid_usage():
+def get_paid_quota(uid: int):
+    if not os.getenv("ENABLE_VIP"):
+        return math.inf
+
+
+def reset_free_quota(uid: int):
+    pass
+
+
+def add_paid_quota(uid: int, amount: int):
+    pass
+
+
+def use_quota(uid: int):
+    # use free first, then paid
     pass
