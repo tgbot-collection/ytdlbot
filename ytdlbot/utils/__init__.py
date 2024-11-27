@@ -89,12 +89,6 @@ def clean_tempfile():
                 shutil.rmtree(item, ignore_errors=True)
 
 
-def parse_cookie_file(cookiefile):
-    jar = MozillaCookieJar(cookiefile)
-    jar.load()
-    return {cookie.name: cookie.value for cookie in jar}
-
-
 def shorten_url(url, CAPTION_URL_LENGTH_LIMIT):
     # Shortens a URL by cutting it to a specified length.
     shortened_url = url[: CAPTION_URL_LENGTH_LIMIT - 3] + "..."
