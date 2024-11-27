@@ -14,12 +14,28 @@ def video_download_entrance():
 
 def extract_code_from_instagram_url(url):
     # Regular expression patterns
-    patterns = [r"/p/([a-zA-Z0-9_-]+)/", r"/reel/([a-zA-Z0-9_-]+)/"]  # Posts  # Reels
+    patterns = [
+        # Instagram stories highlights
+        r"/stories/highlights/([a-zA-Z0-9_-]+)/",
+        # Posts
+        r"/p/([a-zA-Z0-9_-]+)/",
+        # Reels
+        r"/reel/([a-zA-Z0-9_-]+)/",
+        # TV
+        r"/tv/([a-zA-Z0-9_-]+)/",
+        # Threads post (both with @username and without)
+        r"(?:https?://)?(?:www\.)?(?:threads\.net)(?:/[@\w.]+)?(?:/post)?/([\w-]+)(?:/?\?.*)?$"
+    ]
 
     for pattern in patterns:
         match = re.search(pattern, url)
         if match:
-            return match.group(1)
+            if pattern == patterns[0]:  # Check if it's the stories highlights pattern
+                # Return the URL as it is
+                return url
+            else:
+                # Return the code part (first group)
+                return match.group(1)
 
     return None
 
