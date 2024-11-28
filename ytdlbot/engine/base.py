@@ -6,14 +6,16 @@
 import logging
 import tempfile
 from abc import ABC, abstractmethod
+from pathlib import Path
+from types import SimpleNamespace
+
+import filetype
+from helper import get_caption
+from pyrogram import types
 
 from config import Types
-from database.model import (
-    get_free_quota,
-    get_paid_quota,
-    get_upload_settings,
-    use_quota,
-)
+from database import Redis
+from database.model import get_download_settings, get_free_quota, get_paid_quota, get_upload_settings, use_quota
 
 
 def record_usage(func):
@@ -22,14 +24,34 @@ def record_usage(func):
         if free + paid < 0:
             raise Exception("Usage limit exceeded")
         # check cache first
-        if self.check_cache():
-            result = None
+        result = None
+        if cache := self.check_cache():
+            # TODO have cache, just forward the video if possible
+            # chat_id, _type, files, thumb=None, caption=None
+            self._client.send_something(self._user_id, cache["type"], cache["file_id"])
         else:
             result = func(self, *args, **kwargs)  # Call the original method
         use_quota(self._user_id)
         return result
 
     return wrapper
+
+
+def generate_input_media(file_paths: list, cap: str) -> list:
+    input_media = []
+    for path in file_paths:
+        mime = filetype.guess_mime(path)
+        if "video" in mime:
+            input_media.append(types.InputMediaVideo(media=path))
+        elif "image" in mime:
+            input_media.append(types.InputMediaPhoto(media=path))
+        elif "audio" in mime:
+            input_media.append(types.InputMediaAudio(media=path))
+        else:
+            input_media.append(types.InputMediaDocument(media=path))
+
+    input_media[0].caption = cap
+    return input_media
 
 
 class BaseDownloader(ABC):
@@ -45,8 +67,9 @@ class BaseDownloader(ABC):
         self._tempdir.cleanup()
 
     def check_cache(self):
-        print(self._url)
-        return True
+        unique = self._url + get_download_settings(self._url)
+        if file_id := Redis().get_send_cache(unique):
+            return file_id
 
     @abstractmethod
     def _setup_formats(self):
@@ -54,108 +77,62 @@ class BaseDownloader(ABC):
 
     @abstractmethod
     def _download(self, formats):
+        # responsible for get format and download it
         pass
 
-    def _upload(self, path):
-        upload = get_upload_settings(self._user_id)
-        # path, caption, upload format, etc.
-        # raise pyrogram.errors.exceptions.FloodWait(13)
-        # if is str, it's a file id; else it's a list of paths
-        chat_id = bot_msg.chat.id
-        markup = gen_video_markup()
-        if isinstance(vp_or_fid, list) and len(vp_or_fid) > 1:
-            # just generate the first for simplicity, send as media group(2-20)
-            cap, meta = gen_cap(bot_msg, url, vp_or_fid[0])
-            res_msg: list[Types.Message] = self._client.send_media_group(chat_id, generate_input_media(vp_or_fid, cap))
-            # TODO no cache for now
-            return res_msg[0]
-        elif isinstance(vp_or_fid, list) and len(vp_or_fid) == 1:
-            # normal engine, just contains one file in video_paths
-            vp_or_fid = vp_or_fid[0]
-            cap, meta = gen_cap(bot_msg, url, vp_or_fid)
+    def send_something(self, *, chat_id, files, _type, thumb=None, caption=None):
+        maps = {
+            "document": self._client.send_document,
+            "audio": self._client.send_audio,
+            "video": self._client.send_video,
+            "animation": self._client.send_animation,
+            "photo": self._client.send_photo,
+        }
+
+        if len(files) > 1:
+            inputs = generate_input_media(files, caption)
+            return self._client.send_media_group(chat_id, inputs)[0]
         else:
-            # just a file id as string
-            cap, meta = gen_cap(bot_msg, url, vp_or_fid)
-
-        settings = payment.get_user_settings(chat_id)
-
-        if settings[2] == "document":
-            logging.info("Sending as document")
-            try:
-                # send as document could be sent as video even if it's a document
-                res_msg = self._client.send_document(
-                    chat_id,
-                    vp_or_fid,
-                    caption=cap,
-                    progress=upload_hook,
-                    progress_args=(bot_msg,),
-                    reply_markup=markup,
-                    thumb=meta["thumb"],
-                    force_document=True,
-                )
-            except ValueError:
-                logging.error("Retry to send as video")
-                res_msg = self._client.send_video(
-                    chat_id,
-                    vp_or_fid,
-                    supports_streaming=True,
-                    caption=cap,
-                    progress=upload_hook,
-                    progress_args=(bot_msg,),
-                    reply_markup=markup,
-                    **meta,
-                )
-        elif settings[2] == "audio":
-            logging.info("Sending as audio")
-            res_msg = self._client.send_audio(
+            return maps[_type](
                 chat_id,
-                vp_or_fid,
-                caption=cap,
-                progress=upload_hook,
-                progress_args=(bot_msg,),
+                files[0],
+                thumb=thumb,
+                caption=caption,
+                progress="upload_hook",
+                progress_args=("bot_msg",),
             )
-        else:
-            # settings==video
-            logging.info("Sending as video")
-            try:
-                res_msg = self._client.send_video(
-                    chat_id,
-                    vp_or_fid,
-                    supports_streaming=True,
-                    caption=cap,
-                    progress=upload_hook,
-                    progress_args=(bot_msg,),
-                    reply_markup=markup,
-                    **meta,
-                )
-            except Exception:
-                # try to send as annimation, photo
-                try:
-                    logging.warning("Retry to send as animation")
-                    res_msg = self._client.send_animation(
-                        chat_id,
-                        vp_or_fid,
-                        caption=cap,
-                        progress=upload_hook,
-                        progress_args=(bot_msg,),
-                        reply_markup=markup,
-                        **meta,
-                    )
-                except Exception:
-                    # this is likely a photo
-                    logging.warning("Retry to send as photo")
-                    res_msg = self._client.send_photo(
-                        chat_id,
-                        vp_or_fid,
-                        caption=cap,
-                        progress=upload_hook,
-                        progress_args=(bot_msg,),
-                    )
 
-        unique = get_unique_clink(url, bot_msg.chat.id)
-        obj = res_msg.document or res_msg.video or res_msg.audio or res_msg.animation or res_msg.photo
-        redis.add_send_cache(unique, getattr(obj, "file_id", None))
-        return res_msg
+    @record_usage
+    def _upload(self):
+        upload = get_upload_settings(self._user_id)
+        chat_id = self._bot_msg.chat.id
+        files = list(Path(self._tempdir.name).glob("*"))
+
+        success = SimpleNamespace(document=None, video=None, audio=None, animation=None, photo=None)
+        if upload == "document":
+            success = self.send_something(chat_id=chat_id, files=files, _type="document")
+        elif upload == "audio":
+            success = self.send_something(chat_id=chat_id, files=files, _type="audio")
+        elif upload == "video":
+            #               Thumbnail of the video sent.
+            #                 The thumbnail should be in JPEG format and less than 200 KB in size.
+            #                 A thumbnail's width and height should not exceed 320 pixels.
+            methods = {"video": "thumbnail.jpg", "animation": None, "photo": None}
+            for method, thumb in methods.items():
+                try:
+                    success = self.send_something(chat_id=chat_id, files=files, _type=method, thumb=thumb)
+                    break
+                except Exception:
+                    logging.error("Retry to send as %s", method)
+        else:
+            logging.error("Unknown upload settings")
+            return
+
+        # unique link is link+download_format
+        unique = self._url + get_download_settings(self._url)
+        obj = success.document or success.video or success.audio or success.animation or success.photo
+        Redis().add_send_cache(unique, getattr(obj, "file_id", None), upload)
+        return success
 
     @abstractmethod
     def start(self):

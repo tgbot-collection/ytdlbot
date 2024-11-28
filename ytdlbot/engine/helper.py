@@ -201,19 +201,6 @@ def run_ffmpeg_progressbar(cmd_list: list, bm):
     ffpb.main(cmd_list, tqdm=ProgressBar)
 
 
-def gen_video_markup():
-    markup = types.InlineKeyboardMarkup(
-        [
-            [  # First row
-                types.InlineKeyboardButton(  # Generates a callback query when pressed
-                    "convert to audio", callback_data="convert"
-                )
-            ]
-        ]
-    )
-    return markup
-
-
 def get_caption(url, video_path):
     if isinstance(video_path, pathlib.Path):
         meta = get_metadata(video_path)
@@ -229,10 +216,6 @@ def get_caption(url, video_path):
             thumb=getattr(video_path, "thumb", None),
         )
 
-    if worker_name := os.getenv("WORKER_NAME"):
-        worker = f"Downloaded by  {worker_name}"
-    else:
-        worker = ""
     # Shorten the URL if necessary
     try:
         if len(url) > CAPTION_URL_LENGTH_LIMIT:
@@ -247,23 +230,6 @@ def get_caption(url, video_path):
         f"{file_name}\n\n{url_for_cap}\n\nInfo: {meta['width']}x{meta['height']} {file_size}\t" f"{meta['duration']}s\n"
     )
     return cap
-
-
-def generate_input_media(file_paths: list, cap: str) -> list:
-    input_media = []
-    for path in file_paths:
-        mime = filetype.guess_mime(path)
-        if "video" in mime:
-            input_media.append(pyrogram.types.InputMediaVideo(media=path))
-        elif "image" in mime:
-            input_media.append(pyrogram.types.InputMediaPhoto(media=path))
-        elif "audio" in mime:
-            input_media.append(pyrogram.types.InputMediaAudio(media=path))
-        else:
-            input_media.append(pyrogram.types.InputMediaDocument(media=path))
-
-    input_media[0].caption = cap
-    return input_media
 
 
 def convert_audio_format(video_paths: list, bm):

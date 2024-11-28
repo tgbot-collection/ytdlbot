@@ -33,12 +33,11 @@ class YoutubeDownload(BaseDownloader):
             formats.append("worst")
         return formats
 
-    def _download(self, formats) -> list:
+    def _download(self, formats):
         pass
 
-    @record_usage
     def start(self, formats=None):
         if formats is None:
             formats = self._setup_formats()
-        path = self._download(formats)
-        self._upload(path)
+        self._download(formats)
+        self._upload()

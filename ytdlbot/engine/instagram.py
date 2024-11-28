@@ -9,7 +9,6 @@ import re
 
 import filetype
 import requests
-
 from base import BaseDownloader
 
 
@@ -46,7 +45,7 @@ class InstagramDownload(BaseDownloader):
 
     def _download(self, formats):
         # TODO: Implement download method
-        resp = requests.get(f"http://192.168.6.1:15000/?url={self._url}").json()
+        resp = requests.get(f"http://instagram:15000/?url={self._url}").json()
         code = self.extract_code()
         counter = 1
         video_paths = []
