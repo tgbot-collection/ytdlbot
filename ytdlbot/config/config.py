@@ -27,8 +27,7 @@ RCLONE_PATH = os.getenv("RCLONE")
 # payment settings
 ENABLE_VIP = os.getenv("VIP", False)
 PROVIDER_TOKEN = os.getenv("PROVIDER_TOKEN")
-FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 5)
-EXPIRE = 24 * 3600
+FREE_DOWNLOAD = int(os.getenv("FREE_DOWNLOAD", 5))
 TOKEN_PRICE = os.getenv("TOKEN_PRICE", 10)  # 1 USD=10 credits
 
 # For advance users

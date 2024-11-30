@@ -10,25 +10,30 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import filetype
-from helper import get_caption
+from helper import get_caption, upload_hook
 from pyrogram import types
 
 from config import Types
 from database import Redis
-from database.model import get_download_settings, get_free_quota, get_paid_quota, get_upload_settings, use_quota
+from database.model import (
+    get_download_settings,
+    get_free_quota,
+    get_paid_quota,
+    get_upload_settings,
+    use_quota,
+)
 
 
 def record_usage(func):
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self: BaseDownloader, *args, **kwargs):
         free, paid = get_free_quota(self._user_id), get_paid_quota(self._user_id)
         if free + paid < 0:
             raise Exception("Usage limit exceeded")
         # check cache first
         result = None
-        if cache := self.check_cache():
-            # TODO have cache, just forward the video if possible
-            # chat_id, _type, files, thumb=None, caption=None
-            self._client.send_something(self._user_id, cache["type"], cache["file_id"])
+        if caches := self.get_cache_fileid():
+            for fid, _type in caches.items():
+                self._methods[caches[_type]](self._user_id, fid)
         else:
             result = func(self, *args, **kwargs)  # Call the original method
         use_quota(self._user_id)
@@ -62,14 +67,14 @@ class BaseDownloader(ABC):
         self._id = _id
         self._tempdir = tempfile.TemporaryDirectory(prefix="ytdl-")
         self._bot_msg: Types.Message = self._client.get_messages(self._user_id, self._id)
+        self._redis = Redis()
 
     def __del__(self):
         self._tempdir.cleanup()
 
-    def check_cache(self):
+    def get_cache_fileid(self):
         unique = self._url + get_download_settings(self._url)
-        if file_id := Redis().get_send_cache(unique):
-            return file_id
+        return self._redis.get_send_cache(unique)
 
     @abstractmethod
     def _setup_formats(self):
@@ -80,8 +85,9 @@ class BaseDownloader(ABC):
         # responsible for get format and download it
         pass
 
-    def send_something(self, *, chat_id, files, _type, thumb=None, caption=None):
-        maps = {
+    @property
+    def _methods(self):
+        return {
             "document": self._client.send_document,
             "audio": self._client.send_audio,
             "video": self._client.send_video,
@@ -89,17 +95,18 @@ class BaseDownloader(ABC):
             "photo": self._client.send_photo,
         }
 
+    def send_something(self, *, chat_id, files, _type, thumb=None, caption=None):
         if len(files) > 1:
             inputs = generate_input_media(files, caption)
             return self._client.send_media_group(chat_id, inputs)[0]
         else:
-            return maps[_type](
+            return self._methods[_type](
                 chat_id,
                 files[0],
                 thumb=thumb,
                 caption=caption,
-                progress="upload_hook",
-                progress_args=("bot_msg",),
+                progress=upload_hook,
+                progress_args=(self._bot_msg,),
             )
 
     @record_usage
@@ -131,7 +138,7 @@ class BaseDownloader(ABC):
         # unique link is link+download_format
         unique = self._url + get_download_settings(self._url)
         obj = success.document or success.video or success.audio or success.animation or success.photo
-        Redis().add_send_cache(unique, getattr(obj, "file_id", None), upload)
+        self._redis.add_send_cache(unique, getattr(obj, "file_id", None), upload)
         return success
 
     @abstractmethod

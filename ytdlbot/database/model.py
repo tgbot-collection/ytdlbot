@@ -6,9 +6,11 @@ from contextlib import contextmanager
 from typing import Literal
 
 from sqlalchemy import Column, Enum, Float, ForeignKey, Integer, String, create_engine
+from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-from sqlalchemy.dialects.mysql import JSON
+
+from config import FREE_DOWNLOAD
 
 # ytdlbot - model.py
 
@@ -21,7 +23,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, unique=True, nullable=False)  # telegram user id
-    free = Column(Integer, default=5)
+    free = Column(Integer, default=FREE_DOWNLOAD)
     paid = Column(Integer, default=0)
     config = Column(JSON)
 
@@ -112,7 +114,7 @@ def get_free_quota(uid: int):
         data = session.query(User).filter(User.user_id == uid).first()
         if data:
             return data.free
-        return 5
+        return FREE_DOWNLOAD
 
 
 def get_paid_quota(uid: int):

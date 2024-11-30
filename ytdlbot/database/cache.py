@@ -25,6 +25,7 @@ class Redis:
         self.r.close()
 
     def add_send_cache(self, link: str, file_id: str, _type: str):
+        # one link might have multiple files, so we use hset
         self.r.hset(link, mapping={"file_id": file_id, "type": _type})
 
     def get_send_cache(self, link: str):

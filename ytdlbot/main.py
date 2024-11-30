@@ -38,8 +38,8 @@ from config import (
     TOKEN_PRICE,
     BotText,
 )
-from utils import extract_url_and_name, sizeof_fmt, timeof_fmt
 from database.model import init_user
+from utils import extract_url_and_name, sizeof_fmt, timeof_fmt
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
 logging.getLogger("apscheduler.executors.default").propagate = False
