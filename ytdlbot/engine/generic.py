@@ -4,6 +4,7 @@
 # ytdlbot - generic.py
 
 from base import BaseDownloader
+from pyrogram import types
 
 from database.model import get_download_settings
 
@@ -17,7 +18,21 @@ class YoutubeDownload(BaseDownloader):
         if download == "custom":
             # get format from ytdlp, send inlinekeyboard button to user so they can choose
             # another callback will be triggered to download the video
-            self._client.send_message(self._user_id, "Choose the format", reply_to_message_id=self._id)
+            available_options = {
+                "480P": "best[height<=480]",
+                "720P": "best[height<=720]",
+                "1080P": "best[height<=1080]",
+            }
+            markup, temp_row = [], []
+            for quality, data in available_options.items():
+                temp_row.append(types.InlineKeyboardButton(quality, callback_data=data))
+                if len(temp_row) == 3:  # Add a row every 3 buttons
+                    markup.append(temp_row)
+                    temp_row = []
+            # Add any remaining buttons as the last row
+            if temp_row:
+                markup.append(temp_row)
+            self._bot_msg.edit_text("Choose the format", reply_markup=types.InlineKeyboardMarkup(markup))
             return
         if download == "audio":
             # download audio only
