@@ -61,7 +61,7 @@ class BaseDownloader(ABC):
         self._user_id = user_id
         self._id = _id
         self._tempdir = tempfile.TemporaryDirectory(prefix="ytdl-")
-        self._bot_msg = self._client.get_messages(self._user_id, self._id)
+        self._bot_msg: Types.Message = self._client.get_messages(self._user_id, self._id)
 
     def __del__(self):
         self._tempdir.cleanup()
