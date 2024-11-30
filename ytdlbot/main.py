@@ -39,6 +39,7 @@ from config import (
     BotText,
 )
 from utils import extract_url_and_name, sizeof_fmt, timeof_fmt
+from database.model import init_user
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
 logging.getLogger("apscheduler.executors.default").propagate = False
@@ -85,7 +86,8 @@ def private_use(func):
 
 @app.on_message(filters.command(["start"]))
 def start_handler(client: Client, message: types.Message):
-    from_id = message.from_user.id
+    from_id = message.chat.id
+    init_user(from_id)
     logging.info("%s welcome to youtube-dl bot!", message.from_user.id)
     client.send_chat_action(from_id, enums.ChatAction.TYPING)
     client.send_message(message.chat.id, BotText.start, disable_web_page_preview=True)
@@ -94,6 +96,7 @@ def start_handler(client: Client, message: types.Message):
 @app.on_message(filters.command(["help"]))
 def help_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
+    init_user(chat_id)
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     client.send_message(chat_id, BotText.help, disable_web_page_preview=True)
 
@@ -101,6 +104,7 @@ def help_handler(client: Client, message: types.Message):
 @app.on_message(filters.command(["about"]))
 def about_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
+    init_user(chat_id)
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     client.send_message(chat_id, BotText.about)
 
@@ -108,6 +112,7 @@ def about_handler(client: Client, message: types.Message):
 @app.on_message(filters.command(["ping"]))
 def ping_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
+    init_user(chat_id)
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
 
     def send_message_and_measure_ping():
@@ -131,6 +136,7 @@ def ping_handler(client: Client, message: types.Message):
 @app.on_message(filters.command(["stats"]))
 def stats_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
+    init_user(chat_id)
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     cpu_usage = psutil.cpu_percent()
     total, used, free, disk = psutil.disk_usage("/")
@@ -181,8 +187,8 @@ def stats_handler(client: Client, message: types.Message):
 @app.on_message(filters.command(["settings"]))
 def settings_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
+    init_user(chat_id)
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-
     markup = types.InlineKeyboardMarkup(
         [
             [  # First row
@@ -255,6 +261,7 @@ def link_checker(url: str) -> str:
 @app.on_message(filters.command(["spdl"]))
 def spdl_handler(client: Client, message: types.Message):
     chat_id = message.from_user.id
+    init_user(chat_id)
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     message_text = message.text
     url, new_name = extract_url_and_name(message_text)
@@ -288,8 +295,9 @@ def leech_handler(client: Client, message: types.Message):
 
 @app.on_message(filters.command(["ytdl"]))
 def ytdl_handler(client: Client, message: types.Message):
-    # useful for group
+    # for group
     chat_id = message.from_user.id
+    init_user(chat_id)
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     message_text = message.text
     url, new_name = extract_url_and_name(message_text)
@@ -302,49 +310,34 @@ def ytdl_handler(client: Client, message: types.Message):
     ytdl_download_entrance(client, bot_msg, url)
 
 
-@app.on_message(filters.incoming & (filters.text | filters.document))
+@app.on_message(filters.incoming & filters.text)
 @private_use
 def download_handler(client: Client, message: types.Message):
     chat_id = message.from_user.id
+    init_user(chat_id)
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    if message.document:
-        with tempfile.NamedTemporaryFile(mode="r+") as tf:
-            logging.info("Downloading file to %s", tf.name)
-            message.download(tf.name)
-            contents = open(tf.name, "r").read()  # don't know why
-        urls = contents.split()
-    else:
-        urls = [message.text]
-        logging.info("start %s", urls)
+    url = message.text
+    logging.info("start %s", url)
+    # TODO check link
 
-    for url in urls:
-        # check url
-        if not re.findall(r"^https?://", url.lower()):
-            message.reply_text("not an url", quote=True, disable_web_page_preview=True)
-            return
+    try:
+        # raise pyrogram.errors.exceptions.FloodWait(10)
+        bot_msg: types.Message | Any = message.reply_text("Acked", quote=True)
+    except pyrogram.errors.Flood as e:
+        f = BytesIO()
+        f.write(str(e).encode())
+        f.write(b"Your job will be done soon. Just wait!")
+        f.name = "Please don't flood me.txt"
+        bot_msg = message.reply_document(
+            f, caption=f"Flood wait! Please wait {e} seconds...." f"Your job will start automatically", quote=True
+        )
+        f.close()
+        client.send_message(OWNER, f"Flood wait! 🙁 {e} seconds....")
+        time.sleep(e.value)
 
-        if text := link_checker(url):
-            message.reply_text(text, quote=True)
-            return
-
-        try:
-            # raise pyrogram.errors.exceptions.FloodWait(10)
-            bot_msg: types.Message | Any = message.reply_text("Acked", quote=True)
-        except pyrogram.errors.Flood as e:
-            f = BytesIO()
-            f.write(str(e).encode())
-            f.write(b"Your job will be done soon. Just wait!")
-            f.name = "Please don't flood me.txt"
-            bot_msg = message.reply_document(
-                f, caption=f"Flood wait! Please wait {e} seconds...." f"Your job will start automatically", quote=True
-            )
-            f.close()
-            client.send_message(OWNER, f"Flood wait! 🙁 {e} seconds....")
-            time.sleep(e.value)
-
-        client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_VIDEO)
-        bot_msg.chat = message.chat
-        ytdl_download_entrance(client, bot_msg, url)
+    client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_VIDEO)
+    bot_msg.chat = message.chat
+    ytdl_download_entrance(client, bot_msg, url)
 
 
 @app.on_callback_query(filters.regex(r"document|video|audio"))

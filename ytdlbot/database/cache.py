@@ -29,6 +29,3 @@ class Redis:
 
     def get_send_cache(self, link: str):
         return self.r.hgetall(link)
-
-    def del_send_cache(self, unique):
-        return self.r.hdel("cache", unique)

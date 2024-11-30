@@ -276,31 +276,3 @@ def split_large_video(video_paths: list):
 
     if split and original_video:
         return [i for i in pathlib.Path(original_video).parent.glob("*")]
-
-
-def extract_canonical_link(url: str) -> str:
-    # canonic link works for many websites. It will strip out unnecessary stuff
-    props = ["canonical", "alternate", "shortlinkUrl"]
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"
-    }
-    cookie = {"CONSENT": "PENDING+197"}
-    # send head request first
-    r = requests.head(url, headers=headers, allow_redirects=True, cookies=cookie)
-    if r.status_code != HTTPStatus.METHOD_NOT_ALLOWED and "text/html" not in r.headers.get("content-type", ""):
-        # get content-type, if it's not text/html, there's no need to issue a GET request
-        logging.warning("%s Content-type is not text/html, no need to GET for extract_canonical_link", url)
-        return url
-
-    html_doc = requests.get(url, headers=headers, cookies=cookie, timeout=5).text
-    soup = BeautifulSoup(html_doc, "html.parser")
-    for prop in props:
-        element = soup.find(lambda tag: tag.name == "link" and tag.get("rel") == ["prop"])
-        try:
-            href = element["href"]
-            if href not in ["null", "", None, "https://consent.youtube.com/m"]:
-                return href
-        except Exception as e:
-            logging.debug("Canonical exception %s %s e", url, e)
-
-    return url
