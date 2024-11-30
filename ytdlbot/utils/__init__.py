@@ -56,25 +56,6 @@ def adjust_formats(formats):
     #     formats.insert(0, None)
 
 
-def get_metadata(video_path):
-    width, height, duration = 1280, 720, 0
-    try:
-        video_streams = ffmpeg.probe(video_path, select_streams="v")
-        for item in video_streams.get("streams", []):
-            height = item["height"]
-            width = item["width"]
-        duration = int(float(video_streams["format"]["duration"]))
-    except Exception as e:
-        logging.error(e)
-    try:
-        thumb = pathlib.Path(video_path).parent.joinpath(f"{uuid.uuid4().hex}-thunmnail.png").as_posix()
-        ffmpeg.input(video_path, ss=duration / 2).filter("scale", width, -1).output(thumb, vframes=1).run()
-    except ffmpeg._run.Error:
-        thumb = None
-
-    return dict(height=height, width=width, duration=duration, thumb=thumb)
-
-
 def current_time(ts=None):
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
 

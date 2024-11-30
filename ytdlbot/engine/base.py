@@ -5,10 +5,12 @@
 
 import logging
 import tempfile
+import uuid
 from abc import ABC, abstractmethod
 from pathlib import Path
 from types import SimpleNamespace
 
+import ffmpeg
 import filetype
 from helper import get_caption, upload_hook
 from pyrogram import types
@@ -95,7 +97,7 @@ class BaseDownloader(ABC):
             "photo": self._client.send_photo,
         }
 
-    def send_something(self, *, chat_id, files, _type, thumb=None, caption=None):
+    def send_something(self, *, chat_id, files, _type, caption=None, thumb=None, **kwargs):
         if len(files) > 1:
             inputs = generate_input_media(files, caption)
             return self._client.send_media_group(chat_id, inputs)[0]
@@ -103,11 +105,37 @@ class BaseDownloader(ABC):
             return self._methods[_type](
                 chat_id,
                 files[0],
-                thumb=thumb,
                 caption=caption,
+                thumb=thumb,
                 progress=upload_hook,
                 progress_args=(self._bot_msg,),
+                **kwargs,
             )
+
+    @staticmethod
+    def get_metadata(files):
+        video_path = files[0]
+        width = height = duration = 0
+        try:
+            video_streams = ffmpeg.probe(video_path, select_streams="v")
+            for item in video_streams.get("streams", []):
+                height = item["height"]
+                width = item["width"]
+            duration = int(float(video_streams["format"]["duration"]))
+        except Exception as e:
+            logging.error(e)
+        try:
+            thumb = Path(video_path).parent.joinpath(f"{uuid.uuid4().hex}-thunmnail.png").as_posix()
+            # A thumbnail's width and height should not exceed 320 pixels.
+            ffmpeg.input(video_path, ss=duration / 2).filter(
+                "scale",
+                "if(gt(iw,ih),300,-1)",  # If width > height, scale width to 320 and height auto
+                "if(gt(iw,ih),-1,300)",
+            ).output(thumb, vframes=1).run()
+        except ffmpeg._run.Error:
+            thumb = None
+
+        return dict(height=height, width=width, duration=duration, thumb=thumb)
 
     @record_usage
     def _upload(self):
@@ -117,14 +145,18 @@ class BaseDownloader(ABC):
 
         success = SimpleNamespace(document=None, video=None, audio=None, animation=None, photo=None)
         if upload == "document":
-            success = self.send_something(chat_id=chat_id, files=files, _type="document")
+            thumb = self.get_metadata(files)["thumb"]
+            success = self.send_something(
+                chat_id=chat_id,
+                files=files,
+                _type="document",
+                thumb=thumb,
+                force_document=True,
+            )
         elif upload == "audio":
             success = self.send_something(chat_id=chat_id, files=files, _type="audio")
         elif upload == "video":
-            #               Thumbnail of the video sent.
-            #                 The thumbnail should be in JPEG format and less than 200 KB in size.
-            #                 A thumbnail's width and height should not exceed 320 pixels.
-            methods = {"video": "thumbnail.jpg", "animation": None, "photo": None}
+            methods = {"video": self.get_metadata(files)["thumb"], "animation": None, "photo": None}
             for method, thumb in methods.items():
                 try:
                     success = self.send_something(chat_id=chat_id, files=files, _type=method, thumb=thumb)
