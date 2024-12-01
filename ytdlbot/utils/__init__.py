@@ -97,7 +97,7 @@ def extract_url_and_name(message_text):
     # Regular expression to match the URL
     url_pattern = r"(https?://[^\s]+)"
     # Regular expression to match the new name after '-n'
-    name_pattern = r"-n\s+([^\s]+)"
+    name_pattern = r'-n\s+(.+)$'
 
     # Find the URL in the message_text
     url_match = re.search(url_pattern, message_text)
