@@ -6,12 +6,6 @@
 
 This Telegram bot allows you to download videos from YouTube and [other supported websites](#supported-websites).
 
-# development
-install pre-commit
-```shell
-cp pre-push.py .git/hooks/pre-push
-chmod +x .git/hooks/pre-push
-```
 # Usage
 
 * EU🇪🇺: [https://t.me/benny_2ytdlbot](https://t.me/benny_2ytdlbot)
