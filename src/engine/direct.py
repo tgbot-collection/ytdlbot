@@ -36,7 +36,7 @@ class DirectDownloader(BaseDownloader):
         video_paths = None
         # Download process using aria2c
         try:
-            self._bot_msg.edit_text(f"Download Starting...", disable_web_page_preview=True)
+            self._bot_msg.__edit_text(f"Download Starting...", disable_web_page_preview=True)
             # Command to engine the link using aria2c
             command = [
                 "aria2c",
@@ -58,14 +58,14 @@ class DirectDownloader(BaseDownloader):
                 line = process.stdout.readline().decode("utf-8")
                 if line.startswith("[#"):
                     line = line.strip()
-                    self._bot_msg.edit_text(f"Downloading... \n\n`{line}`", disable_web_page_preview=True)
+                    self._bot_msg.__edit_text(f"Downloading... \n\n`{line}`", disable_web_page_preview=True)
                     break
                 iteration += 1
 
             if iteration >= max_iterations:
-                self._bot_msg.edit_text("Something went wrong. Please try again.", disable_web_page_preview=True)
+                self._bot_msg.__edit_text("Something went wrong. Please try again.", disable_web_page_preview=True)
         except Exception as e:
-            self._bot_msg.edit_text(f"Download failed!❌\n\n`{e}`", disable_web_page_preview=True)
+            self._bot_msg.__edit_text(f"Download failed!❌\n\n`{e}`", disable_web_page_preview=True)
             return
         # Get filename and extension correctly after engine
         filepath = list(pathlib.Path(tempdir).glob("*"))
@@ -73,7 +73,7 @@ class DirectDownloader(BaseDownloader):
         path_obj = pathlib.Path(file_path_obj)
         filename = path_obj.name
         logging.info("Downloaded file %s", filename)
-        self._bot_msg.edit_text(f"Download Complete", disable_web_page_preview=True)
+        self._bot_msg.__edit_text(f"Download Complete", disable_web_page_preview=True)
         ext = filetype.guess_extension(file_path_obj)
         # Rename file if it doesn't have extension
         if ext is not None and not filename.endswith(ext):
@@ -83,7 +83,7 @@ class DirectDownloader(BaseDownloader):
         video_paths = list(pathlib.Path(tempdir).glob("*"))
         self._client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_DOCUMENT)
         upload_processor(self._client, self._bot_msg, self._url, video_paths)
-        self._bot_msg.edit_text("Download success!✅")
+        self._bot_msg.__edit_text("Download success!✅")
 
     def _download(self, formats):
         if ENABLE_ARIA2:

@@ -32,7 +32,7 @@ class YoutubeDownload(BaseDownloader):
             # Add any remaining buttons as the last row
             if temp_row:
                 markup.append(temp_row)
-            self._bot_msg.edit_text("Choose the format", reply_markup=types.InlineKeyboardMarkup(markup))
+            self._bot_msg.__edit_text("Choose the format", reply_markup=types.InlineKeyboardMarkup(markup))
             return
         if download == "audio":
             # download audio only

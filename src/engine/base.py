@@ -4,20 +4,21 @@
 # ytdlbot - types.py
 
 import logging
+import re
 import tempfile
 import uuid
 from abc import ABC, abstractmethod
+from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
-from tqdm import tqdm
-from io import StringIO
+
 import ffmpeg
-import re
 import filetype
 from helper import debounce, sizeof_fmt
 from pyrogram import types
+from tqdm import tqdm
 
-from config import Types, TG_NORMAL_MAX_SIZE
+from config import TG_NORMAL_MAX_SIZE, Types
 from database import Redis
 from database.model import (
     get_download_settings,
@@ -113,7 +114,7 @@ class BaseDownloader(ABC):
         f.close()
         return text
 
-    def download_hook(self, d: dict, bot_msg):
+    def download_hook(self, d: dict):
         if d["status"] == "downloading":
             downloaded = d.get("downloaded_bytes", 0)
             total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
@@ -127,15 +128,15 @@ class BaseDownloader(ABC):
             eta = self.__remove_bash_color(d.get("_eta_str", d.get("eta")))
             text = self.__tqdm_progress("Downloading...", total, downloaded, speed, eta)
             # debounce in here
-            self.edit_text(bot_msg, text)
+            self.__edit_text(self._bot_msg, text)
 
-    def upload_hook(self, current, total, bot_msg):
+    def upload_hook(self, current, total):
         text = self.__tqdm_progress("Uploading...", total, current)
-        self.edit_text(bot_msg, text)
+        self.__edit_text(self._bot_msg, text)
 
     @debounce(5)
-    def edit_text(self, bot_msg: types.Message, text: str):
-        bot_msg.edit_text(text)
+    def __edit_text(self, text: str):
+        self._bot_msg.edit_text(text)
 
     def get_cache_fileid(self):
         unique = self._url + get_download_settings(self._url)
@@ -170,7 +171,7 @@ class BaseDownloader(ABC):
                 files[0],
                 caption=caption,
                 thumb=thumb,
-                progress=upload_hook,
+                progress=self.upload_hook,
                 progress_args=(self._bot_msg,),
                 **kwargs,
             )
