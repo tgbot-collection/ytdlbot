@@ -40,7 +40,7 @@ class InstagramDownload(BaseDownloader):
 
         return None
 
-    def _setup_formats(self):
+    def _setup_formats(self) -> list | None:
         pass
 
     def _download(self, formats):

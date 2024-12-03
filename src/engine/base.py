@@ -143,7 +143,7 @@ class BaseDownloader(ABC):
         return self._redis.get_send_cache(unique)
 
     @abstractmethod
-    def _setup_formats(self):
+    def _setup_formats(self) -> list | None:
         pass
 
     @abstractmethod

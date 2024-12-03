@@ -21,7 +21,7 @@ class DirectDownloader(BaseDownloader):
     def start(self):
         pass
 
-    def _setup_formats(self):
+    def _setup_formats(self) -> list | None:
         pass
 
     def _requests_download(self):
