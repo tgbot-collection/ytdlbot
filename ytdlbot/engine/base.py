@@ -9,13 +9,15 @@ import uuid
 from abc import ABC, abstractmethod
 from pathlib import Path
 from types import SimpleNamespace
-
+from tqdm import tqdm
+from io import StringIO
 import ffmpeg
+import re
 import filetype
-from helper import get_caption, upload_hook
+from helper import debounce, sizeof_fmt
 from pyrogram import types
 
-from config import Types
+from config import Types, TG_NORMAL_MAX_SIZE
 from database import Redis
 from database.model import (
     get_download_settings,
@@ -73,6 +75,67 @@ class BaseDownloader(ABC):
 
     def __del__(self):
         self._tempdir.cleanup()
+
+    @staticmethod
+    def __remove_bash_color(text):
+        return re.sub(r"\u001b|\[0;94m|\u001b\[0m|\[0;32m|\[0m|\[0;33m", "", text)
+
+    @staticmethod
+    def __tqdm_progress(desc, total, finished, speed="", eta=""):
+        def more(title, initial):
+            if initial:
+                return f"{title} {initial}"
+            else:
+                return ""
+
+        f = StringIO()
+        tqdm(
+            total=total,
+            initial=finished,
+            file=f,
+            ascii=False,
+            unit_scale=True,
+            ncols=30,
+            bar_format="{l_bar}{bar} |{n_fmt}/{total_fmt} ",
+        )
+        raw_output = f.getvalue()
+        tqdm_output = raw_output.split("|")
+        progress = f"`[{tqdm_output[1]}]`"
+        detail = tqdm_output[2].replace("[A", "")
+        text = f"""
+    {desc}
+
+    {progress}
+    {detail}
+    {more("Speed:", speed)}
+    {more("ETA:", eta)}
+        """
+        f.close()
+        return text
+
+    def download_hook(self, d: dict, bot_msg):
+        if d["status"] == "downloading":
+            downloaded = d.get("downloaded_bytes", 0)
+            total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
+
+            if total > TG_NORMAL_MAX_SIZE:
+                msg = f"Your download file size {sizeof_fmt(total)} is too large for Telegram."
+                raise Exception(msg)
+
+            # percent = remove_bash_color(d.get("_percent_str", "N/A"))
+            speed = self.__remove_bash_color(d.get("_speed_str", "N/A"))
+            eta = self.__remove_bash_color(d.get("_eta_str", d.get("eta")))
+            text = self.__tqdm_progress("Downloading...", total, downloaded, speed, eta)
+            # debounce in here
+            self.edit_text(bot_msg, text)
+
+    def upload_hook(self, current, total, bot_msg):
+        text = self.__tqdm_progress("Uploading...", total, current)
+        self.edit_text(bot_msg, text)
+
+    @debounce(5)
+    def edit_text(self, bot_msg: types.Message, text: str):
+        bot_msg.edit_text(text)
 
     def get_cache_fileid(self):
         unique = self._url + get_download_settings(self._url)

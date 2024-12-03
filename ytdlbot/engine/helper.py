@@ -30,7 +30,7 @@ from config import (
     ENABLE_ARIA2,
     TG_NORMAL_MAX_SIZE,
 )
-from utils import get_metadata, shorten_url, sizeof_fmt
+from utils import shorten_url, sizeof_fmt
 
 
 def ytdl_download(url: str, tempdir, bm, formats: list = None) -> list:
@@ -101,104 +101,6 @@ def debounce(wait_seconds):
         return wrapper
 
     return decorator
-
-
-@debounce(5)
-def edit_text(bot_msg: types.Message, text: str):
-    bot_msg.edit_text(text)
-
-
-def download_hook(d: dict, bot_msg):
-    if d["status"] == "downloading":
-        downloaded = d.get("downloaded_bytes", 0)
-        total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
-
-        if total > TG_NORMAL_MAX_SIZE:
-            msg = f"Your download file size {sizeof_fmt(total)} is too large for Telegram."
-            raise Exception(msg)
-
-        # percent = remove_bash_color(d.get("_percent_str", "N/A"))
-        speed = remove_bash_color(d.get("_speed_str", "N/A"))
-        eta = remove_bash_color(d.get("_eta_str", d.get("eta")))
-        text = tqdm_progress("Downloading...", total, downloaded, speed, eta)
-        # debounce in here
-        edit_text(bot_msg, text)
-
-
-def upload_hook(current, total, bot_msg):
-    text = tqdm_progress("Uploading...", total, current)
-    edit_text(bot_msg, text)
-
-
-def tqdm_progress(desc, total, finished, speed="", eta=""):
-    def more(title, initial):
-        if initial:
-            return f"{title} {initial}"
-        else:
-            return ""
-
-    f = StringIO()
-    tqdm(
-        total=total,
-        initial=finished,
-        file=f,
-        ascii=False,
-        unit_scale=True,
-        ncols=30,
-        bar_format="{l_bar}{bar} |{n_fmt}/{total_fmt} ",
-    )
-    raw_output = f.getvalue()
-    tqdm_output = raw_output.split("|")
-    progress = f"`[{tqdm_output[1]}]`"
-    detail = tqdm_output[2].replace("[A", "")
-    text = f"""
-{desc}
-
-{progress}
-{detail}
-{more("Speed:", speed)}
-{more("ETA:", eta)}
-    """
-    f.close()
-    return text
-
-
-def remove_bash_color(text):
-    return re.sub(r"\u001b|\[0;94m|\u001b\[0m|\[0;32m|\[0m|\[0;33m", "", text)
-
-
-def convert_to_mp4(video_paths: list, bot_msg):
-    default_type = ["video/x-flv", "video/webm"]
-    # all_converted = []
-    for path in video_paths:
-        # if we can't guess file type, we assume it's video/mp4
-        mime = getattr(filetype.guess(path), "mime", "video/mp4")
-        if mime in default_type:
-            edit_text(bot_msg, f"Converting {path.name} to mp4. Please wait.")
-            new_file_path = path.with_suffix(".mp4")
-            logging.info("Detected %s, converting to mp4...", mime)
-            run_ffmpeg_progressbar(["ffmpeg", "-y", "-i", path, new_file_path], bot_msg)
-            index = video_paths.index(path)
-            video_paths[index] = new_file_path
-
-
-class ProgressBar(tqdm):
-    b = None
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.bot_msg = self.b
-
-    def update(self, n=1):
-        super().update(n)
-        t = tqdm_progress("Converting...", self.total, self.n)
-        edit_text(self.bot_msg, t)
-
-
-def run_ffmpeg_progressbar(cmd_list: list, bm):
-    cmd_list = cmd_list.copy()[1:]
-    ProgressBar.b = bm
-    ffpb.main(cmd_list, tqdm=ProgressBar)
 
 
 def get_caption(url, video_path):
