@@ -15,7 +15,7 @@ from types import SimpleNamespace
 import ffmpeg
 import filetype
 from helper import debounce, sizeof_fmt
-from pyrogram import types
+from pyrogram import enums, types
 from tqdm import tqdm
 
 from config import TG_NORMAL_MAX_SIZE, Types
@@ -128,14 +128,14 @@ class BaseDownloader(ABC):
             eta = self.__remove_bash_color(d.get("_eta_str", d.get("eta")))
             text = self.__tqdm_progress("Downloading...", total, downloaded, speed, eta)
             # debounce in here
-            self.__edit_text(self._bot_msg, text)
+            self.edit_text(self._bot_msg, text)
 
     def upload_hook(self, current, total):
         text = self.__tqdm_progress("Uploading...", total, current)
-        self.__edit_text(self._bot_msg, text)
+        self.edit_text(self._bot_msg, text)
 
     @debounce(5)
-    def __edit_text(self, text: str):
+    def edit_text(self, text: str):
         self._bot_msg.edit_text(text)
 
     def get_cache_fileid(self):
@@ -147,7 +147,7 @@ class BaseDownloader(ABC):
         pass
 
     @abstractmethod
-    def _download(self, formats):
+    def _download(self, formats) -> list:
         # responsible for get format and download it
         pass
 
@@ -162,6 +162,7 @@ class BaseDownloader(ABC):
         }
 
     def send_something(self, *, chat_id, files, _type, caption=None, thumb=None, **kwargs):
+        self._client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_DOCUMENT)
         if len(files) > 1:
             inputs = generate_input_media(files, caption)
             return self._client.send_media_group(chat_id, inputs)[0]

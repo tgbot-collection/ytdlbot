@@ -35,7 +35,7 @@ class YoutubeDownload(BaseDownloader):
             # Add any remaining buttons as the last row
             if temp_row:
                 markup.append(temp_row)
-            self._bot_msg.__edit_text("Choose the format", reply_markup=types.InlineKeyboardMarkup(markup))
+            self._bot_msg.edit_text("Choose the format", reply_markup=types.InlineKeyboardMarkup(markup))
             return None
         if download == "audio":
             # download audio only
@@ -59,9 +59,8 @@ class YoutubeDownload(BaseDownloader):
             formats.append("worst")
         return formats
 
-    def _download(self, formats):
+    def _download(self, formats) -> list:
         output = Path(self._tempdir, "%(title).70s.%(ext)s").as_posix()
-
         ydl_opts = {
             "progress_hooks": [lambda d: self.download_hook(d)],
             "outtmpl": output,
