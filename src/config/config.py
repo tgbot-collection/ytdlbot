@@ -14,7 +14,7 @@ WORKERS: int = int(os.getenv("WORKERS", 100))
 APP_ID: int = int(os.getenv("APP_ID"))
 APP_HASH = os.getenv("APP_HASH")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-OWNER = os.getenv("OWNER")
+OWNER = [int(i) for i in os.getenv("OWNER").split(",")]
 # db settings
 AUTHORIZED_USER: str = os.getenv("AUTHORIZED_USER", "")
 MYSQL_DSN = os.getenv("MYSQL_DSN")
@@ -25,7 +25,7 @@ ENABLE_ARIA2 = os.getenv("ENABLE_ARIA2", False)
 RCLONE_PATH = os.getenv("RCLONE")
 
 # payment settings
-ENABLE_VIP = os.getenv("VIP", False)
+ENABLE_VIP = os.getenv("ENABLE_VIP", False)
 PROVIDER_TOKEN = os.getenv("PROVIDER_TOKEN")
 FREE_DOWNLOAD = int(os.getenv("FREE_DOWNLOAD", 5))
 TOKEN_PRICE = os.getenv("TOKEN_PRICE", 10)  # 1 USD=10 credits
@@ -35,7 +35,6 @@ TOKEN_PRICE = os.getenv("TOKEN_PRICE", 10)  # 1 USD=10 credits
 TG_NORMAL_MAX_SIZE = 2000 * 1024 * 1024
 CAPTION_URL_LENGTH_LIMIT = 150
 
-RATE_LIMIT = os.getenv("RATE_LIMIT", 120)
 # This will set the value for the tmpfile path(engine path). If not, will return None and use system’s default path.
 # Please ensure that the directory exists and you have necessary permissions to write to it.
 TMPFILE_PATH = os.getenv("TMPFILE_PATH")

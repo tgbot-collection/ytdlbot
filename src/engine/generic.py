@@ -6,10 +6,10 @@
 from pathlib import Path
 
 import yt_dlp
-from engine.base import BaseDownloader
 from pyrogram import types
 
 from database.model import get_download_settings
+from engine.base import BaseDownloader
 
 
 class YoutubeDownload(BaseDownloader):
@@ -60,7 +60,7 @@ class YoutubeDownload(BaseDownloader):
         return formats
 
     def _download(self, formats) -> list:
-        output = Path(self._tempdir, "%(title).70s.%(ext)s").as_posix()
+        output = Path(self._tempdir.name, "%(title).70s.%(ext)s").as_posix()
         ydl_opts = {
             "progress_hooks": [lambda d: self.download_hook(d)],
             "outtmpl": output,
@@ -77,7 +77,7 @@ class YoutubeDownload(BaseDownloader):
             ydl_opts["format"] = f
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([self._url])
-            files = list(Path(self._tempdir).glob("*"))
+            files = list(Path(self._tempdir.name).glob("*"))
             break
 
         return files

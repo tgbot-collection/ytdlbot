@@ -42,8 +42,8 @@ Low: 480P
 If you choose to send the video as a document, Telegram client will not be able stream it.
 
 Your current settings:
-Video quality: %s
-Sending type: %s
+Video quality: {}
+Sending type: {}
 """
 
 

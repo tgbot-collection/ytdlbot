@@ -49,7 +49,7 @@ def debounce(wait_seconds):
             now = time.time()
 
             # Assuming the first argument is the message object with chat.id and msg.id
-            bot_msg = args[0]
+            bot_msg = args[0]._bot_msg
             key = (bot_msg.chat.id, bot_msg.id)
 
             with lock:

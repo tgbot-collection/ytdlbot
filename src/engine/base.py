@@ -14,7 +14,6 @@ from types import SimpleNamespace
 
 import ffmpeg
 import filetype
-from engine.helper import debounce, sizeof_fmt
 from pyrogram import enums, types
 from tqdm import tqdm
 
@@ -27,6 +26,7 @@ from database.model import (
     get_upload_settings,
     use_quota,
 )
+from engine.helper import debounce, sizeof_fmt
 
 
 def generate_input_media(file_paths: list, cap: str) -> list:
@@ -68,8 +68,8 @@ class BaseDownloader(ABC):
     def __init__(self, client: Types.Client, bot_msg: Types.Message, url: str):
         self._client = client
         self._url = url
-        self._user_id = bot_msg.from_user.id
-        self._id = bot_msg.message_id
+        self._user_id = getattr(bot_msg.from_user, "id", None) or bot_msg.chat.id
+        self._id = bot_msg.id
         self._tempdir = tempfile.TemporaryDirectory(prefix="ytdl-")
         self._bot_msg: Types.Message = bot_msg
         self._redis = Redis()
@@ -127,12 +127,11 @@ class BaseDownloader(ABC):
             speed = self.__remove_bash_color(d.get("_speed_str", "N/A"))
             eta = self.__remove_bash_color(d.get("_eta_str", d.get("eta")))
             text = self.__tqdm_progress("Downloading...", total, downloaded, speed, eta)
-            # debounce in here
-            self.edit_text(self._bot_msg, text)
+            self.edit_text(text)
 
     def upload_hook(self, current, total):
         text = self.__tqdm_progress("Uploading...", total, current)
-        self.edit_text(self._bot_msg, text)
+        self.edit_text(text)
 
     @debounce(5)
     def edit_text(self, text: str):
@@ -173,7 +172,7 @@ class BaseDownloader(ABC):
                 caption=caption,
                 thumb=thumb,
                 progress=self.upload_hook,
-                progress_args=(self._bot_msg,),
+                # progress_args=(self._bot_msg,),
                 **kwargs,
             )
 
@@ -236,6 +235,8 @@ class BaseDownloader(ABC):
         unique = self._url + get_download_settings(self._url)
         obj = success.document or success.video or success.audio or success.animation or success.photo
         self._redis.add_send_cache(unique, getattr(obj, "file_id", None), upload)
+        # change progress bar to done
+        self._bot_msg.edit_text("✅ Success")
         return success
 
     @abstractmethod

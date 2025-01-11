@@ -96,7 +96,7 @@ ping - Ping the Bot
 
 ## Test video
 
-https://www.youtube.com/watch?v=BaW_jenozKc
+https://www.youtube.com/watch?v=V3RtA-1b_2E
 
 ## Test Playlist
 

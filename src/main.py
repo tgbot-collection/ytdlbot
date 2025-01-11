@@ -35,7 +35,7 @@ from config import (
     TOKEN_PRICE,
     BotText,
 )
-from database.model import init_user
+from database.model import get_download_settings, get_upload_settings, init_user
 from engine import youtube_entrance
 from utils import extract_url_and_name, sizeof_fmt, timeof_fmt
 
@@ -176,7 +176,7 @@ def stats_handler(client: Client, message: types.Message):
         f"<b>🤖Bot Uptime:</b> {timeof_fmt(time.time() - botStartTime)}\n"
     )
 
-    if message.chat.username == OWNER:
+    if message.from_user.id in OWNER:
         message.reply_text(owner_stats, quote=True)
     else:
         message.reply_text(user_stats, quote=True)
@@ -202,23 +202,9 @@ def settings_handler(client: Client, message: types.Message):
         ]
     )
 
-    client.send_message(chat_id, BotText.settings.format("a", "b"), reply_markup=markup)
-
-
-def check_link(url: str) -> str:
-    if url.startswith("https://www.instagram.com"):
-        return ""
-    ytdl = yt_dlp.YoutubeDL()
-    if re.findall(r"^https://www\.youtube\.com/channel/", url) or "list" in url:
-        # TODO maybe using ytdl.extract_info
-        return "Playlist or channel links are disabled."
-
-    if re.findall(r"m3u8|\.m3u8|\.m3u$", url.lower()):
-        return "m3u8 links are not supported."
-
-    with contextlib.suppress(yt_dlp.utils.DownloadError):
-        if ytdl.extract_info(url, download=False).get("live_status") == "is_live":
-            return "Live stream links are disabled. Please engine it after the stream ends."
+    quality = get_download_settings(chat_id)
+    send_type = get_upload_settings(chat_id)
+    client.send_message(chat_id, BotText.settings.format(quality, send_type), reply_markup=markup)
 
 
 @app.on_message(filters.command(["spdl"]))
@@ -270,7 +256,21 @@ def ytdl_handler(client: Client, message: types.Message):
         return
 
     bot_msg = message.reply_text("Request received.", quote=True)
-    ytdl_download_entrance(client, bot_msg, url)
+    youtube_entrance(client, bot_msg, url)
+
+
+def check_link(url: str):
+    ytdl = yt_dlp.YoutubeDL()
+    if re.findall(r"^https://www\.youtube\.com/channel/", url) or "list" in url:
+        # TODO maybe using ytdl.extract_info
+        raise ValueError("Playlist or channel links are disabled.")
+
+    if re.findall(r"m3u8|\.m3u8|\.m3u$", url.lower()):
+        raise ValueError("m3u8 links are not supported.")
+
+    with contextlib.suppress(yt_dlp.utils.DownloadError):
+        if ytdl.extract_info(url, download=False).get("live_status") == "is_live":
+            raise ValueError("Live stream links are disabled. Please engine it after the stream ends.")
 
 
 @app.on_message(filters.incoming & filters.text)
@@ -281,29 +281,27 @@ def download_handler(client: Client, message: types.Message):
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     url = message.text
     logging.info("start %s", url)
-    # TODO check link
-    if text := check_link(url):
-        message.reply_text(text, quote=True)
-        return
 
     try:
+        check_link(url)
         # raise pyrogram.errors.exceptions.FloodWait(10)
-        bot_msg: types.Message | Any = message.reply_text("Received.", quote=True)
+        bot_msg: types.Message | Any = message.reply_text("Task received.", quote=True)
+        client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_VIDEO)
+        youtube_entrance(client, bot_msg, url)
     except pyrogram.errors.Flood as e:
         f = BytesIO()
         f.write(str(e).encode())
         f.write(b"Your job will be done soon. Just wait!")
-        f.name = "Please don't flood me.txt"
-        bot_msg = message.reply_document(
-            f, caption=f"Flood wait! Please wait {e} seconds...." f"Your job will start automatically", quote=True
-        )
+        f.name = "Please wait.txt"
+        message.reply_document(f, caption=f"Flood wait! Please wait {e} seconds...", quote=True)
         f.close()
         client.send_message(OWNER, f"Flood wait! 🙁 {e} seconds....")
         time.sleep(e.value)
+    except ValueError as e:
+        message.reply_text(e.__str__(), quote=True)
 
-    client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_VIDEO)
-    bot_msg.chat = message.chat
-    youtube_entrance(client, bot_msg, url)
+    except Exception as e:
+        message.reply_text(f"❌ Download failed: {e}", quote=True)
 
 
 @app.on_callback_query(filters.regex(r"document|video|audio"))
@@ -344,7 +342,7 @@ if __name__ == "__main__":
  ▌  ▌ ▌ ▌ ▌  ▌  ▌ ▌ ▌ ▌ ▛▀  ▌ ▌ ▌ ▌ ▐▐▐  ▌ ▌ ▐  ▌ ▌ ▞▀▌ ▌ ▌
  ▘  ▝▀  ▝▀▘  ▘  ▝▀▘ ▀▀  ▝▀▘ ▀▀  ▝▀   ▘▘  ▘ ▘  ▘ ▝▀  ▝▀▘ ▝▀▘
 
-By @BennyThink, mode: {ENABLE_VIP} 
+By @BennyThink, VIP Mode: {ENABLE_VIP} 
     """
     print(banner)
     app.run()
