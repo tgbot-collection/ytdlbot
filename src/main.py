@@ -10,7 +10,6 @@ __author__ = "Benny <benny.think@gmail.com>"
 import contextlib
 import logging
 import re
-import tempfile
 import threading
 import time
 import typing
@@ -22,8 +21,6 @@ import pyrogram.errors
 import yt_dlp
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, enums, filters, types
-from pyrogram.raw import functions
-from pyrogram.raw import types as raw_types
 
 from config import (
     APP_HASH,
@@ -39,6 +36,7 @@ from config import (
     BotText,
 )
 from database.model import init_user
+from engine import youtube_entrance
 from utils import extract_url_and_name, sizeof_fmt, timeof_fmt
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
@@ -207,42 +205,7 @@ def settings_handler(client: Client, message: types.Message):
     client.send_message(chat_id, BotText.settings.format("a", "b"), reply_markup=markup)
 
 
-@app.on_callback_query(filters.regex(r"bot-payments-.*"))
-def bot_payment_btn_calback(client: Client, callback_query: types.CallbackQuery):
-    callback_query.answer("Generating invoice...")
-    chat_id = callback_query.message.chat.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-
-    data = callback_query.data
-    price = int(data.split("-")[-1])
-    payload = f"{chat_id}-buy"
-    invoice = generate_invoice(price, f"Buy {TOKEN_PRICE} engine tokens", "Pay by card", payload)
-    app.invoke(
-        functions.messages.SendMedia(
-            peer=(raw_types.InputPeerUser(user_id=chat_id, access_hash=0)),
-            media=invoice,
-            random_id=app.rnd_id(),
-            message="Buy more engine token",
-        )
-    )
-
-
-def generate_invoice(amount: int, title: str, description: str, payload: str):
-    invoice = raw_types.input_media_invoice.InputMediaInvoice(
-        invoice=raw_types.invoice.Invoice(
-            currency="USD", prices=[raw_types.LabeledPrice(label="price", amount=amount)]
-        ),
-        title=title,
-        description=description,
-        provider=PROVIDER_TOKEN,
-        provider_data=raw_types.DataJSON(data="{}"),
-        payload=payload.encode(),
-        start_param=payload,
-    )
-    return invoice
-
-
-def link_checker(url: str) -> str:
+def check_link(url: str) -> str:
     if url.startswith("https://www.instagram.com"):
         return ""
     ytdl = yt_dlp.YoutubeDL()
@@ -295,7 +258,7 @@ def leech_handler(client: Client, message: types.Message):
 
 @app.on_message(filters.command(["ytdl"]))
 def ytdl_handler(client: Client, message: types.Message):
-    # for group
+    # for group usage
     chat_id = message.from_user.id
     init_user(chat_id)
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
@@ -319,10 +282,13 @@ def download_handler(client: Client, message: types.Message):
     url = message.text
     logging.info("start %s", url)
     # TODO check link
+    if text := check_link(url):
+        message.reply_text(text, quote=True)
+        return
 
     try:
         # raise pyrogram.errors.exceptions.FloodWait(10)
-        bot_msg: types.Message | Any = message.reply_text("Acked", quote=True)
+        bot_msg: types.Message | Any = message.reply_text("Received.", quote=True)
     except pyrogram.errors.Flood as e:
         f = BytesIO()
         f.write(str(e).encode())
@@ -337,7 +303,7 @@ def download_handler(client: Client, message: types.Message):
 
     client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_VIDEO)
     bot_msg.chat = message.chat
-    ytdl_download_entrance(client, bot_msg, url)
+    youtube_entrance(client, bot_msg, url)
 
 
 @app.on_callback_query(filters.regex(r"document|video|audio"))
@@ -367,26 +333,9 @@ def audio_callback(client: Client, callback_query: types.CallbackQuery):
     audio_entrance(client, callback_query.message)
 
 
-@app.on_raw_update()
-def raw_update(client: Client, update, users, chats):
-    action = getattr(getattr(update, "message", None), "action", None)
-    if update.QUALNAME == "types.UpdateBotPrecheckoutQuery":
-        client.invoke(
-            functions.messages.SetBotPrecheckoutResults(
-                query_id=update.query_id,
-                success=True,
-            )
-        )
-    elif action and action.QUALNAME == "types.MessageActionPaymentSentMe":
-        logging.info("Payment received. %s", action)
-        uid = update.message.peer_id.user_id
-        amount = action.total_amount / 100
-        client.send_message(uid, f"Thank you {uid}. Payment received: {amount} {action.currency}")
-
-
 if __name__ == "__main__":
     botStartTime = time.time()
-    scheduler = BackgroundScheduler(timezone="Europe/London")
+    scheduler = BackgroundScheduler()
     # scheduler.add_job( reset_today, "cron", hour=0, minute=0)
     scheduler.start()
     banner = f"""

@@ -65,13 +65,13 @@ def generate_input_media(file_paths: list, cap: str) -> list:
 
 
 class BaseDownloader(ABC):
-    def __init__(self, client: Types.Client, url: str, user_id: int, _id: int):
+    def __init__(self, client: Types.Client, bot_msg: Types.Message, url: str):
         self._client = client
         self._url = url
-        self._user_id = user_id
-        self._id = _id
+        self._user_id = bot_msg.from_user.id
+        self._id = bot_msg.message_id
         self._tempdir = tempfile.TemporaryDirectory(prefix="ytdl-")
-        self._bot_msg: Types.Message = self._client.get_messages(self._user_id, self._id)
+        self._bot_msg: Types.Message = bot_msg
         self._redis = Redis()
 
     def __del__(self):

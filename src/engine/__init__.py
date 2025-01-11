@@ -5,6 +5,13 @@
 
 from urllib.parse import urlparse
 
+from generic import YoutubeDownload
+
+
+def youtube_entrance(client, bot_message, url):
+    youtube = YoutubeDownload(client, bot_message, url)
+    youtube.start()
+
 
 def special_download_entrance(url: str, tempdir: str, bm, **kwargs) -> list:
     """Specific link downloader"""
