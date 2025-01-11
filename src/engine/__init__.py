@@ -5,7 +5,7 @@
 
 from urllib.parse import urlparse
 
-from generic import YoutubeDownload
+from engine.generic import YoutubeDownload
 
 
 def youtube_entrance(client, bot_message, url):

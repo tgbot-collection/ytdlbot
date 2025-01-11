@@ -14,7 +14,7 @@ from types import SimpleNamespace
 
 import ffmpeg
 import filetype
-from helper import debounce, sizeof_fmt
+from engine.helper import debounce, sizeof_fmt
 from pyrogram import enums, types
 from tqdm import tqdm
 
@@ -27,24 +27,6 @@ from database.model import (
     get_upload_settings,
     use_quota,
 )
-
-
-def record_usage(func):
-    def wrapper(self: BaseDownloader, *args, **kwargs):
-        free, paid = get_free_quota(self._user_id), get_paid_quota(self._user_id)
-        if free + paid < 0:
-            raise Exception("Usage limit exceeded")
-        # check cache first
-        result = None
-        if caches := self.get_cache_fileid():
-            for fid, _type in caches.items():
-                self._methods[caches[_type]](self._user_id, fid)
-        else:
-            result = func(self, *args, **kwargs)  # Call the original method
-        use_quota(self._user_id)
-        return result
-
-    return wrapper
 
 
 def generate_input_media(file_paths: list, cap: str) -> list:
@@ -62,6 +44,24 @@ def generate_input_media(file_paths: list, cap: str) -> list:
 
     input_media[0].caption = cap
     return input_media
+
+
+def record_usage(func):
+    def wrapper(self, *args, **kwargs):
+        free, paid = get_free_quota(self._user_id), get_paid_quota(self._user_id)
+        if free + paid < 0:
+            raise Exception("Usage limit exceeded")
+        # check cache first
+        result = None
+        if caches := self.get_cache_fileid():
+            for fid, _type in caches.items():
+                self._methods[caches[_type]](self._user_id, fid)
+        else:
+            result = func(self, *args, **kwargs)  # Call the original method
+        use_quota(self._user_id)
+        return result
+
+    return wrapper
 
 
 class BaseDownloader(ABC):
