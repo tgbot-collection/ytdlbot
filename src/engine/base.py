@@ -176,9 +176,9 @@ class BaseDownloader(ABC):
                 **kwargs,
             )
 
-    @staticmethod
-    def get_metadata(files):
-        video_path = files[0]
+    def get_metadata(self):
+        video_path = list(Path(self._tempdir.name).glob("*"))[0]
+        filename = Path(video_path).name
         width = height = duration = 0
         try:
             video_streams = ffmpeg.probe(video_path, select_streams="v")
@@ -199,40 +199,47 @@ class BaseDownloader(ABC):
         except ffmpeg._run.Error:
             thumb = None
 
-        return dict(height=height, width=width, duration=duration, thumb=thumb)
+        caption = f"{self._url}\n{filename}\n\nResolution: {width}x{height}\nDuration: {duration} seconds"
+        return dict(height=height, width=width, duration=duration, thumb=thumb, caption=caption)
 
     @record_usage
     def _upload(self):
         upload = get_upload_settings(self._user_id)
-        chat_id = self._bot_msg.chat.id
+        # we only support single file upload
         files = list(Path(self._tempdir.name).glob("*"))
+        meta = self.get_metadata()
 
         success = SimpleNamespace(document=None, video=None, audio=None, animation=None, photo=None)
         if upload == "document":
-            thumb = self.get_metadata(files)["thumb"]
             success = self.send_something(
-                chat_id=chat_id,
+                chat_id=self._user_id,
                 files=files,
                 _type="document",
-                thumb=thumb,
+                thumb=meta["thumb"],
                 force_document=True,
+                caption=meta["caption"],
             )
         elif upload == "audio":
-            success = self.send_something(chat_id=chat_id, files=files, _type="audio")
+            success = self.send_something(
+                chat_id=self._user_id,
+                files=files,
+                _type="audio",
+                caption=meta["caption"],
+            )
         elif upload == "video":
-            methods = {"video": self.get_metadata(files)["thumb"], "animation": None, "photo": None}
+            methods = {"video": meta, "animation": {}, "photo": {}}
             for method, thumb in methods.items():
                 try:
-                    success = self.send_something(chat_id=chat_id, files=files, _type=method, thumb=thumb)
+                    success = self.send_something(chat_id=self._user_id, files=files, _type=method, **meta)
                     break
-                except Exception:
-                    logging.error("Retry to send as %s", method)
+                except Exception as e:
+                    logging.error("Retry to send as %s, error:", method, e)
         else:
             logging.error("Unknown upload settings")
             return
 
         # unique link is link+download_format
-        unique = self._url + get_download_settings(self._url)
+        unique = self._url + get_download_settings(self._url) + upload
         obj = success.document or success.video or success.audio or success.animation or success.photo
         self._redis.add_send_cache(unique, getattr(obj, "file_id", None), upload)
         # change progress bar to done

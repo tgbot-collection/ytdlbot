@@ -263,12 +263,13 @@ def check_link(url: str):
     ytdl = yt_dlp.YoutubeDL()
     if re.findall(r"^https://www\.youtube\.com/channel/", url) or "list" in url:
         # TODO maybe using ytdl.extract_info
-        raise ValueError("Playlist or channel links are disabled.")
+        raise ValueError("Playlist or channel download are not supported at this moment.")
 
     if re.findall(r"m3u8|\.m3u8|\.m3u$", url.lower()):
         raise ValueError("m3u8 links are not supported.")
 
     with contextlib.suppress(yt_dlp.utils.DownloadError):
+        # TODO remove it or try 'match_filter': '!is_live',
         if ytdl.extract_info(url, download=False).get("live_status") == "is_live":
             raise ValueError("Live stream links are disabled. Please engine it after the stream ends.")
 
@@ -299,7 +300,6 @@ def download_handler(client: Client, message: types.Message):
         time.sleep(e.value)
     except ValueError as e:
         message.reply_text(e.__str__(), quote=True)
-
     except Exception as e:
         message.reply_text(f"❌ Download failed: {e}", quote=True)
 
