@@ -46,24 +46,6 @@ def generate_input_media(file_paths: list, cap: str) -> list:
     return input_media
 
 
-def record_usage(func):
-    def wrapper(self, *args, **kwargs):
-        free, paid = get_free_quota(self._user_id), get_paid_quota(self._user_id)
-        if free + paid < 0:
-            raise Exception("Usage limit exceeded")
-        # check cache first
-        result = None
-        if caches := self.get_cache_fileid():
-            for fid, _type in caches.items():
-                self._methods[caches[_type]](self._user_id, fid)
-        else:
-            result = func(self, *args, **kwargs)  # Call the original method
-        use_quota(self._user_id)
-        return result
-
-    return wrapper
-
-
 class BaseDownloader(ABC):
     def __init__(self, client: Types.Client, bot_msg: Types.Message, url: str):
         self._client = client
@@ -73,9 +55,18 @@ class BaseDownloader(ABC):
         self._tempdir = tempfile.TemporaryDirectory(prefix="ytdl-")
         self._bot_msg: Types.Message = bot_msg
         self._redis = Redis()
+        self._record_usage()
 
     def __del__(self):
         self._tempdir.cleanup()
+
+    def _record_usage(self):
+        free, paid = get_free_quota(self._user_id), get_paid_quota(self._user_id)
+        logging.info("User %s has %s free and %s paid quota", self._user_id, free, paid)
+        if free + paid < 0:
+            raise Exception("Usage limit exceeded")
+
+        use_quota(self._user_id)
 
     @staticmethod
     def __remove_bash_color(text):
@@ -202,7 +193,6 @@ class BaseDownloader(ABC):
         caption = f"{self._url}\n{filename}\n\nResolution: {width}x{height}\nDuration: {duration} seconds"
         return dict(height=height, width=width, duration=duration, thumb=thumb, caption=caption)
 
-    @record_usage
     def _upload(self):
         upload = get_upload_settings(self._user_id)
         # we only support single file upload
