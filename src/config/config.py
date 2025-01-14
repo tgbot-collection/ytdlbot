@@ -17,7 +17,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 OWNER = [int(i) for i in os.getenv("OWNER").split(",")]
 # db settings
 AUTHORIZED_USER: str = os.getenv("AUTHORIZED_USER", "")
-MYSQL_DSN = os.getenv("MYSQL_DSN")
+DB_DSN = os.getenv("DB_DSN")
 REDIS_HOST = os.getenv("REDIS_HOST")
 ENABLE_FFMPEG = os.getenv("ENABLE_FFMPEG", False)
 AUDIO_FORMAT = os.getenv("AUDIO_FORMAT")
