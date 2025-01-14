@@ -5,7 +5,7 @@ import os
 from contextlib import contextmanager
 from typing import Literal
 
-from sqlalchemy import Column, Enum, Float, ForeignKey, Integer, String, create_engine
+from sqlalchemy import Column, Enum, Float, ForeignKey, Integer, String, create_engine, BigInteger
 from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -22,7 +22,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, unique=True, nullable=False)  # telegram user id
+    user_id = Column(BigInteger, unique=True, nullable=False)  # telegram user id
     free = Column(Integer, default=FREE_DOWNLOAD)
     paid = Column(Integer, default=0)
     config = Column(JSON)
