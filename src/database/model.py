@@ -56,7 +56,7 @@ class Payment(Base):
 
 def create_session():
     engine = create_engine(
-        "mysql+pymysql://root:root@localhost/ytdlbot",
+        os.getenv("DB_DSN"),
         pool_size=50,
         max_overflow=100,
         pool_timeout=30,
