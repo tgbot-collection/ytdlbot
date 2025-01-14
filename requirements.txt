@@ -1,5 +1,5 @@
 tgcrypto>=1.2.5
-yt-dlp==2024.12.23
+yt-dlp==2025.1.12
 APScheduler>=3.11.0
 ffmpeg-python>=0.2.0
 PyMySQL>=1.1.1
@@ -16,3 +16,4 @@ sqlalchemy>=2.0.36
 psutil>=6.1.0
 ffpb>=0.4.1
 kurigram>=2.1.36
+cryptography>=43.0.3

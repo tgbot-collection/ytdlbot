@@ -20,10 +20,10 @@ from tqdm import tqdm
 from config import TG_NORMAL_MAX_SIZE, Types
 from database import Redis
 from database.model import (
-    get_quality_settings,
+    get_format_settings,
     get_free_quota,
     get_paid_quota,
-    get_format_settings,
+    get_quality_settings,
     use_quota,
 )
 from engine.helper import debounce, sizeof_fmt
