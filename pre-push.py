@@ -19,4 +19,4 @@ with open("requirements.txt", "w") as file:
 
 # commit with amend
 subprocess.run(["git", "add", "requirements.txt"])
-subprocess.run(["git", "commit", "--amend", "--no-edit"])
+subprocess.run(["git", "commit", "-m", "pre-push"])

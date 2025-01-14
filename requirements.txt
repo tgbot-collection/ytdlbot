@@ -5,8 +5,8 @@ ffmpeg-python>=0.2.0
 PyMySQL>=1.1.1
 filetype>=1.2.0
 beautifulsoup4>=4.12.3
-fakeredis>=2.26.1
-redis>=5.2.0
+fakeredis>=2.26.2
+redis==5.2.1
 requests>=2.32.3
 tqdm>=4.67.1
 token-bucket>=0.3.0
