@@ -3,6 +3,7 @@
 [![docker image](https://github.com/tgbot-collection/ytdlbot/actions/workflows/builder.yaml/badge.svg)](https://github.com/tgbot-collection/ytdlbot/actions/workflows/builder.yaml)
 
 **YouTube Download Bot🚀🎬⬇️**
+🧰Refactor ongoing🧰
 
 This Telegram bot allows you to download videos from YouTube and [other supported websites](#supported-websites).
 
@@ -24,10 +25,11 @@ Just send a link directly to the bot.
     * Instagram (Videos, Photos, Reels, IGTV & carousel)
     * Pixeldrain
     * KrakenFiles
-    * Terabox (file/~~folders~~) (you need to add cookies txt in ytdlbot folder with name) 
-    [terabox.txt](https://github.com/ytdl-org/youtube-dl#how-do-i-pass-cookies-to-youtube-dl).
+    * Terabox (file/~~folders~~) (you need to add cookies txt in ytdlbot folder with name)
+      [terabox.txt](https://github.com/ytdl-org/youtube-dl#how-do-i-pass-cookies-to-youtube-dl).
 
 # Features
+
 1. fast download and upload.
 2. No ads
 3. download & upload progress bar
@@ -36,12 +38,10 @@ Just send a link directly to the bot.
 6. cache mechanism - download once for the same video.
 7. Supports multiple download engines (yt-dlp, aria2, requests).
 
- 
 > ## Limitations
 > Due to limitations on servers and bandwidth, there are some restrictions on this free service.
 > * Each user is limited to 3 free downloads every day.
- 
-  
+
 # Screenshots
 
 ## Normal download
@@ -59,12 +59,12 @@ Just send a link directly to the bot.
 This bot can be deployed on any platform that supports Python.
 
 ## Run natively on your machine
+
 * use pdm
 * pdm install
 * copy .env.example to .env
 * python main.py
- 
- 
+
 ## Docker
 
 One line command to run the bot
@@ -75,7 +75,6 @@ docker run -e APP_ID=111 -e APP_HASH=111 -e TOKEN=370FXI bennythink/ytdlbot
 
 # Complete deployment guide for docker-compose
 
- 
 # Command
 
 ```
@@ -91,6 +90,7 @@ ping - Ping the Bot
 ```
 
 # Test data
+
 <details><summary>Tap to expand</summary>
 
 ## Test video
