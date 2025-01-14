@@ -3,6 +3,7 @@
 
 # ytdlbot - generic.py
 
+import os
 from pathlib import Path
 
 import yt_dlp
@@ -19,6 +20,7 @@ class YoutubeDownload(BaseDownloader):
         formats = []
         # "high", "medium", "low", "audio", "custom"
         if download == "custom":
+            # TODO:
             # get format from ytdlp, send inlinekeyboard button to user so they can choose
             # another callback will be triggered to download the video
             available_options = {
@@ -67,6 +69,11 @@ class YoutubeDownload(BaseDownloader):
             "restrictfilenames": False,
             "quiet": True,
         }
+        # setup cookies for youtube only
+        if self._url.startswith("https://www.youtube.com/") or self._url.startswith("https://youtu.be/"):
+            if os.path.exists("cookies.txt"):
+                # src/cookies.txt
+                ydl_opts["cookiefile"] = "cookies.txt"
 
         if self._url.startswith("https://drive.google.com"):
             # Always use the `source` format for Google Drive URLs.
