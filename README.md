@@ -29,18 +29,17 @@ Just send a link directly to the bot.
 
 # Features
 1. fast download and upload.
-2. ads free
-3. support progress bar
-4. audio conversion
-5. different video resolutions
-6. sending as file or streaming as video
-7. cache mechanism - download once for the same video.
-8. Supports multiple download engines (yt-dlp, aria2, requests).
+2. No ads
+3. download & upload progress bar
+4. download quality selection
+5. upload format: file, video, audio
+6. cache mechanism - download once for the same video.
+7. Supports multiple download engines (yt-dlp, aria2, requests).
 
  
 > ## Limitations
 > Due to limitations on servers and bandwidth, there are some restrictions on this free service.
-> * Each user is limited to 5 free downloads per 24-hour period
+> * Each user is limited to 3 free downloads every day.
  
   
 # Screenshots
