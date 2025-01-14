@@ -19,7 +19,7 @@ class BotText:
     EU🇪🇺: @benny_2ytdlbot
     SG🇸🇬：@benny_ytdlbot
 
-    Join https://t.me/+OGRC8tp9-U9mZDZl for updates."""
+    Join https://t.me/+OGRC8tp9-U9mZDZl for updates.\n\n"""
 
     help = """
 1. For YouTube and any websites supported by yt-dlp, just send the link and we will engine and send it to you.

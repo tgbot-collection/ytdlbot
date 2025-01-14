@@ -35,7 +35,14 @@ from config import (
     TOKEN_PRICE,
     BotText,
 )
-from database.model import get_download_settings, get_upload_settings, init_user, set_user_settings
+from database.model import (
+    get_download_settings,
+    get_upload_settings,
+    init_user,
+    set_user_settings,
+    get_free_quota,
+    get_paid_quota,
+)
 from engine import youtube_entrance
 from utils import extract_url_and_name, sizeof_fmt, timeof_fmt
 
@@ -88,7 +95,12 @@ def start_handler(client: Client, message: types.Message):
     init_user(from_id)
     logging.info("%s welcome to youtube-dl bot!", message.from_user.id)
     client.send_chat_action(from_id, enums.ChatAction.TYPING)
-    client.send_message(message.chat.id, BotText.start, disable_web_page_preview=True)
+    free, paid = get_free_quota(from_id), get_paid_quota(from_id)
+    client.send_message(
+        from_id,
+        BotText.start + f"You have {free} free and {paid} paid quota.",
+        disable_web_page_preview=True,
+    )
 
 
 @app.on_message(filters.command(["help"]))
