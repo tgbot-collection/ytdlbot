@@ -10,7 +10,7 @@ WORKDIR /app
 
 RUN apk update && apk add --no-cache ffmpeg aria2
 COPY --from=pybuilder /build/.venv/lib/ /usr/local/lib/
-COPY ytdlbot /app
+COPY src /app
 WORKDIR /app
 
 CMD ["python" ,"main.py"]

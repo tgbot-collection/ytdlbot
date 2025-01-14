@@ -85,9 +85,9 @@ class YoutubeDownload(BaseDownloader):
         }
         # setup cookies for youtube only
         if self._url.startswith("https://www.youtube.com/") or self._url.startswith("https://youtu.be/"):
-            if os.path.exists("cookies.txt"):
+            if os.path.isfile("youtube-cookies.txt"):
                 # src/cookies.txt
-                ydl_opts["cookiefile"] = "cookies.txt"
+                ydl_opts["cookiefile"] = "youtube-cookies.txt"
 
         if self._url.startswith("https://drive.google.com"):
             # Always use the `source` format for Google Drive URLs.

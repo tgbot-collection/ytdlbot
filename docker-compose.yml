@@ -23,5 +23,7 @@ services:
     env_file:
       - .env
     restart: always
+    volumes:
+      - ./youtube-cookies.txt:/app/youtube-cookies.txt
     depends_on:
       - redis
