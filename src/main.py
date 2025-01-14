@@ -50,7 +50,7 @@ logging.info("Authorized users are %s", AUTHORIZED_USER)
 logging.getLogger("apscheduler.executors.default").propagate = False
 
 
-def create_app(name: str, workers: int = 32) -> Client:
+def create_app(name: str, workers: int = 64) -> Client:
     return Client(
         name,
         APP_ID,
@@ -332,17 +332,6 @@ def download_resolution_callback(client: Client, callback_query: types.CallbackQ
     logging.info("Setting %s download quality to %s", chat_id, data)
     callback_query.answer(f"Your default engine quality was set to {callback_query.data}")
     set_user_settings(chat_id, "download", data)
-
-
-@app.on_callback_query(filters.regex(r"convert"))
-def audio_callback(client: Client, callback_query: types.CallbackQuery):
-    if not ENABLE_FFMPEG:
-        callback_query.answer("Request rejected.")
-        callback_query.message.reply_text("Audio conversion is disabled now.")
-        return
-
-    callback_query.answer(f"Converting to audio...please wait patiently")
-    audio_entrance(client, callback_query.message)
 
 
 if __name__ == "__main__":
