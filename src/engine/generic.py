@@ -3,11 +3,11 @@
 
 # ytdlbot - generic.py
 
+import logging
 import os
 from pathlib import Path
 
 import yt_dlp
-from pyrogram import types
 
 from database.model import get_format_settings, get_quality_settings
 from engine.base import BaseDownloader
@@ -96,6 +96,7 @@ class YoutubeDownload(BaseDownloader):
         files = None
         for f in formats:
             ydl_opts["format"] = f
+            logging.info("yt-dlp options: %s", ydl_opts)
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([self._url])
             files = list(Path(self._tempdir.name).glob("*"))
