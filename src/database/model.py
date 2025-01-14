@@ -164,3 +164,11 @@ def init_user(uid: int):
         user = session.query(User).filter(User.user_id == uid).first()
         if not user:
             session.add(User(user_id=uid))
+
+
+def reset_free():
+    with session_manager() as session:
+        users = session.query(User).all()
+        for user in users:
+            user.free = FREE_DOWNLOAD
+        session.commit()

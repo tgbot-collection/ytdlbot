@@ -42,6 +42,7 @@ from database.model import (
     set_user_settings,
     get_free_quota,
     get_paid_quota,
+    reset_free,
 )
 from engine import youtube_entrance
 from utils import extract_url_and_name, sizeof_fmt, timeof_fmt
@@ -337,7 +338,7 @@ def download_resolution_callback(client: Client, callback_query: types.CallbackQ
 if __name__ == "__main__":
     botStartTime = time.time()
     scheduler = BackgroundScheduler()
-    # scheduler.add_job( reset_today, "cron", hour=0, minute=0)
+    scheduler.add_job(reset_free, "cron", hour=0, minute=0)
     scheduler.start()
     banner = f"""
 ▌ ▌         ▀▛▘     ▌       ▛▀▖              ▜            ▌
