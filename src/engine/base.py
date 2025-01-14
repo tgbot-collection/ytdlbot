@@ -20,10 +20,10 @@ from tqdm import tqdm
 from config import TG_NORMAL_MAX_SIZE, Types
 from database import Redis
 from database.model import (
-    get_download_settings,
+    get_quality_settings,
     get_free_quota,
     get_paid_quota,
-    get_upload_settings,
+    get_format_settings,
     use_quota,
 )
 from engine.helper import debounce, sizeof_fmt
@@ -129,7 +129,7 @@ class BaseDownloader(ABC):
         self._bot_msg.edit_text(text)
 
     def get_cache_fileid(self):
-        unique = self._url + get_download_settings(self._url)
+        unique = self._url + get_quality_settings(self._url)
         return self._redis.get_send_cache(unique)
 
     @abstractmethod
@@ -194,7 +194,7 @@ class BaseDownloader(ABC):
         return dict(height=height, width=width, duration=duration, thumb=thumb, caption=caption)
 
     def _upload(self):
-        upload = get_upload_settings(self._user_id)
+        upload = get_format_settings(self._user_id)
         # we only support single file upload
         files = list(Path(self._tempdir.name).glob("*"))
         meta = self.get_metadata()
@@ -229,7 +229,7 @@ class BaseDownloader(ABC):
             return
 
         # unique link is link+download_format
-        unique = self._url + get_download_settings(self._url) + upload
+        unique = self._url + get_quality_settings(self._url) + upload
         obj = success.document or success.video or success.audio or success.animation or success.photo
         self._redis.add_send_cache(unique, getattr(obj, "file_id", None), upload)
         # change progress bar to done

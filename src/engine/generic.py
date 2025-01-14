@@ -9,14 +9,14 @@ from pathlib import Path
 import yt_dlp
 from pyrogram import types
 
-from database.model import get_download_settings
+from database.model import get_quality_settings
 from engine.base import BaseDownloader
 
 
 class YoutubeDownload(BaseDownloader):
 
     def _setup_formats(self) -> list | None:
-        download = get_download_settings(self._user_id)
+        download = get_quality_settings(self._user_id)
         formats = []
         # "high", "medium", "low", "audio", "custom"
         if download == "custom":

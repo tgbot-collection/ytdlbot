@@ -36,8 +36,8 @@ from config import (
     BotText,
 )
 from database.model import (
-    get_download_settings,
-    get_upload_settings,
+    get_quality_settings,
+    get_format_settings,
     init_user,
     set_user_settings,
     get_free_quota,
@@ -215,8 +215,8 @@ def settings_handler(client: Client, message: types.Message):
         ]
     )
 
-    quality = get_download_settings(chat_id)
-    send_type = get_upload_settings(chat_id)
+    quality = get_quality_settings(chat_id)
+    send_type = get_format_settings(chat_id)
     client.send_message(chat_id, BotText.settings.format(quality, send_type), reply_markup=markup)
 
 
@@ -318,21 +318,21 @@ def download_handler(client: Client, message: types.Message):
 
 
 @app.on_callback_query(filters.regex(r"document|video|audio"))
-def send_method_callback(client: Client, callback_query: types.CallbackQuery):
+def format_callback(client: Client, callback_query: types.CallbackQuery):
     chat_id = callback_query.message.chat.id
     data = callback_query.data
     logging.info("Setting %s file type to %s", chat_id, data)
     callback_query.answer(f"Your send type was set to {callback_query.data}")
-    set_user_settings(chat_id, "upload", data)
+    set_user_settings(chat_id, "format", data)
 
 
 @app.on_callback_query(filters.regex(r"high|medium|low"))
-def download_resolution_callback(client: Client, callback_query: types.CallbackQuery):
+def quality_callback(client: Client, callback_query: types.CallbackQuery):
     chat_id = callback_query.message.chat.id
     data = callback_query.data
     logging.info("Setting %s download quality to %s", chat_id, data)
     callback_query.answer(f"Your default engine quality was set to {callback_query.data}")
-    set_user_settings(chat_id, "download", data)
+    set_user_settings(chat_id, "quality", data)
 
 
 if __name__ == "__main__":
