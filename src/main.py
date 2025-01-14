@@ -35,7 +35,7 @@ from config import (
     TOKEN_PRICE,
     BotText,
 )
-from database.model import get_download_settings, get_upload_settings, init_user
+from database.model import get_download_settings, get_upload_settings, init_user, set_user_settings
 from engine import youtube_entrance
 from utils import extract_url_and_name, sizeof_fmt, timeof_fmt
 
@@ -310,14 +310,16 @@ def send_method_callback(client: Client, callback_query: types.CallbackQuery):
     data = callback_query.data
     logging.info("Setting %s file type to %s", chat_id, data)
     callback_query.answer(f"Your send type was set to {callback_query.data}")
+    set_user_settings(chat_id, "upload", data)
 
 
 @app.on_callback_query(filters.regex(r"high|medium|low"))
 def download_resolution_callback(client: Client, callback_query: types.CallbackQuery):
     chat_id = callback_query.message.chat.id
     data = callback_query.data
-    logging.info("Setting %s file type to %s", chat_id, data)
+    logging.info("Setting %s download quality to %s", chat_id, data)
     callback_query.answer(f"Your default engine quality was set to {callback_query.data}")
+    set_user_settings(chat_id, "download", data)
 
 
 @app.on_callback_query(filters.regex(r"convert"))

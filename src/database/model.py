@@ -27,7 +27,7 @@ class User(Base):
     paid = Column(Integer, default=0)
     config = Column(JSON)
 
-    settings = relationship("Setting", back_populates="user", cascade="all, delete-orphan")
+    settings = relationship("Setting", back_populates="user", cascade="all, delete-orphan", uselist=False)
     payments = relationship("Payment", back_populates="user", cascade="all, delete-orphan")
 
 
@@ -82,31 +82,34 @@ def session_manager():
         s.close()
 
 
-def get_download_settings(uid) -> Literal["high", "medium", "low", "audio", "custom"]:
+def get_download_settings(tgid) -> Literal["high", "medium", "low", "audio", "custom"]:
     with session_manager() as session:
-        data = session.query(Setting).filter(Setting.user_id == uid).first()
-        if data:
-            return data.download
+        user = session.query(User).filter(User.user_id == tgid).first()
+        if user and user.settings:
+            return user.settings.download
+
         return "high"
 
 
-def get_upload_settings(uid) -> Literal["video", "audio", "document"]:
+def get_upload_settings(tgid) -> Literal["video", "audio", "document"]:
     with session_manager() as session:
-        data = session.query(Setting).filter(Setting.user_id == uid).first()
-        if data:
-            return data.upload
+        user = session.query(User).filter(User.user_id == tgid).first()
+        if user and user.settings:
+            return user.settings.upload
         return "video"
 
 
-def set_user_settings(uid: int, key: str, value: str):
+def set_user_settings(tgid: int, key: str, value: str):
     # set download or upload settings
     with session_manager() as session:
+        # find user first
+        user = session.query(User).filter(User.user_id == tgid).first()
         # upsert
-        setting = session.query(Setting).filter(Setting.user_id == uid).first()
+        setting = session.query(Setting).filter(Setting.user_id == user.id).first()
         if setting:
             setattr(setting, key, value)
         else:
-            session.add(Setting(user_id=uid, **{key: value}))
+            session.add(Setting(user_id=user.id, **{key: value}))
 
 
 def get_free_quota(uid: int):
