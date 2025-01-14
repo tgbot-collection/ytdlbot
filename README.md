@@ -25,8 +25,6 @@ Just send a link directly to the bot.
     * Instagram (Videos, Photos, Reels, IGTV & carousel)
     * Pixeldrain
     * KrakenFiles
-    * Terabox (file/~~folders~~) (you need to add cookies txt in ytdlbot folder with name)
-      [terabox.txt](https://github.com/ytdl-org/youtube-dl#how-do-i-pass-cookies-to-youtube-dl).
 
 # Features
 
@@ -121,10 +119,6 @@ https://pixeldrain.com/u/765ijw9i
 ## Test KrakenFiles
 
 https://krakenfiles.com/view/oqmSTF0T5t/file.html
-
-## Test TeraBox
-
-https://terabox.com/s/1mpgNshrZVl6KuH717Hs23Q
 
 </details>
 
