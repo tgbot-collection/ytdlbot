@@ -281,11 +281,6 @@ def check_link(url: str):
     if re.findall(r"m3u8|\.m3u8|\.m3u$", url.lower()):
         raise ValueError("m3u8 links are not supported.")
 
-    with contextlib.suppress(yt_dlp.utils.DownloadError):
-        # TODO remove it or try 'match_filter': '!is_live',
-        if ytdl.extract_info(url, download=False).get("live_status") == "is_live":
-            raise ValueError("Live stream links are disabled. Please engine it after the stream ends.")
-
 
 @app.on_message(filters.incoming & filters.text)
 @private_use

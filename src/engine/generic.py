@@ -13,6 +13,12 @@ from database.model import get_format_settings, get_quality_settings
 from engine.base import BaseDownloader
 
 
+def match_filter(info_dict):
+    if info_dict.get("is_live"):
+        raise NotImplementedError("Skipping live video")
+    return None  # Allow download for non-live videos
+
+
 class YoutubeDownload(BaseDownloader):
     @staticmethod
     def get_format(m):
@@ -82,6 +88,7 @@ class YoutubeDownload(BaseDownloader):
             "outtmpl": output,
             "restrictfilenames": False,
             "quiet": True,
+            "match_filter": match_filter,
         }
         # setup cookies for youtube only
         if self._url.startswith("https://www.youtube.com/") or self._url.startswith("https://youtu.be/"):
