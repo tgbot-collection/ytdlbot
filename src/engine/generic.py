@@ -28,7 +28,7 @@ class YoutubeDownload(BaseDownloader):
         ]
 
     def _setup_formats(self) -> list | None:
-        quality, format_ = get_quality_settings(self._user_id), get_format_settings(self._user_id)
+        quality, format_ = get_quality_settings(self._chat_id), get_format_settings(self._chat_id)
         # quality: high, medium, low, custom
         # format: audio, video, document
         formats = []

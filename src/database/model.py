@@ -5,7 +5,16 @@ import os
 from contextlib import contextmanager
 from typing import Literal
 
-from sqlalchemy import Column, Enum, Float, ForeignKey, Integer, String, create_engine, BigInteger
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    create_engine,
+)
 from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker

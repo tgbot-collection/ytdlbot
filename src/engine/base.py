@@ -50,7 +50,11 @@ class BaseDownloader(ABC):
     def __init__(self, client: Types.Client, bot_msg: Types.Message, url: str):
         self._client = client
         self._url = url
-        self._user_id = getattr(bot_msg.from_user, "id", None) or bot_msg.chat.id
+        # chat id is the same for private chat
+        self._chat_id = self._from_user = bot_msg.chat.id
+        if bot_msg.chat.type == enums.ChatType.GROUP or bot_msg.chat.type == enums.ChatType.SUPERGROUP:
+            # if in group, we need to find out who send the message
+            self._from_user = bot_msg.reply_to_message.from_user.id
         self._id = bot_msg.id
         self._tempdir = tempfile.TemporaryDirectory(prefix="ytdl-")
         self._bot_msg: Types.Message = bot_msg
@@ -61,12 +65,12 @@ class BaseDownloader(ABC):
         self._tempdir.cleanup()
 
     def _record_usage(self):
-        free, paid = get_free_quota(self._user_id), get_paid_quota(self._user_id)
-        logging.info("User %s has %s free and %s paid quota", self._user_id, free, paid)
+        free, paid = get_free_quota(self._from_user), get_paid_quota(self._from_user)
+        logging.info("User %s has %s free and %s paid quota", self._from_user, free, paid)
         if free + paid < 0:
             raise Exception("Usage limit exceeded")
 
-        use_quota(self._user_id)
+        use_quota(self._from_user)
 
     @staticmethod
     def __remove_bash_color(text):
@@ -194,7 +198,7 @@ class BaseDownloader(ABC):
         return dict(height=height, width=width, duration=duration, thumb=thumb, caption=caption)
 
     def _upload(self):
-        upload = get_format_settings(self._user_id)
+        upload = get_format_settings(self._chat_id)
         # we only support single file upload
         files = list(Path(self._tempdir.name).glob("*"))
         meta = self.get_metadata()
@@ -202,7 +206,7 @@ class BaseDownloader(ABC):
         success = SimpleNamespace(document=None, video=None, audio=None, animation=None, photo=None)
         if upload == "document":
             success = self.send_something(
-                chat_id=self._user_id,
+                chat_id=self._chat_id,
                 files=files,
                 _type="document",
                 thumb=meta["thumb"],
@@ -211,7 +215,7 @@ class BaseDownloader(ABC):
             )
         elif upload == "audio":
             success = self.send_something(
-                chat_id=self._user_id,
+                chat_id=self._chat_id,
                 files=files,
                 _type="audio",
                 caption=meta["caption"],
@@ -220,7 +224,7 @@ class BaseDownloader(ABC):
             methods = {"video": meta, "animation": {}, "photo": {}}
             for method, thumb in methods.items():
                 try:
-                    success = self.send_something(chat_id=self._user_id, files=files, _type=method, **meta)
+                    success = self.send_something(chat_id=self._chat_id, files=files, _type=method, **meta)
                     break
                 except Exception as e:
                     logging.error("Retry to send as %s, error:", method, e)

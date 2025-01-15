@@ -255,20 +255,20 @@ def leech_handler(client: Client, message: types.Message):
     leech_download_entrance(client, bot_msg, url)
 
 
-@app.on_message(filters.command(["ytdl"]))
+@app.on_message(filters.command(["ytdl"]) & filters.group)
 def ytdl_handler(client: Client, message: types.Message):
-    # for group usage
-    chat_id = message.from_user.id
-    init_user(chat_id)
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    # for group only
+    init_user(message.from_user.id)
+    client.send_chat_action(message.chat.id, enums.ChatAction.TYPING)
     message_text = message.text
     url, new_name = extract_url_and_name(message_text)
     logging.info("ytdl start %s", url)
     if url is None or not re.findall(r"^https?://", url.lower()):
-        message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
+        message.reply_text("Check your URL.", quote=True)
         return
 
-    bot_msg = message.reply_text("Request received.", quote=True)
+    bot_msg = message.reply_text("Group download request received.", quote=True)
+
     youtube_entrance(client, bot_msg, url)
 
 
