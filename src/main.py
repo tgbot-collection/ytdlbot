@@ -309,6 +309,7 @@ def download_handler(client: Client, message: types.Message):
     except ValueError as e:
         message.reply_text(e.__str__(), quote=True)
     except Exception as e:
+        logging.error("Download failed", exc_info=True)
         message.reply_text(f"❌ Download failed: {e}", quote=True)
 
 

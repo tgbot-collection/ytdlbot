@@ -70,5 +70,5 @@ class InstagramDownload(BaseDownloader):
 
         return video_paths
 
-    def start(self):
+    def _start(self):
         pass

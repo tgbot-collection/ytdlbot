@@ -3,6 +3,8 @@
 
 # ytdlbot - types.py
 
+import hashlib
+import json
 import logging
 import re
 import tempfile
@@ -11,6 +13,7 @@ from abc import ABC, abstractmethod
 from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
+from typing import final
 
 import ffmpeg
 import filetype
@@ -59,6 +62,9 @@ class BaseDownloader(ABC):
         self._tempdir = tempfile.TemporaryDirectory(prefix="ytdl-")
         self._bot_msg: Types.Message = bot_msg
         self._redis = Redis()
+        self._quality = get_quality_settings(self._chat_id)
+        self._format = get_format_settings(self._chat_id)
+
         self._record_usage()
 
     def __del__(self):
@@ -132,10 +138,6 @@ class BaseDownloader(ABC):
     def edit_text(self, text: str):
         self._bot_msg.edit_text(text)
 
-    def get_cache_fileid(self):
-        unique = self._url + get_quality_settings(self._url)
-        return self._redis.get_send_cache(unique)
-
     @abstractmethod
     def _setup_formats(self) -> list | None:
         pass
@@ -157,7 +159,8 @@ class BaseDownloader(ABC):
 
     def send_something(self, *, chat_id, files, _type, caption=None, thumb=None, **kwargs):
         self._client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_DOCUMENT)
-        if len(files) > 1:
+        is_cache = kwargs.pop("cache", False)
+        if len(files) > 1 and is_cache == False:
             inputs = generate_input_media(files, caption)
             return self._client.send_media_group(chat_id, inputs)[0]
         else:
@@ -182,7 +185,7 @@ class BaseDownloader(ABC):
                 width = item["width"]
             duration = int(float(video_streams["format"]["duration"]))
         except Exception as e:
-            logging.error(e)
+            logging.error("Error while getting metadata: %s", e)
         try:
             thumb = Path(video_path).parent.joinpath(f"{uuid.uuid4().hex}-thunmnail.png").as_posix()
             # A thumbnail's width and height should not exceed 320 pixels.
@@ -197,14 +200,15 @@ class BaseDownloader(ABC):
         caption = f"{self._url}\n{filename}\n\nResolution: {width}x{height}\nDuration: {duration} seconds"
         return dict(height=height, width=width, duration=duration, thumb=thumb, caption=caption)
 
-    def _upload(self):
-        upload = get_format_settings(self._chat_id)
-        # we only support single file upload
-        files = list(Path(self._tempdir.name).glob("*"))
-        meta = self.get_metadata()
+    def _upload(self, files=None, meta=None):
+        if files is None:
+            files = list(Path(self._tempdir.name).glob("*"))
+        if meta is None:
+            meta = self.get_metadata()
 
         success = SimpleNamespace(document=None, video=None, audio=None, animation=None, photo=None)
-        if upload == "document":
+        if self._format == "document":
+            logging.info("Sending as document for %s", self._url)
             success = self.send_something(
                 chat_id=self._chat_id,
                 files=files,
@@ -213,14 +217,16 @@ class BaseDownloader(ABC):
                 force_document=True,
                 caption=meta["caption"],
             )
-        elif upload == "audio":
+        elif self._format == "audio":
+            logging.info("Sending as audio for %s", self._url)
             success = self.send_something(
                 chat_id=self._chat_id,
                 files=files,
                 _type="audio",
                 caption=meta["caption"],
             )
-        elif upload == "video":
+        elif self._format == "video":
+            logging.info("Sending as video for %s", self._url)
             methods = {"video": meta, "animation": {}, "photo": {}}
             for method, thumb in methods.items():
                 try:
@@ -229,17 +235,47 @@ class BaseDownloader(ABC):
                 except Exception as e:
                     logging.error("Retry to send as %s, error:", method, e)
         else:
-            logging.error("Unknown upload settings")
+            logging.error("Unknown upload format settings")
             return
 
-        # unique link is link+download_format
-        unique = self._url + get_quality_settings(self._url) + upload
+        video_key = self._calc_video_key()
         obj = success.document or success.video or success.audio or success.animation or success.photo
-        self._redis.add_send_cache(unique, getattr(obj, "file_id", None), upload)
+        mapping = {
+            "file_id": json.dumps([getattr(obj, "file_id", None)]),
+            "meta": json.dumps({k: v for k, v in meta.items() if k != "thumb"}, ensure_ascii=False),
+        }
+
+        self._redis.add_cache(video_key, mapping)
         # change progress bar to done
         self._bot_msg.edit_text("✅ Success")
         return success
 
-    @abstractmethod
+    def _get_video_cache(self):
+        return self._redis.get_cache(self._calc_video_key())
+
+    def _calc_video_key(self):
+        h = hashlib.md5()
+        h.update((self._url + self._quality + self._format).encode())
+        key = h.hexdigest()
+        return key
+
+    @final
     def start(self):
+        if cache := self._get_video_cache():
+            logging.info("Cache hit for %s", self._url)
+            sample = {
+                "meta": '{"height": 628, "width": 1280, "duration": 4, "caption": "https://www.youtube.com/watch?v=V3RtA-1b_2E\\ntest1.mp4\\n\\nResolution: 1280x628\\nDuration: 4 seconds"}',
+                "format": "video",  # not needed?
+                "quality": "high",  # not needed?
+                "file_id": "BAACAgUAAxkDAAJkPmeICCtKWhS-uK5TyU_7r8ppPIR6AAJxFQACV8xAVLn6LvM7FMvzHgQ",
+            }
+            meta, file_id = json.loads(cache["meta"]), json.loads(cache["file_id"])
+            meta["cache"] = True
+            self._upload(file_id, meta)
+
+        else:
+            self._start()
+
+    @abstractmethod
+    def _start(self):
         pass

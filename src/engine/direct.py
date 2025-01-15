@@ -90,6 +90,6 @@ class DirectDownloader(BaseDownloader):
             return self._aria2_download()
         return self._requests_download()
 
-    def start(self):
+    def _start(self):
         self._download()
         self._upload()
