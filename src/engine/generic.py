@@ -92,7 +92,7 @@ class YoutubeDownload(BaseDownloader):
         }
         # setup cookies for youtube only
         if self._url.startswith("https://www.youtube.com/") or self._url.startswith("https://youtu.be/"):
-            if os.path.isfile("youtube-cookies.txt"):
+            if os.path.isfile("youtube-cookies.txt") and os.path.getsize("youtube-cookies.txt") > 100:
                 # src/cookies.txt
                 ydl_opts["cookiefile"] = "youtube-cookies.txt"
 
