@@ -7,8 +7,8 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
-import contextlib
 import logging
+import os
 import re
 import threading
 import time
@@ -36,6 +36,7 @@ from config import (
     BotText,
 )
 from database.model import (
+    credit_account,
     get_format_settings,
     get_free_quota,
     get_paid_quota,
@@ -142,6 +143,42 @@ def ping_handler(client: Client, message: types.Message):
 
     thread = threading.Thread(target=send_message_and_measure_ping)
     thread.start()
+
+
+@app.on_message(filters.command(["buy"]))
+def buy(client: Client, message: types.Message):
+    chat_id = message.chat.id
+    logging.info("Generating invoice for %s", chat_id)
+    price = os.getenv("TOKEN_PRICE")
+    client.send_invoice(
+        chat_id,
+        f"{price} permanent download",
+        "Please make a payment via Stripe",
+        f"vip-{chat_id}",
+        "USD",
+        [types.LabeledPrice(label="VIP", amount=100)],
+        provider_token=os.getenv("PROVIDER_TOKEN"),
+        protect_content=True,
+        start_parameter="no-forward",
+    )
+
+
+@app.on_pre_checkout_query()
+def pre_checkout(client: Client, query: types.PreCheckoutQuery):
+    client.answer_pre_checkout_query(query.id, ok=True)
+
+
+@app.on_message(filters.successful_payment)
+def successful_payment(client: Client, message: types.Message):
+    who = message.chat.id
+    amount = message.successful_payment.total_amount  # in cents
+    ch = message.successful_payment.provider_payment_charge_id
+    free, paid = credit_account(who, amount, ch)
+    if paid > 0:
+        message.reply_text(f"Payment successful! You now have {free} free and {paid} paid quota.")
+    else:
+        message.reply_text("Something went wrong. Please contact the admin.")
+    message.delete()
 
 
 @app.on_message(filters.command(["stats"]))

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # coding: utf-8
+import logging
 import math
 import os
 from contextlib import contextmanager
@@ -21,7 +22,12 @@ from sqlalchemy.orm import relationship, sessionmaker
 
 from config import FREE_DOWNLOAD
 
-# ytdlbot - model.py
+
+class PaymentStatus:
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    REFUNDED = "refunded"
 
 
 Base = declarative_base()
@@ -57,7 +63,16 @@ class Payment(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     method = Column(String(50), nullable=False)
     amount = Column(Float, nullable=False)
-    status = Column(Enum("pending", "completed", "failed", "refunded"), nullable=False)
+    status = Column(
+        Enum(
+            PaymentStatus.PENDING,
+            PaymentStatus.COMPLETED,
+            PaymentStatus.FAILED,
+            PaymentStatus.REFUNDED,
+        ),
+        nullable=False,
+    )
+    transaction_id = Column(String(100))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     user = relationship("User", back_populates="payments")
@@ -181,3 +196,26 @@ def reset_free():
         for user in users:
             user.free = FREE_DOWNLOAD
         session.commit()
+
+
+def credit_account(who, total_amount, transaction, method="stripe"):
+    with session_manager() as session:
+        user = session.query(User).filter(User.user_id == who).first()
+        if user:
+            dollar = total_amount / 100
+            price = int(os.getenv("TOKEN_PRICE"))  # per one dollar
+            user.paid += int(dollar * price)
+            logging.info("user %d credited with %d tokens, payment:$%.2f", who, user.paid, dollar)
+            session.add(
+                Payment(
+                    method=method,
+                    amount=total_amount,
+                    status=PaymentStatus.COMPLETED,
+                    transaction_id=transaction,
+                    user_id=user.id,
+                )
+            )
+            session.commit()
+            return user.free, user.paid
+
+        return None, None
