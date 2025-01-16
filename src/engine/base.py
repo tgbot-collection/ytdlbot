@@ -65,8 +65,6 @@ class BaseDownloader(ABC):
         self._quality = get_quality_settings(self._chat_id)
         self._format = get_format_settings(self._chat_id)
 
-        self._record_usage()
-
     def __del__(self):
         self._tempdir.cleanup()
 
@@ -263,18 +261,12 @@ class BaseDownloader(ABC):
     def start(self):
         if cache := self._get_video_cache():
             logging.info("Cache hit for %s", self._url)
-            sample = {
-                "meta": '{"height": 628, "width": 1280, "duration": 4, "caption": "https://www.youtube.com/watch?v=V3RtA-1b_2E\\ntest1.mp4\\n\\nResolution: 1280x628\\nDuration: 4 seconds"}',
-                "format": "video",  # not needed?
-                "quality": "high",  # not needed?
-                "file_id": "BAACAgUAAxkDAAJkPmeICCtKWhS-uK5TyU_7r8ppPIR6AAJxFQACV8xAVLn6LvM7FMvzHgQ",
-            }
             meta, file_id = json.loads(cache["meta"]), json.loads(cache["file_id"])
             meta["cache"] = True
             self._upload(file_id, meta)
-
         else:
             self._start()
+        self._record_usage()
 
     @abstractmethod
     def _start(self):
