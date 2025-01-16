@@ -95,6 +95,9 @@ class YoutubeDownload(BaseDownloader):
             if os.path.isfile("youtube-cookies.txt") and os.path.getsize("youtube-cookies.txt") > 100:
                 # src/cookies.txt
                 ydl_opts["cookiefile"] = "youtube-cookies.txt"
+            # try add extract_args if present
+            if potoken := os.getenv("POTOKEN"):
+                ydl_opts["extractor_args"] = {"youtube": ["player-client=web,default", f"po_token=web+{potoken}"]}
 
         if self._url.startswith("https://drive.google.com"):
             # Always use the `source` format for Google Drive URLs.
