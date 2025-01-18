@@ -8,6 +8,7 @@ import yt_dlp
 url = "https://www.youtube.com/watch?v=e19kTVgb2c8"
 opts = {
     "cookiefile": "cookies.txt",
+    "cookiesfrombrowser": ["firefox"],
 }
 
 with yt_dlp.YoutubeDL(opts) as ydl:
