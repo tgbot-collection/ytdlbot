@@ -19,14 +19,14 @@ class BotText:
     EU🇪🇺: @benny_2ytdlbot
     SG🇸🇬：@benny_ytdlbot
 
-    Join https://t.me/+OGRC8tp9-U9mZDZl for updates.\n\n"""
+    Join https://t.me/ytdlbot0 for updates.\n\n"""
 
     help = """
 1. For YouTube and any websites supported by yt-dlp, just send the link and we will engine and send it to you.
 
 2. For specific links use `/spdl {URL}`. More info at https://github.com/SanujaNS/ytdlbot-telegram#supported-websites 
 
-3. If the bot doesn't work, try again or join https://t.me/+OGRC8tp9-U9mZDZl for updates.
+3. If the bot doesn't work, try again or join https://t.me/ytdlbot0 for updates.
 
 4. Want to deploy it yourself?\nHere's the source code: https://github.com/tgbot-collection/ytdlbot
     """

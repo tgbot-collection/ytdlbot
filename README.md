@@ -12,7 +12,7 @@ This Telegram bot allows you to download videos from YouTube and [other supporte
 * EU🇪🇺: [https://t.me/benny_2ytdlbot](https://t.me/benny_2ytdlbot)
 * Singapore🇸🇬:[https://t.me/benny_ytdlbot](https://t.me/benny_ytdlbot)
 
-* Join Telegram Channel https://t.me/+OGRC8tp9-U9mZDZl for updates.
+* Join Telegram Channel https://t.me/ytdlbot0 for updates.
 
 Just send a link directly to the bot.
 
