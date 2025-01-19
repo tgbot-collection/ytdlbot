@@ -147,19 +147,39 @@ def ping_handler(client: Client, message: types.Message):
 
 @app.on_message(filters.command(["buy"]))
 def buy(client: Client, message: types.Message):
-    chat_id = message.chat.id
-    logging.info("Generating invoice for %s", chat_id)
-    price = os.getenv("TOKEN_PRICE")
+    markup = types.InlineKeyboardMarkup(
+        [
+            [  # First row
+                types.InlineKeyboardButton("10-$1", callback_data="buy-10-1"),
+                types.InlineKeyboardButton("20-$2", callback_data="buy-20-2"),
+                types.InlineKeyboardButton("40-$3.5", callback_data="buy-40-3.5"),
+            ],
+            [  # second row
+                types.InlineKeyboardButton("50-$4", callback_data="buy-50-4"),
+                types.InlineKeyboardButton("75-$6", callback_data="buy-75-6"),
+                types.InlineKeyboardButton("100-$8", callback_data="buy-100-8"),
+            ],
+        ]
+    )
+    message.reply_text("Please choose the amount you want to buy.", reply_markup=markup)
+
+
+@app.on_callback_query(filters.regex(r"buy.*"))
+def send_invoice(client: Client, callback_query: types.CallbackQuery):
+    chat_id = callback_query.message.chat.id
+    data = callback_query.data
+    _, count, price = data.split("-")
+    price = int(float(price) * 100)
     client.send_invoice(
         chat_id,
-        f"{price} permanent download",
+        f"{count} permanent download quota",
         "Please make a payment via Stripe",
-        f"vip-{chat_id}",
+        f"{count}",
         "USD",
-        [types.LabeledPrice(label="VIP", amount=100)],
+        [types.LabeledPrice(label="VIP", amount=price)],
         provider_token=os.getenv("PROVIDER_TOKEN"),
         protect_content=True,
-        start_parameter="no-forward",
+        start_parameter="no-forward-placeholder",
     )
 
 
@@ -172,8 +192,9 @@ def pre_checkout(client: Client, query: types.PreCheckoutQuery):
 def successful_payment(client: Client, message: types.Message):
     who = message.chat.id
     amount = message.successful_payment.total_amount  # in cents
+    quota = int(message.successful_payment.invoice_payload)
     ch = message.successful_payment.provider_payment_charge_id
-    free, paid = credit_account(who, amount, ch)
+    free, paid = credit_account(who, amount, quota, ch)
     if paid > 0:
         message.reply_text(f"Payment successful! You now have {free} free and {paid} paid quota.")
     else:

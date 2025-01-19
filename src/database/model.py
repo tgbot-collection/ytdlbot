@@ -198,13 +198,12 @@ def reset_free():
         session.commit()
 
 
-def credit_account(who, total_amount, transaction, method="stripe"):
+def credit_account(who, total_amount: int, quota: int, transaction, method="stripe"):
     with session_manager() as session:
         user = session.query(User).filter(User.user_id == who).first()
         if user:
             dollar = total_amount / 100
-            price = int(os.getenv("TOKEN_PRICE"))  # per one dollar
-            user.paid += int(dollar * price)
+            user.paid += quota
             logging.info("user %d credited with %d tokens, payment:$%.2f", who, user.paid, dollar)
             session.add(
                 Payment(
