@@ -23,6 +23,7 @@ from tqdm import tqdm
 from config import TG_NORMAL_MAX_SIZE, Types
 from database import Redis
 from database.model import (
+    check_quota,
     get_format_settings,
     get_free_quota,
     get_paid_quota,
@@ -259,6 +260,7 @@ class BaseDownloader(ABC):
 
     @final
     def start(self):
+        check_quota(self._from_user)
         if cache := self._get_video_cache():
             logging.info("Cache hit for %s", self._url)
             meta, file_id = json.loads(cache["meta"]), json.loads(cache["file_id"])

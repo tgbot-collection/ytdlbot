@@ -170,6 +170,13 @@ def add_paid_quota(uid: int, amount: int):
             data.paid += amount
 
 
+def check_quota(uid: int):
+    with session_manager() as session:
+        data = session.query(User).filter(User.user_id == uid).first()
+        if data and (data.free + data.paid) <= 0:
+            raise Exception("Quota exhausted. Please /buy or wait until free quota is reset")
+
+
 def use_quota(uid: int):
     # use free first, then paid
     with session_manager() as session:
@@ -180,7 +187,7 @@ def use_quota(uid: int):
             elif user.paid > 0:
                 user.paid -= 1
             else:
-                raise Exception("Quota exhausted")
+                raise Exception("Quota exhausted. Please /buy or wait until free quota is reset")
 
 
 def init_user(uid: int):
