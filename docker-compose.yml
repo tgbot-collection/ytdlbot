@@ -1,25 +1,34 @@
-version: '3.1'
-
 services:
   redis:
     image: redis:7-alpine
     restart: always
+    ports:
+      - "6379:6379"
     logging:
       driver: none
+    command: redis-server --bind 0.0.0.0
 
   mysql:
     image: ubuntu/mysql:8.0-22.04_beta
     restart: always
+    ports:
+      - "3306:3306"
     volumes:
       - ./db_data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: 'root'
-    command: --default-authentication-plugin=mysql_native_password
+      MYSQL_DATABASE: 'ytdlbot'
+      MYSQL_USER: 'ytdlbot'
+      MYSQL_PASSWORD: 'password'
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --bind-address=0.0.0.0
     logging:
       driver: none
 
   ytdl:
-    image: bennythink/ytdlbot
+    # image: bennythink/ytdlbot
+    # build: .
     env_file:
       - .env
     restart: always
@@ -27,3 +36,4 @@ services:
       - ./youtube-cookies.txt:/app/youtube-cookies.txt
     depends_on:
       - redis
+      - mysql
