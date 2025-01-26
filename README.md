@@ -61,7 +61,7 @@ This bot can be deployed on any platform that supports Python.
 > Project use PDM to manage dependencies.
 
 1. <details>
-    <summary><h3>Install PDM</h3></summary>
+    <summary>Install PDM</summary>
     You can install using pip: `pip install --user pdm`
     or for more ways: [Official Docs](https://pdm-project.org/en/latest/#installation)
   </details>
@@ -69,7 +69,7 @@ This bot can be deployed on any platform that supports Python.
 2. Install modules using PDM: `pdm install`, or the old way use `requirements.txt`
 
 3. <details>
-    <summary><h3>Setting up config file</h3></summary>
+    <summary>Setting up config file</summary>
 
     ```
     cp .env.example .env
