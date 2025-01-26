@@ -58,10 +58,54 @@ This bot can be deployed on any platform that supports Python.
 
 ## Run natively on your machine
 
-* use pdm
-* pdm install
-* copy .env.example to .env
-* python main.py
+> Project use PDM to manage dependencies.
+
+1. <details>
+    <summary>Install PDM</summary>
+    You can install using pip: `pip install --user pdm`
+    or for more ways: [Official Docs](https://pdm-project.org/en/latest/#installation)
+  </details>
+
+2. Install modules using PDM: `pdm install`, or the old way use `requirements.txt`
+
+3. <details>
+    <summary>Setting up config file</summary>
+
+    ```
+    cp .env.example .env
+    ```
+    
+    Fill the fields in `.env`.
+
+    **- Required Fields**
+    - `WORKERS`: Number of workers (default is 100)
+    - `APP_ID`: Telegram app ID
+    - `APP_HASH`: Telegram app hash
+    - `BOT_TOKEN`: Your telegram bot token
+    - `OWNER`: Owner ID (separate by `,`)
+    - `AUTHORIZED_USER`: List of authorized users (separate by `,`)
+    - `DB_DSN`: Your database URL (mysql+pymysql://user:pass@some_mariadb/dbname)
+    - `REDIS_HOST`: Redis host
+
+    **- Optional Fields**
+    - `ENABLE_FFMPEG`: Enable FFMPEG for video processing (True/False)
+    - `AUDIO_FORMAT`: Desired audio format (e.g.:- mp3, wav)
+    - `ENABLE_ARIA2`: Enable Aria2 for downloads (True/False)
+    - `RCLONE_PATH`: Path to Rclone executable
+    - `ENABLE_VIP`: Enable VIP features (True/False)
+    - `PROVIDER_TOKEN`: Payment provider token
+    - `FREE_DOWNLOAD`: Free downloads allowed per user
+    - `RATE_LIMIT`: Rate limit for requests
+    - `TMPFILE_PATH`: Path for temporary/download files (ensure the directory exists and is writable)
+    - `TG_NORMAL_MAX_SIZE`: Maximum size for Telegram uploads in MB
+    - `CAPTION_URL_LENGTH_LIMIT`: Maximum URL length in captions
+    - `POTOKEN`: Your PO Token.  [PO-Token-Guide](https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide)
+    - `BROWSERS`: Browser to handle 'cookies from browser'
+  </details>
+
+4. Activate virtual environment that created by PDM: `source .venv/bin/activate`
+
+5. Finally run the bot: `python src/main.py`
 
 ## Docker
 
@@ -70,8 +114,6 @@ One line command to run the bot
 ```shell
 docker run -e APP_ID=111 -e APP_HASH=111 -e TOKEN=370FXI bennythink/ytdlbot
 ```
-
-# Complete deployment guide for docker-compose
 
 # Command
 
@@ -85,6 +127,7 @@ aria2 - Download file using aria2
 settings - Set your preference
 unsub - Unsubscribe from YouTube Channel
 ping - Ping the Bot
+stats - Server and bot stats
 ```
 
 # Test data

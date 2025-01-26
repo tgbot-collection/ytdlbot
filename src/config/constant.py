@@ -24,7 +24,7 @@ class BotText:
     help = """
 1. For YouTube and any websites supported by yt-dlp, just send the link and we will engine and send it to you.
 
-2. For specific links use `/spdl {URL}`. More info at https://github.com/SanujaNS/ytdlbot-telegram#supported-websites 
+2. For specific links use `/spdl {URL}`. More info at https://github.com/tgbot-collection/ytdlbot#supported-websites 
 
 3. If the bot doesn't work, try again or join https://t.me/ytdlbot0 for updates.
 
