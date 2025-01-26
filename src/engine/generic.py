@@ -11,6 +11,7 @@ import yt_dlp
 
 from database.model import get_format_settings, get_quality_settings
 from engine.base import BaseDownloader
+from config import AUDIO_FORMAT
 
 
 def match_filter(info_dict):
@@ -38,14 +39,15 @@ class YoutubeDownload(BaseDownloader):
             "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
             None,
         ]
+        audio = AUDIO_FORMAT or "m4a"
         maps = {
-            "high-audio": ["bestaudio[ext=m4a]"],
+            "high-audio": [f"bestaudio[ext=={audio}]"],
             "high-video": defaults,
             "high-document": defaults,
-            "medium-audio": ["bestaudio[ext=m4a]"],  # no mediumaudio :-(
+            "medium-audio": [f"bestaudio[ext={audio}]"],  # no mediumaudio :-(
             "medium-video": self.get_format(720),
             "medium-document": self.get_format(720),
-            "low-audio": ["bestaudio[ext=m4a]"],
+            "low-audio": [f"bestaudio[ext={audio}]"],
             "low-video": self.get_format(480),
             "low-document": self.get_format(480),
             "custom-audio": "",
@@ -100,6 +102,10 @@ class YoutubeDownload(BaseDownloader):
             # try add extract_args if present
             if potoken := os.getenv("POTOKEN"):
                 ydl_opts["extractor_args"] = {"youtube": ["player-client=web,default", f"po_token=web+{potoken}"]}
+                # for new version? https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
+                # ydl_opts["extractor_args"] = {
+                #     "youtube": [f"po_token=web.player+{potoken}", f"po_token=web.gvs+{potoken}"]
+                # }
 
         if self._url.startswith("https://drive.google.com"):
             # Always use the `source` format for Google Drive URLs.

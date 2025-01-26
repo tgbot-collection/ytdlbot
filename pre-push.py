@@ -18,5 +18,5 @@ with open("requirements.txt", "w") as file:
         file.write(f"{item}\n")
 
 # commit with amend
-subprocess.run(["git", "add", "requirements.txt"])
-subprocess.run(["git", "commit", "-m", "pre-push"])
+# subprocess.run(["git", "add", "requirements.txt"])
+# subprocess.run(["git", "commit", "-m", "pre-push"])

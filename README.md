@@ -3,7 +3,6 @@
 [![docker image](https://github.com/tgbot-collection/ytdlbot/actions/workflows/builder.yaml/badge.svg)](https://github.com/tgbot-collection/ytdlbot/actions/workflows/builder.yaml)
 
 **YouTube Download Bot🚀🎬⬇️**
-🧰Refactor ongoing🧰
 
 This Telegram bot allows you to download videos from YouTube and [other supported websites](#supported-websites).
 
@@ -38,7 +37,7 @@ Just send a link directly to the bot.
 
 > ## Limitations
 > Due to limitations on servers and bandwidth, there are some restrictions on this free service.
-> * Each user is limited to 3 free downloads every day.
+> * Each user is limited to 1 free downloads every day.
 
 # Screenshots
 
@@ -66,7 +65,7 @@ This bot can be deployed on any platform that supports Python.
     or for more ways: [Official Docs](https://pdm-project.org/en/latest/#installation)
   </details>
 
-2. Install modules using PDM: `pdm install`, or the old way use `requirements.txt`
+2. Install modules using PDM: `pdm install`, or the old way use `pip install -r requirements.txt`
 
 3. <details>
     <summary>Setting up config file</summary>
@@ -75,7 +74,7 @@ This bot can be deployed on any platform that supports Python.
     cp .env.example .env
     ```
     
-    Fill the fields in `.env`.
+    Fill the fields in `.env`. For more information, see the comments in the `.env.example` file.
 
     **- Required Fields**
     - `WORKERS`: Number of workers (default is 100)
@@ -83,8 +82,8 @@ This bot can be deployed on any platform that supports Python.
     - `APP_HASH`: Telegram app hash
     - `BOT_TOKEN`: Your telegram bot token
     - `OWNER`: Owner ID (separate by `,`)
-    - `AUTHORIZED_USER`: List of authorized users (separate by `,`)
-    - `DB_DSN`: Your database URL (mysql+pymysql://user:pass@some_mariadb/dbname)
+    - `AUTHORIZED_USER`: List of authorized users ids, (separate by `,`)
+    - `DB_DSN`: Your database URL (mysql+pymysql://user:pass@mysql/dbname) or SQLite (sqlite:///db.sqlite)
     - `REDIS_HOST`: Redis host
 
     **- Optional Fields**
@@ -93,14 +92,14 @@ This bot can be deployed on any platform that supports Python.
     - `ENABLE_ARIA2`: Enable Aria2 for downloads (True/False)
     - `RCLONE_PATH`: Path to Rclone executable
     - `ENABLE_VIP`: Enable VIP features (True/False)
-    - `PROVIDER_TOKEN`: Payment provider token
+    - `PROVIDER_TOKEN`: Payment provider token from Stripe
     - `FREE_DOWNLOAD`: Free downloads allowed per user
     - `RATE_LIMIT`: Rate limit for requests
     - `TMPFILE_PATH`: Path for temporary/download files (ensure the directory exists and is writable)
     - `TG_NORMAL_MAX_SIZE`: Maximum size for Telegram uploads in MB
     - `CAPTION_URL_LENGTH_LIMIT`: Maximum URL length in captions
     - `POTOKEN`: Your PO Token.  [PO-Token-Guide](https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide)
-    - `BROWSERS`: Browser to handle 'cookies from browser'
+    - `BROWSERS`: Browser to handle 'cookies from browser', i.e. firefox
   </details>
 
 4. Activate virtual environment that created by PDM: `source .venv/bin/activate`
@@ -112,7 +111,7 @@ This bot can be deployed on any platform that supports Python.
 One line command to run the bot
 
 ```shell
-docker run -e APP_ID=111 -e APP_HASH=111 -e TOKEN=370FXI bennythink/ytdlbot
+docker run --env-file .env bennythink/ytdlbot
 ```
 
 # Command
