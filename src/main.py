@@ -45,7 +45,7 @@ from database.model import (
     reset_free,
     set_user_settings,
 )
-from engine import youtube_entrance
+from engine import direct_entrance, youtube_entrance
 from utils import extract_url_and_name, sizeof_fmt, timeof_fmt
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
@@ -276,6 +276,20 @@ def settings_handler(client: Client, message: types.Message):
     quality = get_quality_settings(chat_id)
     send_type = get_format_settings(chat_id)
     client.send_message(chat_id, BotText.settings.format(quality, send_type), reply_markup=markup)
+
+
+@app.on_message(filters.command(["direct"]))
+def direct_download(client: Client, message: types.Message):
+    chat_id = message.chat.id
+    init_user(chat_id)
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    text = message.text.split()
+
+    if len(text) == 1:
+        message.reply_text("Send me a direct link to download, e.g. /direct https://example.com/1.mp4", quote=True)
+        return
+    bot_msg = message.reply_text("Direct download request received.", quote=True)
+    direct_entrance(client, bot_msg, text[1])
 
 
 @app.on_message(filters.command(["spdl"]))

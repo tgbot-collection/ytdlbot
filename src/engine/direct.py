@@ -13,29 +13,30 @@ from uuid import uuid4
 
 import filetype
 import requests
-from base import BaseDownloader
-from pyrogram import enums
 
 from config import ENABLE_ARIA2, TMPFILE_PATH
+from engine.base import BaseDownloader
 
 
-class DirectDownloader(BaseDownloader):
+class DirectDownload(BaseDownloader):
 
     def _setup_formats(self) -> list | None:
         # direct download doesn't need to setup formats
         pass
 
     def _requests_download(self):
+        logging.info("Requests download with url %s", self._url)
         response = requests.get(self._url, stream=True)
         response.raise_for_status()
-        file = Path(self._tempdir).joinpath(uuid4().hex)
-        ext = filetype.guess_extension(file)
-        if ext is not None:
-            file = file.with_suffix(ext)
-
+        file = Path(self._tempdir.name).joinpath(uuid4().hex)
         with open(file, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
+        ext = filetype.guess_extension(file)
+        if ext is not None:
+            new_name = file.with_suffix(f".{ext}")
+            file.rename(new_name)
+
         return [file.as_posix()]
 
     def _aria2_download(self):

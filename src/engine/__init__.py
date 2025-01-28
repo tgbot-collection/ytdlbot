@@ -5,12 +5,18 @@
 
 from urllib.parse import urlparse
 
+from engine.direct import DirectDownload
 from engine.generic import YoutubeDownload
 
 
 def youtube_entrance(client, bot_message, url):
     youtube = YoutubeDownload(client, bot_message, url)
     youtube.start()
+
+
+def direct_entrance(client, bot_message, url):
+    dl = DirectDownload(client, bot_message, url)
+    dl.start()
 
 
 def special_download_entrance(url: str, tempdir: str, bm, **kwargs) -> list:

@@ -19,13 +19,14 @@ OWNER = [int(i) for i in os.getenv("OWNER").split(",")]
 AUTHORIZED_USER: str = os.getenv("AUTHORIZED_USER", "")
 DB_DSN = os.getenv("DB_DSN")
 REDIS_HOST = os.getenv("REDIS_HOST")
-ENABLE_FFMPEG = os.getenv("ENABLE_FFMPEG", False)
-AUDIO_FORMAT = os.getenv("AUDIO_FORMAT")
-ENABLE_ARIA2 = os.getenv("ENABLE_ARIA2", False)
+ENABLE_FFMPEG = os.getenv("ENABLE_FFMPEG") == "True"
+AUDIO_FORMAT = os.getenv("AUDIO_FORMAT", "m4a")
+ENABLE_ARIA2 = os.getenv("ENABLE_ARIA2") == "True"
+
 RCLONE_PATH = os.getenv("RCLONE")
 
 # payment settings
-ENABLE_VIP = os.getenv("ENABLE_VIP", False)
+ENABLE_VIP = os.getenv("ENABLE_VIP") == "True"
 PROVIDER_TOKEN = os.getenv("PROVIDER_TOKEN")
 FREE_DOWNLOAD = int(os.getenv("FREE_DOWNLOAD", 3))
 TOKEN_PRICE = os.getenv("TOKEN_PRICE", 10)  # 1 USD=10 downloads

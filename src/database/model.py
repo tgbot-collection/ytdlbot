@@ -20,7 +20,7 @@ from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
-from config import FREE_DOWNLOAD, ENABLE_VIP
+from config import ENABLE_VIP, FREE_DOWNLOAD
 
 
 class PaymentStatus:

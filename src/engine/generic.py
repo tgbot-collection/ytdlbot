@@ -9,9 +9,9 @@ from pathlib import Path
 
 import yt_dlp
 
+from config import AUDIO_FORMAT
 from database.model import get_format_settings, get_quality_settings
 from engine.base import BaseDownloader
-from config import AUDIO_FORMAT
 
 
 def match_filter(info_dict):
