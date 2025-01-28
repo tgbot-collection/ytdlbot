@@ -20,7 +20,7 @@ from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
-from config import FREE_DOWNLOAD
+from config import FREE_DOWNLOAD, ENABLE_VIP
 
 
 class PaymentStatus:
@@ -137,6 +137,9 @@ def set_user_settings(tgid: int, key: str, value: str):
 
 
 def get_free_quota(uid: int):
+    if not ENABLE_VIP:
+        return math.inf
+
     with session_manager() as session:
         data = session.query(User).filter(User.user_id == uid).first()
         if data:
@@ -145,7 +148,7 @@ def get_free_quota(uid: int):
 
 
 def get_paid_quota(uid: int):
-    if os.getenv("ENABLE_VIP"):
+    if ENABLE_VIP:
         with session_manager() as session:
             data = session.query(User).filter(User.user_id == uid).first()
             if data:
@@ -171,6 +174,9 @@ def add_paid_quota(uid: int, amount: int):
 
 
 def check_quota(uid: int):
+    if not ENABLE_VIP:
+        return
+
     with session_manager() as session:
         data = session.query(User).filter(User.user_id == uid).first()
         if data and (data.free + data.paid) <= 0:
@@ -179,6 +185,9 @@ def check_quota(uid: int):
 
 def use_quota(uid: int):
     # use free first, then paid
+    if not ENABLE_VIP:
+        return
+
     with session_manager() as session:
         user = session.query(User).filter(User.user_id == uid).first()
         if user:
