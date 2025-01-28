@@ -9,27 +9,43 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import os
 
-# general settings
-WORKERS: int = int(os.getenv("WORKERS", 100))
-APP_ID: int = int(os.getenv("APP_ID"))
-APP_HASH = os.getenv("APP_HASH")
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-OWNER = [int(i) for i in os.getenv("OWNER").split(",")]
-# db settings
-AUTHORIZED_USER: str = os.getenv("AUTHORIZED_USER", "")
-DB_DSN = os.getenv("DB_DSN")
-REDIS_HOST = os.getenv("REDIS_HOST")
-ENABLE_FFMPEG = os.getenv("ENABLE_FFMPEG") == "True"
-AUDIO_FORMAT = os.getenv("AUDIO_FORMAT", "m4a")
-ENABLE_ARIA2 = os.getenv("ENABLE_ARIA2") == "True"
 
-RCLONE_PATH = os.getenv("RCLONE")
+def get_env(name: str, default=None):
+    val = os.getenv(name, default)
+    if val is None:
+        return None
+    if val.lower() == "true":
+        return True
+    if val.lower() == "false":
+        return False
+    if val.isdigit():
+        return int(val)
+    return val
+
+
+# general settings
+WORKERS: int = get_env("WORKERS", 100)
+APP_ID: int = get_env("APP_ID")
+APP_HASH = get_env("APP_HASH")
+BOT_TOKEN = get_env("BOT_TOKEN")
+OWNER = [int(i) for i in str(get_env("OWNER")).split(",")]
+# db settings
+AUTHORIZED_USER: str = get_env("AUTHORIZED_USER", "")
+DB_DSN = get_env("DB_DSN")
+REDIS_HOST = get_env("REDIS_HOST")
+
+ENABLE_FFMPEG = get_env("ENABLE_FFMPEG")
+
+AUDIO_FORMAT = get_env("AUDIO_FORMAT", "m4a")
+ENABLE_ARIA2 = get_env("ENABLE_ARIA2")
+
+RCLONE_PATH = get_env("RCLONE")
 
 # payment settings
-ENABLE_VIP = os.getenv("ENABLE_VIP") == "True"
-PROVIDER_TOKEN = os.getenv("PROVIDER_TOKEN")
-FREE_DOWNLOAD = int(os.getenv("FREE_DOWNLOAD", 3))
-TOKEN_PRICE = os.getenv("TOKEN_PRICE", 10)  # 1 USD=10 downloads
+ENABLE_VIP = get_env("ENABLE_VIP")
+PROVIDER_TOKEN = get_env("PROVIDER_TOKEN")
+FREE_DOWNLOAD = get_env("FREE_DOWNLOAD", 3)
+TOKEN_PRICE = get_env("TOKEN_PRICE", 10)  # 1 USD=10 downloads
 
 # For advance users
 # Please do not change, if you don't know what these are.
@@ -38,4 +54,4 @@ CAPTION_URL_LENGTH_LIMIT = 150
 
 # This will set the value for the tmpfile path(engine path). If not, will return None and use system’s default path.
 # Please ensure that the directory exists and you have necessary permissions to write to it.
-TMPFILE_PATH = os.getenv("TMPFILE_PATH")
+TMPFILE_PATH = get_env("TMPFILE_PATH")
