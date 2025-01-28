@@ -14,12 +14,13 @@ def get_env(name: str, default=None):
     val = os.getenv(name, default)
     if val is None:
         return None
-    if val.lower() == "true":
-        return True
-    if val.lower() == "false":
-        return False
-    if val.isdigit():
-        return int(val)
+    if isinstance(val, str):
+        if val.lower() == "true":
+            return True
+        if val.lower() == "false":
+            return False
+        if val.isdigit() and name != "AUTHORIZED_USER":
+            return int(val)
     return val
 
 
