@@ -1,36 +1,24 @@
 services:
   redis:
     image: redis:7-alpine
-    container_name: redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - ./redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
-    command: redis-server --appendonly yes
     logging:
       options:
         max-size: "10m"
         max-file: "3"
 
   mysql:
-    image: mysql:8.0-debian
-    container_name: mysql
-    restart: unless-stopped
-    ports:
-      - "3306:3306"
+    image: ubuntu/mysql:8.0-22.04_beta
+    restart: always
     volumes:
       - ./db_data:/var/lib/mysql
     environment:
-      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
-      MYSQL_DATABASE: "ytdlbot"
-      MYSQL_USER: "ytdlbot"
-      MYSQL_PASSWORD: "your_password"
+      MYSQL_RANDOM_ROOT_PASSWORD: "root"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -49,11 +37,9 @@ services:
 
   ytdl:
     image: bennythink/ytdlbot
-    build: .
-    container_name: ytdl
     env_file:
       - .env
-    restart: unless-stopped
+    restart: always
     volumes:
       - ./youtube-cookies.txt:/app/youtube-cookies.txt
     depends_on:
@@ -61,13 +47,3 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
-
-volumes:
-  redis_data:
-    name: ytdl_redis_data
-  mysql_data:
-    name: ytdl_mysql_data
-
-networks:
-  default:
-    name: ytdl_network
