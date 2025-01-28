@@ -18,7 +18,7 @@ services:
     volumes:
       - ./db_data:/var/lib/mysql
     environment:
-      MYSQL_RANDOM_ROOT_PASSWORD: "root"
+      MYSQL_ROOT_PASSWORD: "root"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
