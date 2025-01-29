@@ -28,7 +28,13 @@ class YoutubeDownload(BaseDownloader):
             f"bestvideo[vcodec^=avc][height={m}]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
         ]
 
+    def is_youtube(self):
+        return self._url.startswith(("https://www.youtube.com/", "https://youtu.be/"))
+
     def _setup_formats(self) -> list | None:
+        if not self.is_youtube():
+            return [None]
+
         quality, format_ = get_quality_settings(self._chat_id), get_format_settings(self._chat_id)
         # quality: high, medium, low, custom
         # format: audio, video, document
@@ -93,7 +99,7 @@ class YoutubeDownload(BaseDownloader):
             "match_filter": match_filter,
         }
         # setup cookies for youtube only
-        if self._url.startswith("https://www.youtube.com/") or self._url.startswith("https://youtu.be/"):
+        if self.is_youtube():
             # use cookies from browser firstly
             if browsers := os.getenv("BROWSERS"):
                 ydl_opts["cookiesfrombrowser"] = browsers.split(",")
