@@ -283,13 +283,15 @@ def direct_download(client: Client, message: types.Message):
     chat_id = message.chat.id
     init_user(chat_id)
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    text = message.text.split()
+    message_text = message.text
+    url, new_name = extract_url_and_name(message_text)
 
-    if len(text) == 1:
-        message.reply_text("Send me a direct link to download, e.g. /direct https://example.com/1.mp4", quote=True)
+    logging.info("Direct download using aria2/requests start %s", url)
+    if url is None or not re.findall(r"^https?://", url.lower()):
+        message.reply_text("Send me a correct LINK.", quote=True)
         return
     bot_msg = message.reply_text("Direct download request received.", quote=True)
-    direct_entrance(client, bot_msg, text[1])
+    direct_entrance(client, bot_msg, url)
 
 
 @app.on_message(filters.command(["spdl"]))
@@ -306,25 +308,6 @@ def spdl_handler(client: Client, message: types.Message):
 
     bot_msg = message.reply_text("Request received.", quote=True)
     spdl_download_entrance(client, bot_msg, url)
-
-
-@app.on_message(filters.command(["leech"]))
-def leech_handler(client: Client, message: types.Message):
-    if not ENABLE_ARIA2:
-        message.reply_text("Aria2 Not Enabled.", quote=True)
-        return
-
-    chat_id = message.from_user.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    message_text = message.text
-    url, new_name = extract_url_and_name(message_text)
-    logging.info("leech using aria2 start %s", url)
-    if url is None or not re.findall(r"^https?://", url.lower()):
-        message.reply_text("Send me a correct LINK.", quote=True)
-        return
-
-    bot_msg = message.reply_text("Request received.", quote=True)
-    leech_download_entrance(client, bot_msg, url)
 
 
 @app.on_message(filters.command(["ytdl"]) & filters.group)

@@ -17,7 +17,7 @@ Just send a link directly to the bot.
 
 # Supported websites
 
-* YouTube 😅
+* YouTube
 * Any websites [supported by yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
 
   ### Specific link downloader (Use /spdl for these links)
@@ -61,9 +61,11 @@ This bot can be deployed on any platform that supports Python.
 
 1. <details>
     <summary>Install PDM</summary>
+
     You can install using pip: `pip install --user pdm`
-    or for more ways: [Official Docs](https://pdm-project.org/en/latest/#installation)
-  </details>
+    or for detailed instructions: [Official Docs](https://pdm-project.org/en/latest/#installation)
+  
+   </details>
 
 2. Install modules using PDM: `pdm install`, or the old way use `pip install -r requirements.txt`
 
@@ -121,12 +123,13 @@ start - Let's start
 about - What's this bot?
 help - Help
 spdl - Use to download specific link downloader links
+direct - Download using aria2/requests engines
 ytdl - Download video in group
-aria2 - Download file using aria2
 settings - Set your preference
 unsub - Unsubscribe from YouTube Channel
 ping - Ping the Bot
 stats - Server and bot stats
+buy - Buy quota.
 ```
 
 # Test data
