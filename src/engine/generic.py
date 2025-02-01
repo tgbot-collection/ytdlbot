@@ -47,7 +47,7 @@ class YoutubeDownload(BaseDownloader):
         ]
         audio = AUDIO_FORMAT or "m4a"
         maps = {
-            "high-audio": [f"bestaudio[ext=={audio}]"],
+            "high-audio": [f"bestaudio[ext={audio}]"],
             "high-video": defaults,
             "high-document": defaults,
             "medium-audio": [f"bestaudio[ext={audio}]"],  # no mediumaudio :-(
