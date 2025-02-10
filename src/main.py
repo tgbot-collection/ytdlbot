@@ -45,7 +45,7 @@ from database.model import (
     reset_free,
     set_user_settings,
 )
-from engine import direct_entrance, youtube_entrance
+from engine import direct_entrance, youtube_entrance, special_download_entrance
 from utils import extract_url_and_name, sizeof_fmt, timeof_fmt
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
@@ -285,7 +285,6 @@ def direct_download(client: Client, message: types.Message):
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     message_text = message.text
     url, new_name = extract_url_and_name(message_text)
-
     logging.info("Direct download using aria2/requests start %s", url)
     if url is None or not re.findall(r"^https?://", url.lower()):
         message.reply_text("Send me a correct LINK.", quote=True)
@@ -296,7 +295,7 @@ def direct_download(client: Client, message: types.Message):
 
 @app.on_message(filters.command(["spdl"]))
 def spdl_handler(client: Client, message: types.Message):
-    chat_id = message.from_user.id
+    chat_id = message.chat.id
     init_user(chat_id)
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     message_text = message.text
@@ -305,9 +304,8 @@ def spdl_handler(client: Client, message: types.Message):
     if url is None or not re.findall(r"^https?://", url.lower()):
         message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
         return
-
-    bot_msg = message.reply_text("Request received.", quote=True)
-    spdl_download_entrance(client, bot_msg, url)
+    bot_msg = message.reply_text("SPDL request received.", quote=True)
+    special_download_entrance(client, bot_msg, url)
 
 
 @app.on_message(filters.command(["ytdl"]) & filters.group)
