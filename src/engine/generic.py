@@ -10,6 +10,7 @@ from pathlib import Path
 import yt_dlp
 
 from config import AUDIO_FORMAT
+from utils import is_youtube
 from database.model import get_format_settings, get_quality_settings
 from engine.base import BaseDownloader
 
@@ -28,11 +29,8 @@ class YoutubeDownload(BaseDownloader):
             f"bestvideo[vcodec^=avc][height={m}]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
         ]
 
-    def is_youtube(self):
-        return self._url.startswith(("https://www.youtube.com/", "https://youtu.be/"))
-
     def _setup_formats(self) -> list | None:
-        if not self.is_youtube():
+        if not is_youtube(self._url):
             return [None]
 
         quality, format_ = get_quality_settings(self._chat_id), get_format_settings(self._chat_id)
@@ -99,7 +97,7 @@ class YoutubeDownload(BaseDownloader):
             "match_filter": match_filter,
         }
         # setup cookies for youtube only
-        if self.is_youtube():
+        if is_youtube(self._url):
             # use cookies from browser firstly
             if browsers := os.getenv("BROWSERS"):
                 ydl_opts["cookiesfrombrowser"] = browsers.split(",")
