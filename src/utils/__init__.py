@@ -12,7 +12,7 @@ import tempfile
 import time
 import uuid
 from http.cookiejar import MozillaCookieJar
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlparse
 
 import ffmpeg
 
@@ -35,9 +35,16 @@ def timeof_fmt(seconds: int | float):
     return result
 
 
-def is_youtube(url: str):
-    if url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/"):
-        return True
+def is_youtube(url: str) -> bool:
+    try:
+        if not url or not isinstance(url, str):
+            return False
+
+        parsed = urlparse(url)
+        return parsed.netloc.lower() in {'youtube.com', 'www.youtube.com', 'youtu.be'}
+
+    except Exception:
+        return False
 
 
 def adjust_formats(formats):
