@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-# ytdlbot - leech.py
+# ytdlbot - direct.py
 
 import logging
 import os
@@ -120,8 +120,7 @@ class DirectDownload(BaseDownloader):
             file = files[0]
             # Handle file extension
             if not file.suffix:
-                ext = filetype.guess_extension(file)
-                if ext:
+                if ext := filetype.guess_extension(file):
                     new_file = file.with_suffix(f".{ext}")
                     file.rename(new_file)
                     file = new_file

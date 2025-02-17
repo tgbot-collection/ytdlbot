@@ -5,8 +5,11 @@
 
 from urllib.parse import urlparse
 
-from engine.direct import DirectDownload
 from engine.generic import YoutubeDownload
+from engine.direct import DirectDownload
+from engine.pixeldrain import pixeldrain_download
+from engine.instagram import InstagramDownload
+from engine.krakenfiles import krakenfiles_download
 
 
 def youtube_entrance(client, bot_message, url):
@@ -19,16 +22,17 @@ def direct_entrance(client, bot_message, url):
     dl.start()
 
 
-def special_download_entrance(url: str, tempdir: str, bm, **kwargs) -> list:
+def special_download_entrance(client, bot_message, url):
     """Specific link downloader"""
     domain = urlparse(url).hostname
     if "youtube.com" in domain or "youtu.be" in domain:
-        raise ValueError("ERROR: This is ytdl bot for Youtube links just send the link.")
+        raise ValueError("ERROR: For Youtube links, just send the link.")
     elif "www.instagram.com" in domain:
-        return instagram(url, tempdir, bm, **kwargs)
+        dl = InstagramDownload(client, bot_message, url)
+        dl.start()
     elif "pixeldrain.com" in domain:
-        return pixeldrain(url, tempdir, bm, **kwargs)
+        return pixeldrain_download(client, bot_message, url)
     elif "krakenfiles.com" in domain:
-        return krakenfiles(url, tempdir, bm, **kwargs)
+        return krakenfiles_download(client, bot_message, url)
     else:
         raise ValueError(f"Invalid URL: No specific link function found for {url}")
