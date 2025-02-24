@@ -36,8 +36,8 @@ DB_DSN = get_env("DB_DSN")
 REDIS_HOST = get_env("REDIS_HOST")
 
 ENABLE_FFMPEG = get_env("ENABLE_FFMPEG")
-
 AUDIO_FORMAT = get_env("AUDIO_FORMAT", "m4a")
+M3U8_SUPPORT = get_env("M3U8_SUPPORT")
 ENABLE_ARIA2 = get_env("ENABLE_ARIA2")
 
 RCLONE_PATH = get_env("RCLONE")

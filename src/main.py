@@ -29,6 +29,7 @@ from config import (
     BOT_TOKEN,
     ENABLE_ARIA2,
     ENABLE_FFMPEG,
+    M3U8_SUPPORT,
     ENABLE_VIP,
     OWNER,
     PROVIDER_TOKEN,
@@ -331,8 +332,8 @@ def check_link(url: str):
         # TODO maybe using ytdl.extract_info
         raise ValueError("Playlist or channel download are not supported at this moment.")
 
-    if re.findall(r"m3u8|\.m3u8|\.m3u$", url.lower()):
-        raise ValueError("m3u8 links are not supported.")
+    if not M3U8_SUPPORT and (re.findall(r"m3u8|\.m3u8|\.m3u$", url.lower())):
+        return "m3u8 links are disabled."
 
 
 @app.on_message(filters.incoming & filters.text)
