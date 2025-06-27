@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:b9571eba6704a3b307ac05afcca5ba3d6286b827da24f54bad27cfead2ff6211"
+content_hash = "sha256:1f8790b2678afab570955b745664ddc1840854dbf1d89d9a510c6083520eab21"
 
 [[metadata.targets]]
 requires_python = ">3.9"
@@ -1092,18 +1092,18 @@ files = [
 
 [[package]]
 name = "yt-dlp"
-version = "2025.6.9"
+version = "2025.6.25"
 requires_python = ">=3.9"
 summary = "A feature-rich command-line audio/video downloader"
 groups = ["default"]
 files = [
-    {file = "yt_dlp-2025.6.9-py3-none-any.whl", hash = "sha256:ebdfda9ffa807f6a26aed7c8f906e5557cd06b4c388dc547df1ec2078631fca8"},
-    {file = "yt_dlp-2025.6.9.tar.gz", hash = "sha256:751f53a3b61353522bf805fa30bbcbd16666126537e39706eab4f8c368f111ac"},
+    {file = "yt_dlp-2025.6.25-py3-none-any.whl", hash = "sha256:1eb31c9a47d56c7433be23a6ae084c640bd4e14961ad43076927ef05280871ea"},
+    {file = "yt_dlp-2025.6.25.tar.gz", hash = "sha256:242b648e1a18ab04bdd4cc175a317fe8ec3ad7d0175eee9f981912624b3d6c8b"},
 ]
 
 [[package]]
 name = "yt-dlp"
-version = "2025.6.9"
+version = "2025.6.25"
 extras = ["curl-cffi", "default"]
 requires_python = ">=3.9"
 summary = "A feature-rich command-line audio/video downloader"
@@ -1118,9 +1118,9 @@ dependencies = [
     "requests<3,>=2.32.2",
     "urllib3<3,>=1.26.17",
     "websockets>=13.0",
-    "yt-dlp==2025.6.9",
+    "yt-dlp==2025.6.25",
 ]
 files = [
-    {file = "yt_dlp-2025.6.9-py3-none-any.whl", hash = "sha256:ebdfda9ffa807f6a26aed7c8f906e5557cd06b4c388dc547df1ec2078631fca8"},
-    {file = "yt_dlp-2025.6.9.tar.gz", hash = "sha256:751f53a3b61353522bf805fa30bbcbd16666126537e39706eab4f8c368f111ac"},
+    {file = "yt_dlp-2025.6.25-py3-none-any.whl", hash = "sha256:1eb31c9a47d56c7433be23a6ae084c640bd4e14961ad43076927ef05280871ea"},
+    {file = "yt_dlp-2025.6.25.tar.gz", hash = "sha256:242b648e1a18ab04bdd4cc175a317fe8ec3ad7d0175eee9f981912624b3d6c8b"},
 ]
