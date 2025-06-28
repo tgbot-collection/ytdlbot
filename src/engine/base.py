@@ -163,15 +163,34 @@ class BaseDownloader(ABC):
             inputs = generate_input_media(files, caption)
             return self._client.send_media_group(chat_id, inputs)[0]
         else:
-            return self._methods[_type](
-                chat_id,
-                files[0],
-                caption=caption,
-                thumb=thumb,
-                progress=self.upload_hook,
-                # progress_args=(self._bot_msg,),
+            file_arg_name = None
+            if _type == "photo":
+                file_arg_name = "photo"
+            elif _type == "video":
+                file_arg_name = "video"
+            elif _type == "animation":
+                file_arg_name = "animation"
+            elif _type == "document":
+                file_arg_name = "document"
+            elif _type == "audio":
+                file_arg_name = "audio"
+            else:
+                logging.error("Unknown _type encountered: %s", _type)
+                # You might want to raise an error or return None here
+                return None
+
+            send_args = {
+                "chat_id": chat_id,
+                file_arg_name: files[0],
+                "caption": caption,
+                "progress": self.upload_hook,
                 **kwargs,
-            )
+            }
+
+            if _type in ["video", "animation", "document", "audio"] and thumb is not None:
+                send_args["thumb"] = thumb
+
+            return self._methods[_type](**send_args)
 
     def get_metadata(self):
         video_path = list(Path(self._tempdir.name).glob("*"))[0]
@@ -212,9 +231,17 @@ class BaseDownloader(ABC):
                 chat_id=self._chat_id,
                 files=files,
                 _type="document",
-                thumb=meta["thumb"],
+                thumb=meta.get("thumb"),
                 force_document=True,
-                caption=meta["caption"],
+                caption=meta.get("caption"),
+            )
+        elif self._format == "photo":
+            logging.info("Sending as photo for %s", self._url)
+            success = self.send_something(
+                chat_id=self._chat_id,
+                files=files,
+                _type="photo",
+                caption=meta.get("caption"),
             )
         elif self._format == "audio":
             logging.info("Sending as audio for %s", self._url)
@@ -222,19 +249,54 @@ class BaseDownloader(ABC):
                 chat_id=self._chat_id,
                 files=files,
                 _type="audio",
-                caption=meta["caption"],
+                caption=meta.get("caption"),
             )
         elif self._format == "video":
             logging.info("Sending as video for %s", self._url)
-            methods = {"video": meta, "animation": {}, "photo": {}}
-            for method, thumb in methods.items():
+            attempt_methods = ["video", "animation", "audio", "photo"]
+            video_meta = meta.copy()
+
+            upload_successful = False  # Flag to track if any method succeeded
+            for method in attempt_methods:
+                current_meta = video_meta.copy()
+
+                if method == "photo":
+                    current_meta.pop("thumb", None)
+                    current_meta.pop("duration", None)
+                    current_meta.pop("height", None)
+                    current_meta.pop("width", None)
+                elif method == "audio":
+                    current_meta.pop("height", None)
+                    current_meta.pop("width", None)
+
                 try:
-                    success = self.send_something(chat_id=self._chat_id, files=files, _type=method, **meta)
+                    success_obj = self.send_something(
+                        chat_id=self._chat_id,
+                        files=files,
+                        _type=method,
+                        **current_meta
+                    )
+
+                    if method == "video":
+                        success = success_obj
+                    elif method == "animation":
+                        success = success_obj
+                    elif method == "photo":
+                        success = success_obj
+                    elif method == "audio":
+                        success = success_obj
+
+                    upload_successful = True # Set flag to True on success
                     break
                 except Exception as e:
-                    logging.error("Retry to send as %s, error:", method, e)
+                    logging.error("Retry to send as %s, error: %s", method, e)
+
+            # Check the flag after the loop
+            if not upload_successful:
+                raise ValueError("ERROR: For direct links, try again with `/direct`.")
+
         else:
-            logging.error("Unknown upload format settings")
+            logging.error("Unknown upload format settings for %s", self._format)
             return
 
         video_key = self._calc_video_key()

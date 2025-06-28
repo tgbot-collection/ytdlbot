@@ -52,9 +52,22 @@ class InstagramDownload(BaseDownloader):
         code = self.extract_code()
         counter = 1
         video_paths = []
+        found_media_types = set()
 
         if url_results := resp.get("data"):
-            for link in url_results:
+            for media in url_results:
+                link = media["link"]
+                media_type = media["type"]
+
+                if media_type == "image":
+                    ext = "jpg"
+                    found_media_types.add("photo")
+                elif media_type == "video":
+                    ext = "mp4"
+                    found_media_types.add("video")
+                else:
+                    continue
+
                 try:
                     req = requests.get(link, stream=True)
                     length = int(req.headers.get("content-length", 0) or req.headers.get("x-full-image-content-length", 0))
@@ -111,15 +124,22 @@ class InstagramDownload(BaseDownloader):
                         save_path.rename(new_path)
                         save_path = new_path
 
-                    video_paths.append(save_path)
+                    video_paths.append(str(save_path))
                     counter += 1
 
                 except Exception as e:
                     self._bot_msg.edit_text(f"Download failed!❌\n\n`{e}`")
                     return []
 
+        if "video" in found_media_types:
+            self._format = "video"
+        elif "photo" in found_media_types:
+            self._format = "photo"
+        else:
+            self._format = "document"
+
         return video_paths
 
     def _start(self):
-        self._download()
-        self._upload()
+        downloaded_files = self._download()
+        self._upload(files=downloaded_files)
