@@ -176,7 +176,6 @@ class BaseDownloader(ABC):
                 file_arg_name = "audio"
             else:
                 logging.error("Unknown _type encountered: %s", _type)
-                # You might want to raise an error or return None here
                 return None
 
             send_args = {
