@@ -95,6 +95,14 @@ class YoutubeDownload(BaseDownloader):
             "restrictfilenames": False,
             "quiet": True,
             "match_filter": match_filter,
+            "concurrent_fragments": 16,
+            "buffersize": 4194304,
+            "retries": 6,
+            "fragment_retries": 6,
+            "skip_unavailable_fragments": True,
+            "embed_metadata": True,
+            "embed_thumbnail": True,
+            "writethumbnail": False,
         }
         # setup cookies for youtube only
         if is_youtube(self._url):
