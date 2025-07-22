@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:1e2987926c27301d6aa30c1a34c4b48a1b53fdbe16d2990bf0f312980bfa09fd"
+content_hash = "sha256:36d63a2911bbdb136b211ef5a958417d685cdbcabc7bb9a8cb7782e05f8db37d"
 
 [[metadata.targets]]
 requires_python = ">3.9"
@@ -609,7 +609,7 @@ files = [
 
 [[package]]
 name = "kurigram"
-version = "2.2.6"
+version = "2.2.7"
 requires_python = ">=3.8"
 summary = "Elegant, modern and asynchronous Telegram MTProto API framework in Python for users and bots"
 groups = ["default"]
@@ -618,8 +618,8 @@ dependencies = [
     "pysocks<=1.7.1",
 ]
 files = [
-    {file = "kurigram-2.2.6-py3-none-any.whl", hash = "sha256:0fd245a7117e2b6479149995857c81b93cb19979ddadcf3fc8063dca05465847"},
-    {file = "kurigram-2.2.6.tar.gz", hash = "sha256:15b64199a076c12b2c73915f66fb580294ea4ca6c1cba05f33e19a364a569d3d"},
+    {file = "kurigram-2.2.7-py3-none-any.whl", hash = "sha256:3ebcfd4f4e7e6e9a2547997b8915ed323f679d9e99fde70a1f30f4c72aee0a97"},
+    {file = "kurigram-2.2.7.tar.gz", hash = "sha256:61f3529a0cdc0a0f10f8b98103c6509317d90ebc0ae69959f38a4b684ad244f8"},
 ]
 
 [[package]]
@@ -1092,18 +1092,18 @@ files = [
 
 [[package]]
 name = "yt-dlp"
-version = "2025.6.30"
+version = "2025.7.21"
 requires_python = ">=3.9"
 summary = "A feature-rich command-line audio/video downloader"
 groups = ["default"]
 files = [
-    {file = "yt_dlp-2025.6.30-py3-none-any.whl", hash = "sha256:541becc29ed7b7b3a08751c0a66da4b7f8ee95cb81066221c78e83598bc3d1f3"},
-    {file = "yt_dlp-2025.6.30.tar.gz", hash = "sha256:6d0ae855c0a55bfcc28dffba804ec8525b9b955d34a41191a1561a4cec03d8bd"},
+    {file = "yt_dlp-2025.7.21-py3-none-any.whl", hash = "sha256:d7aa2b53f9b2f35453346360f41811a0dad1e956e70b35a4ae95039d4d815d15"},
+    {file = "yt_dlp-2025.7.21.tar.gz", hash = "sha256:46fbb53eab1afbe184c45b4c17e9a6eba614be680e4c09de58b782629d0d7f43"},
 ]
 
 [[package]]
 name = "yt-dlp"
-version = "2025.6.30"
+version = "2025.7.21"
 extras = ["curl-cffi", "default"]
 requires_python = ">=3.9"
 summary = "A feature-rich command-line audio/video downloader"
@@ -1118,9 +1118,9 @@ dependencies = [
     "requests<3,>=2.32.2",
     "urllib3<3,>=1.26.17",
     "websockets>=13.0",
-    "yt-dlp==2025.6.30",
+    "yt-dlp==2025.7.21",
 ]
 files = [
-    {file = "yt_dlp-2025.6.30-py3-none-any.whl", hash = "sha256:541becc29ed7b7b3a08751c0a66da4b7f8ee95cb81066221c78e83598bc3d1f3"},
-    {file = "yt_dlp-2025.6.30.tar.gz", hash = "sha256:6d0ae855c0a55bfcc28dffba804ec8525b9b955d34a41191a1561a4cec03d8bd"},
+    {file = "yt_dlp-2025.7.21-py3-none-any.whl", hash = "sha256:d7aa2b53f9b2f35453346360f41811a0dad1e956e70b35a4ae95039d4d815d15"},
+    {file = "yt_dlp-2025.7.21.tar.gz", hash = "sha256:46fbb53eab1afbe184c45b4c17e9a6eba614be680e4c09de58b782629d0d7f43"},
 ]
