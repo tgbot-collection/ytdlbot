@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:ccf9ba0ca0c00ffdfc237d096da38a3e58ef321b35e261a062476f705f3de081"
+content_hash = "sha256:abb5216ce445b61a4a487cc4d5468443847414d233c67b0414f50416489f2fb5"
 
 [[metadata.targets]]
 requires_python = ">3.9"
@@ -779,7 +779,7 @@ files = [
 
 [[package]]
 name = "redis"
-version = "6.3.0"
+version = "6.4.0"
 requires_python = ">=3.9"
 summary = "Python client for Redis database and key-value store"
 groups = ["default"]
@@ -787,8 +787,8 @@ dependencies = [
     "async-timeout>=4.0.3; python_full_version < \"3.11.3\"",
 ]
 files = [
-    {file = "redis-6.3.0-py3-none-any.whl", hash = "sha256:92f079d656ded871535e099080f70fab8e75273c0236797126ac60242d638e9b"},
-    {file = "redis-6.3.0.tar.gz", hash = "sha256:3000dbe532babfb0999cdab7b3e5744bcb23e51923febcfaeb52c8cfb29632ef"},
+    {file = "redis-6.4.0-py3-none-any.whl", hash = "sha256:f0544fa9604264e9464cdf4814e7d4830f74b165d52f2a330a760a88dd248b7f"},
+    {file = "redis-6.4.0.tar.gz", hash = "sha256:b01bc7282b8444e28ec36b261df5375183bb47a07eb9c603f284e89cbc5ef010"},
 ]
 
 [[package]]
@@ -1092,18 +1092,18 @@ files = [
 
 [[package]]
 name = "yt-dlp"
-version = "2025.7.21"
+version = "2025.8.11"
 requires_python = ">=3.9"
 summary = "A feature-rich command-line audio/video downloader"
 groups = ["default"]
 files = [
-    {file = "yt_dlp-2025.7.21-py3-none-any.whl", hash = "sha256:d7aa2b53f9b2f35453346360f41811a0dad1e956e70b35a4ae95039d4d815d15"},
-    {file = "yt_dlp-2025.7.21.tar.gz", hash = "sha256:46fbb53eab1afbe184c45b4c17e9a6eba614be680e4c09de58b782629d0d7f43"},
+    {file = "yt_dlp-2025.8.11-py3-none-any.whl", hash = "sha256:f115d2246c1ab5737772bd4845be057eebb91c0d95125a7577d92288351df7d0"},
+    {file = "yt_dlp-2025.8.11.tar.gz", hash = "sha256:dc7c120a367fe55e0f711613dc80ea29d3a4e0ed8d66104cebfbe3d36e81fdfc"},
 ]
 
 [[package]]
 name = "yt-dlp"
-version = "2025.7.21"
+version = "2025.8.11"
 extras = ["curl-cffi", "default"]
 requires_python = ">=3.9"
 summary = "A feature-rich command-line audio/video downloader"
@@ -1112,15 +1112,15 @@ dependencies = [
     "brotli; implementation_name == \"cpython\"",
     "brotlicffi; implementation_name != \"cpython\"",
     "certifi",
-    "curl-cffi!=0.6.*,!=0.7.*,!=0.8.*,!=0.9.*,<0.11,>=0.5.10; implementation_name == \"cpython\"",
+    "curl-cffi!=0.6.*,!=0.7.*,!=0.8.*,!=0.9.*,<0.14,>=0.5.10; implementation_name == \"cpython\"",
     "mutagen",
     "pycryptodomex",
     "requests<3,>=2.32.2",
-    "urllib3<3,>=1.26.17",
+    "urllib3<3,>=2.0.2",
     "websockets>=13.0",
-    "yt-dlp==2025.7.21",
+    "yt-dlp==2025.8.11",
 ]
 files = [
-    {file = "yt_dlp-2025.7.21-py3-none-any.whl", hash = "sha256:d7aa2b53f9b2f35453346360f41811a0dad1e956e70b35a4ae95039d4d815d15"},
-    {file = "yt_dlp-2025.7.21.tar.gz", hash = "sha256:46fbb53eab1afbe184c45b4c17e9a6eba614be680e4c09de58b782629d0d7f43"},
+    {file = "yt_dlp-2025.8.11-py3-none-any.whl", hash = "sha256:f115d2246c1ab5737772bd4845be057eebb91c0d95125a7577d92288351df7d0"},
+    {file = "yt_dlp-2025.8.11.tar.gz", hash = "sha256:dc7c120a367fe55e0f711613dc80ea29d3a4e0ed8d66104cebfbe3d36e81fdfc"},
 ]
