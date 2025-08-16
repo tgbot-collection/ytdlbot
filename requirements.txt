@@ -1,12 +1,12 @@
 tgcrypto>=1.2.5
-yt-dlp[default,curl-cffi]==2025.7.21
+yt-dlp[default,curl-cffi]==2025.8.11
 APScheduler>=3.11.0
 ffmpeg-python>=0.2.0
 PyMySQL>=1.1.1
 filetype>=1.2.0
 beautifulsoup4>=4.12.3
 fakeredis>=2.26.2
-redis==6.3.0
+redis==6.4.0
 requests>=2.32.3
 tqdm>=4.67.1
 token-bucket>=0.3.0
