@@ -98,6 +98,7 @@ This bot can be deployed on any platform that supports Python.
     - `FREE_DOWNLOAD`: Free downloads allowed per user
     - `RATE_LIMIT`: Rate limit for requests
     - `TMPFILE_PATH`: Path for temporary/download files (ensure the directory exists and is writable)
+    - `PROXY`: Proxy URL for downloads (e.g., http://proxy.example.com:8080 or socks5://proxy.example.com:1080)
     - `TG_NORMAL_MAX_SIZE`: Maximum size for Telegram uploads in MB
     - `CAPTION_URL_LENGTH_LIMIT`: Maximum URL length in captions
     - `POTOKEN`: Your PO Token.  [PO-Token-Guide](https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide)

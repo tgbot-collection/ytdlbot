@@ -15,7 +15,7 @@ from uuid import uuid4
 import filetype
 import requests
 
-from config import ENABLE_ARIA2, TMPFILE_PATH
+from config import ENABLE_ARIA2, TMPFILE_PATH, PROXY
 from engine.base import BaseDownloader
 
 
@@ -40,7 +40,8 @@ class DirectDownload(BaseDownloader):
 
     def _requests_download(self):
         logging.info("Requests download with url %s", self._url)
-        response = requests.get(self._url, stream=True)
+        proxies = {"http": PROXY, "https": PROXY} if PROXY else None
+        response = requests.get(self._url, stream=True, proxies=proxies)
         response.raise_for_status()
         file = Path(self._tempdir.name).joinpath(uuid4().hex)
         with open(file, "wb") as f:
@@ -75,6 +76,9 @@ class DirectDownload(BaseDownloader):
                 "-d", temp_dir,
                 self._url,
             ]
+            # add proxy if configured
+            if PROXY:
+                command.extend(["--all-proxy", PROXY])
 
             self._process = subprocess.Popen(
                 command,
