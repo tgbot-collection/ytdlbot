@@ -42,6 +42,9 @@ ENABLE_ARIA2 = get_env("ENABLE_ARIA2")
 
 RCLONE_PATH = get_env("RCLONE")
 
+# proxy settings
+PROXY = get_env("PROXY")
+
 # payment settings
 ENABLE_VIP = get_env("ENABLE_VIP")
 PROVIDER_TOKEN = get_env("PROVIDER_TOKEN")
