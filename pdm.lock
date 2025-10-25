@@ -5,10 +5,10 @@
 groups = ["default"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:9c6bf3c0f0a88275c449d056d984aa9e2f0e06b6de34d823ebd4b5b4858a1ada"
+content_hash = "sha256:8b5547b4831bb7c5b449506f131f5d842237771721abdf5db6a8e5b6db9e17cb"
 
 [[metadata.targets]]
-requires_python = ">3.9"
+requires_python = ">=3.10"
 
 [[package]]
 name = "apscheduler"
@@ -1092,20 +1092,20 @@ files = [
 
 [[package]]
 name = "yt-dlp"
-version = "2025.10.14"
-requires_python = ">=3.9"
+version = "2025.10.22"
+requires_python = ">=3.10"
 summary = "A feature-rich command-line audio/video downloader"
 groups = ["default"]
 files = [
-    {file = "yt_dlp-2025.10.14-py3-none-any.whl", hash = "sha256:0b9da17eda1bbf48e2315130043d7993fd4ca1c5a35571f8231da1a910c9c115"},
-    {file = "yt_dlp-2025.10.14.tar.gz", hash = "sha256:b18436aa9bb6f04354fd78d31ad9eeaae8c81b6a859f07072b25c18cd6c25844"},
+    {file = "yt_dlp-2025.10.22-py3-none-any.whl", hash = "sha256:9c803a9598859f91d0d5bd3337f1506ecb40bbe97f6efbe93bc4461fed344fb2"},
+    {file = "yt_dlp-2025.10.22.tar.gz", hash = "sha256:db2d48133222b1d9508c6de757859c24b5cefb9568cf68ccad85dac20b07f77b"},
 ]
 
 [[package]]
 name = "yt-dlp"
-version = "2025.10.14"
+version = "2025.10.22"
 extras = ["curl-cffi", "default"]
-requires_python = ">=3.9"
+requires_python = ">=3.10"
 summary = "A feature-rich command-line audio/video downloader"
 groups = ["default"]
 dependencies = [
@@ -1118,9 +1118,9 @@ dependencies = [
     "requests<3,>=2.32.2",
     "urllib3<3,>=2.0.2",
     "websockets>=13.0",
-    "yt-dlp==2025.10.14",
+    "yt-dlp==2025.10.22",
 ]
 files = [
-    {file = "yt_dlp-2025.10.14-py3-none-any.whl", hash = "sha256:0b9da17eda1bbf48e2315130043d7993fd4ca1c5a35571f8231da1a910c9c115"},
-    {file = "yt_dlp-2025.10.14.tar.gz", hash = "sha256:b18436aa9bb6f04354fd78d31ad9eeaae8c81b6a859f07072b25c18cd6c25844"},
+    {file = "yt_dlp-2025.10.22-py3-none-any.whl", hash = "sha256:9c803a9598859f91d0d5bd3337f1506ecb40bbe97f6efbe93bc4461fed344fb2"},
+    {file = "yt_dlp-2025.10.22.tar.gz", hash = "sha256:db2d48133222b1d9508c6de757859c24b5cefb9568cf68ccad85dac20b07f77b"},
 ]
