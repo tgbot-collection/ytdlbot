@@ -15,5 +15,5 @@ black>=24.10.0
 sqlalchemy>=2.0.36
 psutil>=6.1.0
 ffpb>=0.4.1
-kurigram==2.2.13
+kurigram==2.2.14
 cryptography>=43.0.3
