@@ -1,5 +1,5 @@
 tgcrypto>=1.2.5
-yt-dlp[default,curl-cffi]==2025.10.22
+yt-dlp[default,curl-cffi]==2025.11.12
 APScheduler>=3.11.0
 ffmpeg-python>=0.2.0
 PyMySQL>=1.1.1
