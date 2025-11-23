@@ -1,5 +1,4 @@
 tgcrypto>=1.2.5
-yt-dlp[default,curl-cffi]==2025.10.22
 APScheduler>=3.11.0
 ffmpeg-python>=0.2.0
 PyMySQL>=1.1.1
@@ -17,3 +16,5 @@ psutil>=6.1.0
 ffpb>=0.4.1
 kurigram==2.2.13
 cryptography>=43.0.3
+yt-dlp[default,curl-cffi]==2025.11.12
+yt-dlp-ejs==0.3.1
