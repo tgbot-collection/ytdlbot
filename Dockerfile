@@ -8,7 +8,7 @@ RUN pdm install
 FROM python:3.12-alpine AS runner
 WORKDIR /app
 
-RUN apk update && apk add --no-cache ffmpeg aria2
+RUN apk update && apk add --no-cache ffmpeg aria2 deno
 COPY --from=pybuilder /build/.venv/lib/ /usr/local/lib/
 COPY src /app
 WORKDIR /app

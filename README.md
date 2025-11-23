@@ -69,6 +69,10 @@ This bot can be deployed on any platform that supports Python.
 
 2. Install modules using PDM: `pdm install`, or the old way use `pip install -r requirements.txt`
 
+<!-- [Nov 23, 2025] Note for the users to install a JS runtime for yt-dlp to work properly with YouTube. -->
+> [!IMPORTANT]
+> All users who intend to download from YouTube are strongly encouraged to install one of the JS runtimes (like deno) supported by yt-dlp.
+
 3. <details>
     <summary>Setting up config file</summary>
 
