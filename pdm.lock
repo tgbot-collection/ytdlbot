@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:8d4db19e49a707c0a9772af4d4699d5660885ad93fd060df024770824c21b20f"
+content_hash = "sha256:d7917c1051f4b5ff27b1dd3bf9fc03daa8a1c6178a848d93eaae8e1d92e15600"
 
 [[metadata.targets]]
 requires_python = ">=3.10"
@@ -609,7 +609,7 @@ files = [
 
 [[package]]
 name = "kurigram"
-version = "2.2.13"
+version = "2.2.15"
 requires_python = ">=3.8"
 summary = "Elegant, modern and asynchronous Telegram MTProto API framework in Python for users and bots"
 groups = ["default"]
@@ -618,8 +618,8 @@ dependencies = [
     "pysocks<=1.7.1",
 ]
 files = [
-    {file = "kurigram-2.2.13-py3-none-any.whl", hash = "sha256:656ef2377431d6054c23cb852b3b9efed46c0349658fc7d2e2cb05834263f0a9"},
-    {file = "kurigram-2.2.13.tar.gz", hash = "sha256:71c054821937d7238eee966be318d3fd9a2150a6769468e83db31933ccc2c9af"},
+    {file = "kurigram-2.2.15-py3-none-any.whl", hash = "sha256:9622af086988d0df783257b34e0ab423f7d33f1412b563e0d4f3df58d57d8f65"},
+    {file = "kurigram-2.2.15.tar.gz", hash = "sha256:4e777ef2809d0883a318299374438a408d71ecb4ddef597b7292b7ffc332955a"},
 ]
 
 [[package]]
