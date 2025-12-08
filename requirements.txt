@@ -16,5 +16,5 @@ psutil>=6.1.0
 ffpb>=0.4.1
 kurigram==2.2.15
 cryptography>=43.0.3
-yt-dlp[default,curl-cffi]==2025.11.12
+yt-dlp[default,curl-cffi]==2025.12.8
 yt-dlp-ejs==0.3.1
