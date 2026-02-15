@@ -34,6 +34,7 @@ from config import (
     OWNER,
     PROVIDER_TOKEN,
     TOKEN_PRICE,
+    PROXY,
     BotText,
 )
 from database.model import (
@@ -341,7 +342,10 @@ def ytdl_handler(client: Client, message: types.Message):
 
 
 def check_link(url: str):
-    ytdl = yt_dlp.YoutubeDL()
+    opts = {}
+    if PROXY:
+        opts["proxy"] = PROXY
+    ytdl = yt_dlp.YoutubeDL(opts)
     if re.findall(r"^https://www\.youtube\.com/channel/", url) or "list" in url:
         # TODO maybe using ytdl.extract_info
         raise ValueError("Playlist or channel download are not supported at this moment.")
