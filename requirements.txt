@@ -15,5 +15,5 @@ sqlalchemy>=2.0.36
 psutil>=7.2.2
 ffpb>=0.4.1
 cryptography>=46.0.4
-kurigram==2.2.18
+kurigram==2.2.22
 yt-dlp[default,curl-cffi]==2026.1.31
