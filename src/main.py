@@ -10,11 +10,15 @@ __author__ = "Benny <benny.think@gmail.com>"
 import logging
 import os
 import re
+import signal
 import threading
 import time
 import typing
+from collections import OrderedDict
 from io import BytesIO
+from queue import Queue
 from typing import Any
+from urllib.parse import urlparse
 
 import psutil
 import pyrogram.errors
@@ -42,6 +46,7 @@ from database.model import (
     get_free_quota,
     get_paid_quota,
     get_quality_settings,
+    get_silent_mode,
     init_user,
     reset_free,
     set_user_settings,
@@ -84,7 +89,7 @@ def private_use(func):
             users = []
 
         if users and chat_id and chat_id not in users:
-            message.reply_text("BotText.private", quote=True)
+            message.reply_text(BotText.private, quote=True)
             return
 
         return func(client, message)
@@ -351,20 +356,32 @@ def check_link(url: str):
 
 
 @app.on_message(filters.incoming & filters.text)
-@private_use
 def download_handler(client: Client, message: types.Message):
     chat_id = message.from_user.id
+
+    # inline private_use check
+    if message.chat.type != enums.ChatType.PRIVATE:
+        logging.debug("%s, it's annoying me...🙄️ ", message.text)
+        return
+    if AUTHORIZED_USER:
+        users = [int(i) for i in AUTHORIZED_USER.split(",")]
+        if users and chat_id not in users:
+            message.reply_text(BotText.private, quote=True)
+            return
+
     init_user(chat_id)
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     url = message.text
-    logging.info("start %s", url)
+    logging.info("queue start %s", url)
 
     try:
         check_link(url)
-        # raise pyrogram.errors.exceptions.FloodWait(10)
-        bot_msg: types.Message | Any = message.reply_text("Task received.", quote=True)
-        client.send_chat_action(chat_id, enums.ChatAction.UPLOAD_VIDEO)
-        youtube_entrance(client, bot_msg, url)
+        bot_msg: types.Message | Any = message.reply_text("⏳ Task queued.", quote=True)
+        # direct media URLs → aria2/requests; everything else → yt-dlp
+        path = urlparse(url).path.lower()
+        is_direct = any(path.endswith(ext) for ext in (".webm", ".mp4", ".avi", ".mkv", ".mov", ".flv", ".gif", ".jpg", ".png"))
+        func = direct_entrance if is_direct else youtube_entrance
+        _enqueue_download(client, bot_msg, url, func)
     except pyrogram.errors.Flood as e:
         f = BytesIO()
         f.write(str(e).encode())
@@ -390,6 +407,17 @@ def format_callback(client: Client, callback_query: types.CallbackQuery):
     set_user_settings(chat_id, "format", data)
 
 
+@app.on_message(filters.command(["silent"]))
+def silent_handler(client: Client, message: types.Message):
+    chat_id = message.chat.id
+    init_user(chat_id)
+    current = get_silent_mode(chat_id)
+    new_val = 0 if current else 1
+    set_user_settings(chat_id, "silent_mode", new_val)
+    status = "ON 🔇" if new_val else "OFF 🔊"
+    message.reply_text(f"Silent mode set to {status}.", quote=True)
+
+
 @app.on_callback_query(filters.regex(r"high|medium|low"))
 def quality_callback(client: Client, callback_query: types.CallbackQuery):
     chat_id = callback_query.message.chat.id
@@ -397,6 +425,73 @@ def quality_callback(client: Client, callback_query: types.CallbackQuery):
     logging.info("Setting %s download quality to %s", chat_id, data)
     callback_query.answer(f"Your default engine quality was set to {callback_query.data}")
     set_user_settings(chat_id, "quality", data)
+
+
+# --- Download queue & cancel ---
+# Singleton queue: (client, bot_msg, url, func)
+_download_queue: Queue = Queue()
+_active_tasks: dict[int, threading.Thread] = {}  # chat_id -> thread
+
+
+def _queue_worker():
+    while True:
+        client, bot_msg, url, func = _download_queue.get()
+        chat_id = bot_msg.chat.id
+        _active_tasks[chat_id] = threading.current_thread()
+        try:
+            func(client, bot_msg, url)
+        except Exception as e:
+            logging.error("Queue task failed: %s", e)
+            try:
+                bot_msg.edit_text(f"❌ Download failed: {e}")
+            except Exception:
+                pass
+        finally:
+            _active_tasks.pop(chat_id, None)
+            _download_queue.task_done()
+
+
+def _enqueue_download(client, bot_msg, url, func):
+    _download_queue.put((client, bot_msg, url, func))
+    # update user about queue position (no debounce)
+    pos = _download_queue.qsize()
+    if pos > 1:
+        bot_msg.edit_text(f"⏳ Queue position: #{pos}")
+
+
+@app.on_message(filters.command(["cancel"]))
+def cancel_handler(client: Client, message: types.Message):
+    chat_id = message.chat.id
+    thread = _active_tasks.get(chat_id)
+    if thread and thread.is_alive():
+        # kill thread — safe for yt-dlp since it runs in same process
+        # We signal by raising exception through the hook mechanism
+        # Hard kill: the thread will be interrupted at next I/O
+        import ctypes
+        tid = thread.ident
+        if tid:
+            ret = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                ctypes.c_long(tid), ctypes.py_object(SystemExit)
+            )
+            if ret == 0:
+                message.reply_text("No active task found.", quote=True)
+                return
+            elif ret > 1:
+                ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), None)
+        message.reply_text("✅ Task cancelled.", quote=True)
+        # delete progress message if any
+        if hasattr(message, 'reply_to_message') and message.reply_to_message:
+            try:
+                message.reply_to_message.delete()
+            except Exception:
+                pass
+    else:
+        message.reply_text("No active task to cancel.", quote=True)
+
+
+# Start worker thread
+_queue_thread = threading.Thread(target=_queue_worker, daemon=True)
+_queue_thread.start()
 
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ import filetype
 from pyrogram import enums, types
 from tqdm import tqdm
 
-from config import TG_NORMAL_MAX_SIZE, Types
+from config import ENABLE_FFMPEG, TG_NORMAL_MAX_SIZE, Types
 from database import Redis
 from database.model import (
     check_quota,
@@ -28,9 +28,10 @@ from database.model import (
     get_free_quota,
     get_paid_quota,
     get_quality_settings,
+    get_silent_mode,
     use_quota,
 )
-from engine.helper import debounce, sizeof_fmt
+from engine.helper import debounce, ensure_streamable_video, sizeof_fmt
 
 
 def generate_input_media(file_paths: list, cap: str) -> list:
@@ -65,6 +66,7 @@ class BaseDownloader(ABC):
         self._redis = Redis()
         self._quality = get_quality_settings(self._chat_id)
         self._format = get_format_settings(self._chat_id)
+        self._silent_mode = get_silent_mode(self._chat_id)
 
     def __del__(self):
         self._tempdir.cleanup()
@@ -82,7 +84,7 @@ class BaseDownloader(ABC):
         return re.sub(r"\u001b|\[0;94m|\u001b\[0m|\[0;32m|\[0m|\[0;33m", "", text)
 
     @staticmethod
-    def __tqdm_progress(desc, total, finished, speed="", eta=""):
+    def __tqdm_progress(desc, total, finished, speed="", eta="", percent=""):
         def more(title, initial):
             if initial:
                 return f"{title} {initial}"
@@ -103,10 +105,11 @@ class BaseDownloader(ABC):
         tqdm_output = raw_output.split("|")
         progress = f"`[{tqdm_output[1]}]`"
         detail = tqdm_output[2].replace("[A", "")
+        pct_str = percent if percent else ""
         text = f"""
     {desc}
 
-    {progress}
+    {progress} {pct_str}
     {detail}
     {more("Speed:", speed)}
     {more("ETA:", eta)}
@@ -123,19 +126,24 @@ class BaseDownloader(ABC):
                 msg = f"Your download file size {sizeof_fmt(total)} is too large for Telegram."
                 raise Exception(msg)
 
-            # percent = remove_bash_color(d.get("_percent_str", "N/A"))
             speed = self.__remove_bash_color(d.get("_speed_str", "N/A"))
             eta = self.__remove_bash_color(d.get("_eta_str", d.get("eta")))
-            text = self.__tqdm_progress("Downloading...", total, downloaded, speed, eta)
+            percent = self.__remove_bash_color(d.get("_percent_str", ""))
+            text = self.__tqdm_progress("Downloading...", total, downloaded, speed, eta, percent)
             self.edit_text(text)
 
     def upload_hook(self, current, total):
         text = self.__tqdm_progress("Uploading...", total, current)
         self.edit_text(text)
 
-    @debounce(5)
+    @debounce(2)
     def edit_text(self, text: str):
-        self._bot_msg.edit_text(text)
+        if self._silent_mode:
+            return
+        try:
+            self._bot_msg.edit_text(text)
+        except Exception as e:
+            logging.warning("edit_text failed (msg may have been deleted): %s", e)
 
     @abstractmethod
     def _setup_formats(self) -> list | None:
@@ -192,7 +200,15 @@ class BaseDownloader(ABC):
             return self._methods[_type](**send_args)
 
     def get_metadata(self):
-        video_path = list(Path(self._tempdir.name).glob("*"))[0]
+        # pick the first video file, skip thumbnails/images
+        video_path = None
+        for p in Path(self._tempdir.name).iterdir():
+            mime = filetype.guess_mime(str(p))
+            if mime and "video" in mime:
+                video_path = p
+                break
+        if not video_path:
+            video_path = list(Path(self._tempdir.name).glob("*"))[0]
         filename = Path(video_path).name
         width = height = duration = 0
         try:
@@ -210,16 +226,40 @@ class BaseDownloader(ABC):
                 "scale",
                 "if(gt(iw,ih),300,-1)",  # If width > height, scale width to 320 and height auto
                 "if(gt(iw,ih),-1,300)",
-            ).output(thumb, vframes=1).run()
+            ).output(thumb, vframes=1, update=1).run()
         except ffmpeg._run.Error:
             thumb = None
 
         caption = f"{self._url}\n{filename}\n\nResolution: {width}x{height}\nDuration: {duration} seconds"
         return dict(height=height, width=width, duration=duration, thumb=thumb, caption=caption)
 
+    def _reencode_videos(self, files: list) -> list:
+        """Convert videos to mp4/h264 and scale to max 720p for Telegram.
+        
+        Only runs if ENABLE_FFMPEG is truthy. Set ENABLE_FFMPEG=true in env.
+        Skips items that are not real files (e.g. Telegram file_ids from cache).
+        """
+        if not ENABLE_FFMPEG:
+            logging.info("FFmpeg re-encode disabled by config (ENABLE_FFMPEG=%s)", ENABLE_FFMPEG)
+            return files
+        new_files = []
+        for f in files:
+            f_path = Path(f)
+            if f_path.exists():
+                mime = filetype.guess_mime(str(f))
+                if mime and "video" in mime:
+                    f = ensure_streamable_video(f)
+            new_files.append(f)
+        return new_files
+
     def _upload(self, files=None, meta=None):
         if files is None:
             files = list(Path(self._tempdir.name).glob("*"))
+        
+        # Always re-encode videos to ensure 720p max resolution
+        # This applies even when meta is provided (e.g., from cache)
+        files = self._reencode_videos(files)
+        
         if meta is None:
             meta = self.get_metadata()
 
@@ -307,7 +347,14 @@ class BaseDownloader(ABC):
 
         self._redis.add_cache(video_key, mapping)
         # change progress bar to done
-        self._bot_msg.edit_text("✅ Success")
+        if self._silent_mode:
+            try:
+                self._bot_msg.delete()
+            except Exception as e:
+                logging.warning("delete silent msg failed: %s", e)
+            self._client.send_message(self._chat_id, "✅ Download complete, file sent in chat.")
+        else:
+            self._bot_msg.edit_text("✅ Success")
         return success
 
     def _get_video_cache(self):

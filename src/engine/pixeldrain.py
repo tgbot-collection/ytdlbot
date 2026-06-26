@@ -6,7 +6,6 @@
 __author__ = "SanujaNS <sanujas@sanuja.biz>"
 
 import tempfile
-import pathlib
 import re
 from urllib.parse import urlparse
 from engine.direct import DirectDownload

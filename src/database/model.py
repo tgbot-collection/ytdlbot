@@ -52,6 +52,7 @@ class Setting(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     quality = Column(Enum("high", "medium", "low", "audio", "custom"), nullable=False, default="high")
     format = Column(Enum("video", "audio", "document"), nullable=False, default="video")
+    silent_mode = Column(Integer, default=0)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     user = relationship("User", back_populates="settings")
@@ -123,7 +124,15 @@ def get_format_settings(tgid) -> Literal["video", "audio", "document"]:
         return "video"
 
 
-def set_user_settings(tgid: int, key: str, value: str):
+def get_silent_mode(tgid) -> bool:
+    with session_manager() as session:
+        user = session.query(User).filter(User.user_id == tgid).first()
+        if user and user.settings:
+            return bool(user.settings.silent_mode)
+        return False
+
+
+def set_user_settings(tgid: int, key: str, value: str | int):
     # set quality or format settings
     with session_manager() as session:
         # find user first

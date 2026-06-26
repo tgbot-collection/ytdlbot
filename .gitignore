@@ -1,13 +1,58 @@
-# Byte-compiled / optimized / DLL files
+```
+# Python
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.eggs/
+.egg-info/
+dist/
+build/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
 
-# C extensions
-*.so
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.nosetests
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+*.coverage
+
+# MyPy
+.mypy_cache/
 
 # Distribution / packaging
 .Python
+_build/
+buck-out/
 build/
 develop-eggs/
 dist/
@@ -20,58 +65,45 @@ parts/
 sdist/
 var/
 wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
 
 # Unit test / coverage reports
 htmlcov/
 .tox/
 .nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
 coverage.xml
 *.cover
-*.py,cover
 .hypothesis/
-.pytest_cache/
+cover/
 
 # Translations
 *.mo
 *.pot
 
-# Django stuff:
+# Django
 *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# Flask stuff:
+# Flask
 instance/
 .webassets-cache
 
-# Scrapy stuff:
+# Scrapy
 .scrapy
 
 # Sphinx documentation
 docs/_build/
 
 # PyBuilder
+.pybuilder/
 target/
 
 # Jupyter Notebook
@@ -85,30 +117,19 @@ ipython_config.py
 .python-version
 
 # pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
+Pipfile.lock
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+# PEP 582
 __pypackages__/
 
-# Celery stuff
+# Celery
 celerybeat-schedule
 celerybeat.pid
 
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+# Sage
+.dvipsrc
+.pyxblib
+notebook_sage.py
 
 # Spyder project settings
 .spyderproject
@@ -118,64 +139,42 @@ venv.bak/
 .ropeproject
 
 # mkdocs documentation
-/site
+/site/
 
 # mypy
 .mypy_cache/
 .dmypy.json
 dmypy.json
 
-# Pyre type checker
+# Pyre
 .pyre/
-/.idea/modules.xml
-/.idea/inspectionProfiles/profiles_settings.xml
-/.idea/inspectionProfiles/Project_Default.xml
-/.idea/vcs.xml
-/.idea/ytdl-bot.iml
-/.idea/misc.xml
-/.idea/workspace.xml
-/.idea/jsonSchemas.xml
-/*.session
-/.idea/ytdlbot.iml
-/*.sqlite
-/.idea/dataSources.xml
-/.idea/sqldialects.xml
-/.idea/.gitignore
-/.idea/dataSources/bf75f0a6-c774-4ecf-9448-2086f57b70df.xml
-/.idea/dataSources.local.xml
-/.idea/dataSources/bf75f0a6-c774-4ecf-9448-2086f57b70df/entities/entities.dat
-/.idea/dataSources/bf75f0a6-c774-4ecf-9448-2086f57b70df/entities/entities.dat.len
-/.idea/dataSources/bf75f0a6-c774-4ecf-9448-2086f57b70df/entities/entities.dat.values
-/.idea/dataSources/bf75f0a6-c774-4ecf-9448-2086f57b70df/entities/entities.dat.values.at
-/.idea/dataSources/bf75f0a6-c774-4ecf-9448-2086f57b70df/entities/entities.dat.values.s
-/.idea/dataSources/bf75f0a6-c774-4ecf-9448-2086f57b70df/entities/entities.dat_i
-/.idea/dataSources/bf75f0a6-c774-4ecf-9448-2086f57b70df/entities/entities.dat_i.len
-/.idea/dataSources/bf75f0a6-c774-4ecf-9448-2086f57b70df/storage_v2/_src_/schema/main.uQUzAA.meta
-db_data/*
-env/*
-.ash_history
-.DS_Store
-ytdlbot/ytdl.session
-data/*
-upgrade_worker.sh
-ytdl.session
-reinforcement/*
-/ytdlbot/session/celery.session
-/.idea/prettier.xml
-/.idea/watcherTasks.xml
-/ytdlbot/session/ytdl.session-journal
-/ytdlbot/unknown_errors.txt
-/ytdlbot/ytdl.session-journal
-/ytdlbot/ytdl-main.session-journal
-/ytdlbot/ytdl-main.session
-/ytdlbot/ytdl-celery.session-journal
-/ytdlbot/ytdl-celery.session
-/ytdlbot/main.session
-/ytdlbot/tasks.session
-/ytdlbot/tasks.session-journal
-/ytdlbot/premium.session
-/dump.rdb
-/ytdlbot/premium.session-journal
-/ytdlbot/main.session-journal
-/src/main.session
-/src/main.session-journal
+
+# pytype
+.pytype/
+
+# Cython
+cython_debug/
+
+# Ruff
+.ruff_cache/
+
+# Black
+.black_cache/
+
+# isort
+.isort_cache/
+
+# Pre-commit
+.pre-commit-config.yaml
+
+# Coverage
+coverage/
+htmlcov/
+*.coverage
+.coverage.*
+
+# Temporary files
+*.tmp
+*.temp
+*~
+```

@@ -13,6 +13,7 @@ from config import AUDIO_FORMAT
 from utils import is_youtube
 from database.model import get_format_settings, get_quality_settings
 from engine.base import BaseDownloader
+from engine.helper import convert_audio_format
 
 
 def match_filter(info_dict):
@@ -24,24 +25,26 @@ def match_filter(info_dict):
 class YoutubeDownload(BaseDownloader):
     @staticmethod
     def get_format(m):
+        # No filter by height — yt-dlp picks best available.
+        # Downscale to ≤m is done by format_sort + ensure_streamable_video().
         return [
-            f"bestvideo[ext=mp4][height={m}]+bestaudio[ext=m4a]",
-            f"bestvideo[vcodec^=avc][height={m}]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
+            "bestvideo+bestaudio/best",
         ]
 
-    def _setup_formats(self) -> list | None:
+    def _setup_formats(self) -> tuple[list | None, int]:
+        """Returns (formats, max_resolution).
+        max_res: pixel height limit for format_sort (0 = no limit).
+        """
         if not is_youtube(self._url):
-            return [None]
+            return ["best[height<=1080]/best"], 0
 
         quality, format_ = get_quality_settings(self._chat_id), get_format_settings(self._chat_id)
         # quality: high, medium, low, custom
         # format: audio, video, document
         formats = []
         defaults = [
-            # webm , vp9 and av01 are not streamable on telegram, so we'll extract only mp4
-            "bestvideo[ext=mp4][vcodec!*=av01][vcodec!*=vp09]+bestaudio[ext=m4a]/bestvideo+bestaudio",
-            "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
-            None,
+            # prefer ≤1080p (fast, no post-processing); fallback to full quality
+            "bestvideo[ext=mp4][height<=1080][vcodec!*=av01][vcodec!*=vp09]+bestaudio[ext=m4a]/best[height<=1080]/bestvideo+bestaudio/best",
         ]
         audio = AUDIO_FORMAT or "m4a"
         maps = {
@@ -58,6 +61,9 @@ class YoutubeDownload(BaseDownloader):
             "custom-video": "",
             "custom-document": "",
         }
+
+        # Map quality to max resolution for format_sort
+        quality_max_res = {"high": 1080, "medium": 720, "low": 480, "custom": 0}
 
         if quality == "custom":
             pass
@@ -85,24 +91,31 @@ class YoutubeDownload(BaseDownloader):
         # extend default formats if not high*
         if quality != "high":
             formats.extend(defaults)
-        return formats
+        return formats, quality_max_res.get(quality, 0)
 
-    def _download(self, formats) -> list:
+    def _download(self, formats, max_res=0) -> list:
         output = Path(self._tempdir.name, "%(title).70s.%(ext)s").as_posix()
+        # Use dynamic format_sort: prefer ≤max_res, fallback to best
+        format_sort = ["ext"]
+        if max_res > 0:
+            format_sort.insert(0, f"res:{max_res}")
+        else:
+            format_sort.insert(0, "res:1080")
         ydl_opts = {
             "progress_hooks": [lambda d: self.download_hook(d)],
             "outtmpl": output,
             "restrictfilenames": False,
             "quiet": True,
             "match_filter": match_filter,
-            "concurrent_fragments": 16,
-            "buffersize": 4194304,
+            "concurrent_fragments": 16 if is_youtube(self._url) else 1,
+            "buffersize": 4194304 if is_youtube(self._url) else 1048576,
             "retries": 6,
             "fragment_retries": 6,
             "skip_unavailable_fragments": True,
             "embed_metadata": True,
             "embed_thumbnail": True,
             "writethumbnail": False,
+            "format_sort": format_sort,
         }
         # setup cookies for youtube only
         if is_youtube(self._url):
@@ -127,19 +140,30 @@ class YoutubeDownload(BaseDownloader):
         for f in formats:
             ydl_opts["format"] = f
             logging.info("yt-dlp options: %s", ydl_opts)
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([self._url])
-            files = list(Path(self._tempdir.name).glob("*"))
-            break
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([self._url])
+                files = list(Path(self._tempdir.name).glob("*"))
+                if files:
+                    break
+            except Exception as e:
+                logging.warning("Format %s failed: %s", f, e)
+                continue
 
         return files
 
     def _start(self, formats=None):
         # start download and upload, no cache hit
         # user can choose format by clicking on the button(custom config)
-        default_formats = self._setup_formats()
+        default_formats, max_res = self._setup_formats()
         if formats is not None:
             # formats according to user choice
-            default_formats = formats + self._setup_formats()
-        self._download(default_formats)
+            extra_formats, _ = self._setup_formats()
+            default_formats = formats + extra_formats
+        self._download(default_formats, max_res)
+        # reprocess audio to Telegram-friendly format
+        if self._format == "audio":
+            files = list(Path(self._tempdir.name).glob("*"))
+            if files:
+                convert_audio_format(files, self._bot_msg)
         self._upload()

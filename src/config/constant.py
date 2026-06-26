@@ -21,6 +21,8 @@ class BotText:
 
     Join https://t.me/ytdlbot0 for updates.\n\n"""
 
+    private = "This bot is for private use only."
+
     help = """
 1. For YouTube and any websites supported by yt-dlp, just send the link and we will engine and send it to you.
 

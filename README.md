@@ -35,6 +35,9 @@ Just send a link directly to the bot.
 5. upload format: file, video, audio
 6. cache mechanism - download once for the same video.
 7. Supports multiple download engines (yt-dlp, aria2, requests).
+8. Automatic video conversion to 720p for large videos (4K, 1080p) to ensure smooth playback on Telegram.
+9. Smart scaling logic preserving aspect ratio for both landscape and portrait videos.
+10. Enhanced FFmpeg integration for video processing and format optimization.
 
 > ## Limitations
 > Due to limitations on servers and bandwidth, there are some restrictions on this free service.

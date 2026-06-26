@@ -19,16 +19,16 @@ def krakenfiles_download(client, bot_message, url: str):
             resp.raise_for_status()
             soup = BeautifulSoup(resp.content, "html.parser")
 
-            if post_url := soup.xpath('//form[@id="dl-form"]/@action'):
-                post_url = f"https://krakenfiles.com{post_url[0]}"
+            if post_url := soup.select_one('form#dl-form') and soup.select_one('form#dl-form').get('action'):
+                post_url = f"https://krakenfiles.com{soup.select_one('form#dl-form')['action']}"
             else:
                 raise ValueError("ERROR: Unable to find post link.")
-            if token := soup.xpath('//input[@id="dl-token"]/@value'):
-                data = {"token": token[0]}
+            if token := soup.select_one('input#dl-token') and soup.select_one('input#dl-token').get('value'):
+                data = {"token": soup.select_one('input#dl-token')['value']}
             else:
                 raise ValueError("ERROR: Unable to find token for post.")
 
-            return list(zip(post_url, data))
+            return [(post_url, data)]
 
         except requests.RequestException as e:
             raise ValueError(f"Failed to fetch page: {str(e)}")

@@ -36,12 +36,17 @@ services:
         max-file: "3"
 
   ytdl:
-    image: bennythink/ytdlbot
+    build: .
     env_file:
       - .env
+    environment:
+      - ENABLE_FFMPEG=true
     restart: always
     volumes:
       - ./youtube-cookies.txt:/app/youtube-cookies.txt
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
     depends_on:
       redis:
         condition: service_healthy

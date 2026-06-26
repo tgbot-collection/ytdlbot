@@ -17,3 +17,4 @@ ffpb>=0.4.1
 cryptography>=46.0.4
 kurigram==2.2.18
 yt-dlp[default,curl-cffi]==2026.1.31
+ai-cloudscraper>=3.8.4

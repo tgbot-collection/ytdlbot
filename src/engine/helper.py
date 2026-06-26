@@ -6,7 +6,7 @@
 import functools
 import logging
 import os
-import pathlib
+from pathlib import Path
 import re
 import subprocess
 import threading
@@ -63,7 +63,7 @@ def debounce(wait_seconds):
 
 
 def get_caption(url, video_path):
-    if isinstance(video_path, pathlib.Path):
+    if isinstance(video_path, Path):
         meta = get_metadata(video_path)
         file_name = video_path.name
         file_size = sizeof_fmt(os.stat(video_path).st_size)
@@ -124,6 +124,86 @@ def convert_audio_format(video_paths: list, bm):
             video_paths[index] = new_path
 
 
+def ensure_streamable_video(video_path: Path) -> Path:
+    video_path = Path(video_path)
+    mime = filetype.guess_mime(str(video_path))
+    if mime and "video" not in mime:
+        return video_path
+
+    try:
+        probe = ffmpeg.probe(str(video_path))
+        video_codec = None
+        width = 0
+        height = 0
+        for stream in probe.get("streams", []):
+            if stream["codec_type"] == "video":
+                video_codec = stream["codec_name"]
+                width = stream.get("width", 0) or 0
+                height = stream.get("height", 0) or 0
+                break
+
+        ext = video_path.suffix.lower()
+        # Always re-encode if video exceeds 720p, regardless of format
+        # Skip only if already mp4/h264 AND within 720p limits
+        max_dimension = max(width, height)
+        should_skip = (ext == ".mp4" and video_codec == "h264" and max_dimension <= 720)
+        
+        if should_skip:
+            logging.info("Video already compliant: %s (%dx%d), skipping", video_path, width, height)
+            return video_path
+
+        logging.info(
+            "Re-encoding %s: %s (%s, %dx%d) -> max 720p",
+            video_path, video_codec, ext, width, height,
+        )
+        new_path = video_path.with_suffix(".mp4")
+        # Write to a temp file first to avoid in-place overwrite when
+        # video_path already has .mp4 extension (ffmpeg can't read+write same file).
+        temp_path = video_path.with_suffix(".tmp.mp4")
+
+        # Build scale filter: resize to max 720p while preserving aspect ratio
+        # -2 ensures divisibility by 2. The largest dimension is capped to 720.
+        # If video is already ≤720p, should_skip above already returned early.
+        if width > height:
+            # Horizontal video: limit width to 720, height auto
+            scale_filter = "scale=720:-2"
+        else:
+            # Vertical or square video: limit height to 720, width auto
+            scale_filter = "scale=-2:720"
+
+        args = [
+            "ffmpeg", "-y",
+            "-i", str(video_path),
+            "-vcodec", "libx264",
+            "-preset", "ultrafast",
+            "-crf", "28",
+            "-acodec", "aac",
+            "-b:a", "128k",
+            "-movflags", "+faststart",
+            "-vf", scale_filter,
+            str(temp_path),
+        ]
+
+        logging.info("ffmpeg: %s", " ".join(args))
+        subprocess.run(args, check=True, capture_output=True, timeout=600)
+
+        if not temp_path.exists() or temp_path.stat().st_size == 0:
+            raise RuntimeError(f"ffmpeg produced empty or missing file: {temp_path}")
+        video_path.unlink()
+        temp_path.rename(new_path)
+        return new_path
+    except subprocess.TimeoutExpired:
+        logging.error("ffmpeg timed out for %s after 600s", video_path)
+        return video_path
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.decode() if e.stderr else str(e)
+        logging.error("ffmpeg error for %s\nstderr: %s", video_path, stderr)
+        return video_path
+    except Exception as e:
+        logging.error("ensure_streamable_video failed for %s", video_path, exc_info=True)
+        return video_path
+
+
 def split_large_video(video_paths: list):
     original_video = None
     split = False
@@ -136,4 +216,4 @@ def split_large_video(video_paths: list):
             os.remove(original_video)
 
     if split and original_video:
-        return [i for i in pathlib.Path(original_video).parent.glob("*")]
+        return [i for i in Path(original_video).parent.glob("*")]

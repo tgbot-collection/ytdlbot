@@ -4,8 +4,8 @@
 # ytdlbot - instagram.py
 
 import time
-import pathlib
 import re
+from pathlib import Path
 
 import filetype
 import requests
@@ -72,7 +72,7 @@ class InstagramDownload(BaseDownloader):
                     req = requests.get(link, stream=True)
                     length = int(req.headers.get("content-length", 0) or req.headers.get("x-full-image-content-length", 0))
                     filename = f"Instagram_{code}-{counter}"
-                    save_path = pathlib.Path(self._tempdir.name, filename)
+                    save_path = Path(self._tempdir.name) / filename
                     chunk_size = 8192
                     downloaded = 0
                     start_time = time.time()
